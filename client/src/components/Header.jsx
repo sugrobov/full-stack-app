@@ -7,8 +7,10 @@ import Select from './UI/Select';
 import Input from './UI/Input';
 
 const Header = () => {
-  const dispatch = useDispatch();
+    const dispatch = useDispatch();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAtTop, setIsAtTop] = useState(true);
+  const [showTopIndicator, setShowTopIndicator] = useState(false);
   const closeMenuTimerRef = useRef(null);
 
   const cartItemsCount = useSelector(state => state.cart.totalQuantity);
@@ -22,12 +24,24 @@ const Header = () => {
   const [localMaxPrice, setLocalMaxPrice] = useState(maxPrice || '');
 
   const toggleMenu = () => {
-    // Очищаем таймер закрытия при клике на бургер
-    if (closeMenuTimerRef.current) {
-      clearTimeout(closeMenuTimerRef.current);
-      closeMenuTimerRef.current = null;
+    // Если мы не в самом верху и меню закрыто, сначала скроллим наверх
+    if (!isAtTop && !isMenuOpen) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setShowTopIndicator(true);
+      
+      // Ждем завершения скролла, затем открываем меню
+      setTimeout(() => {
+        setIsMenuOpen(true);
+        setShowTopIndicator(false);
+      }, 400); // Время на скролл + небольшая задержка
+    } else {
+      // Если уже наверху или меню открыто - обычное поведение
+      if (closeMenuTimerRef.current) {
+        clearTimeout(closeMenuTimerRef.current);
+        closeMenuTimerRef.current = null;
+      }
+      setIsMenuOpen(!isMenuOpen);
     }
-    setIsMenuOpen(!isMenuOpen);
   };
 
   const closeMenu = useCallback(() => {
@@ -67,18 +81,29 @@ const Header = () => {
     setLocalMaxPrice(maxPrice || '');
   }, [minPrice, maxPrice]);
 
-  // Эффект для обработки скролла и изменения размера
+  // Эффект для отслеживания позиции скролла
   useEffect(() => {
+    let scrollTimeout;
+    
     const handleScroll = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const atTop = scrollTop < 50; // Порог 50px от верха
+      
+      setIsAtTop(atTop);
+      
+      // Если мы проскроллили и не наверху, скрываем индикатор
+      if (scrollTop > 50) {
+        setShowTopIndicator(false);
+      }
+      
+      // Закрываем меню при скролле (если оно открыто)
       if (isMenuOpen) {
-        // Очищаем предыдущий таймер
         if (closeMenuTimerRef.current) {
           clearTimeout(closeMenuTimerRef.current);
         }
-        // Устанавливаем новый таймер с небольшой задержкой
         closeMenuTimerRef.current = setTimeout(() => {
           closeMenu();
-        }, 150); // Задержка 
+        }, 150);
       }
     };
 
@@ -94,9 +119,11 @@ const Header = () => {
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
-      // Очищаем таймер при размонтировании
       if (closeMenuTimerRef.current) {
         clearTimeout(closeMenuTimerRef.current);
+      }
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
       }
     };
   }, [isMenuOpen, closeMenu]);
@@ -123,19 +150,45 @@ const Header = () => {
             <Link to="/contact" className="text-gray-700 hover:text-blue-600 font-medium">Обратная связь</Link>
           </nav>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden">
+          {/* Mobile menu button with visual feedback */}
+          <div className="md:hidden flex items-center space-x-2">
+            {/* Indicator for "need to scroll up" */}
+            {showTopIndicator && !isAtTop && (
+              <span className="text-xs text-blue-600 animate-pulse">
+                Скроллим наверх...
+              </span>
+            )}
+            
+            {/* Visual indicator when not at top */}
+            {!isAtTop && !isMenuOpen && (
+              <span className="text-xs text-gray-500 hidden sm:inline">
+                Нажмите, чтобы скроллить наверх
+              </span>
+            )}
+            
             <button
               onClick={toggleMenu}
-              className="text-gray-700 hover:text-blue-600 focus:outline-none"
+              className={`
+                text-gray-700 hover:text-blue-600 focus:outline-none
+                transition-all duration-200
+                ${!isAtTop && !isMenuOpen ? 'opacity-80 hover:opacity-100' : ''}
+              `}
+              title={!isAtTop && !isMenuOpen ? "Нажмите для скролла наверх и открытия меню" : "Открыть меню"}
             >
-              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {isMenuOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <div className="relative">
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {isMenuOpen ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  )}
+                </svg>
+                
+                {/* Animated dot when not at top */}
+                {!isAtTop && !isMenuOpen && (
+                  <span className="absolute -top-1 -right-1 h-2 w-2 bg-blue-500 rounded-full animate-pulse"></span>
                 )}
-              </svg>
+              </div>
             </button>
           </div>
         </div>
