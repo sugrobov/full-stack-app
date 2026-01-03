@@ -14,12 +14,11 @@ const HomePage = () => {
 
   const [localMinPrice, setLocalMinPrice] = useState(minPrice);
   const [localMaxPrice, setLocalMaxPrice] = useState(maxPrice);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-/*   const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredItems.length / itemsPerPage); */
 
   // Handle search with debounce
   useEffect(() => {
@@ -66,43 +65,58 @@ const HomePage = () => {
     <div className="container mx-auto px-4 py-8">
       <Breadcrumb />
 
-      <h1 className="text-3xl font-bold text-gray-800 mb-8">Каталог товаров</h1>
-
-      {/* Desktop Search and Filters */}
-      <div className="hidden md:block bg-white rounded-lg shadow-md p-6 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {/* Search */}
-          <div className="md:col-span-2">
-            <Input
-              label="Поиск"
-              type="text"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              placeholder="Поиск товаров..."
-            />
-          </div>
-
-          {/* Category Dropdown */}
-          <div>
-            <Select
-              label="Категория"
-              value={selectedCategory}
-              onChange={(e) => dispatch(setSelectedCategory(e.target.value))}
-            >
-              <option value="">Все категории</option>
-              {categories.map((category, index) => (
-                <option key={index} value={category}>{category}</option>
-              ))}
-            </Select>
-          </div>
-
-          {/* Empty column for spacing */}
-          <div></div>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-800">Каталог товаров</h1>
+        
+        {/* Filters Button for Desktop */}
+        <div className="hidden md:block">
+          <Button
+            variant="secondary"
+            onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+            className="flex items-center space-x-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            <span>Фильтры</span>
+          </Button>
         </div>
+      </div>
 
-        {/* Desktop Price Inputs and Filter Buttons - кнопки на новой строке */}
-        <div className="mt-6">
-          {/* Price Inputs - в одной строке */}
+      {/* Filters Dropdown for Desktop */}
+      {isFiltersOpen && (
+        <div className="hidden md:block bg-white rounded-lg shadow-md p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            {/* Search */}
+            <div className="md:col-span-2">
+              <Input
+                label="Поиск"
+                type="text"
+                value={searchQuery}
+                onChange={handleSearchChange}
+                placeholder="Поиск товаров..."
+              />
+            </div>
+
+            {/* Category Dropdown */}
+            <div>
+              <Select
+                label="Категория"
+                value={selectedCategory}
+                onChange={(e) => dispatch(setSelectedCategory(e.target.value))}
+              >
+                <option value="">Все категории</option>
+                {categories.map((category, index) => (
+                  <option key={index} value={category}>{category}</option>
+                ))}
+              </Select>
+            </div>
+
+            {/* Empty column for spacing */}
+            <div></div>
+          </div>
+
+          {/* Price Inputs and Filter Buttons */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <Input
@@ -125,8 +139,8 @@ const HomePage = () => {
             </div>
           </div>
 
-          {/* Filter Buttons - на новой строке с выравниванием по центру */}
-          <div className="flex justify-center space-x-2">
+          {/* Filter Buttons */}
+          <div className="flex justify-center space-x-2 pt-2">
             <Button
               variant="primary"
               onClick={handlePriceFilter}
@@ -146,7 +160,7 @@ const HomePage = () => {
             </Button>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Products */}
       {displayedItems.length > 0 ? (
