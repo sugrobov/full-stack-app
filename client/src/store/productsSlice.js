@@ -1,20 +1,44 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
+// Функция для генерации цветного градиента
+const generateGradientColor = (id, imgIndex) => {
+  // Генерируем уникальный цвет на основе id и imgIndex
+  const hue = (id * imgIndex) % 360;
+  const saturation = 70 + (id % 30); // 70-100%
+  const lightness = 50 + (imgIndex % 20); // 50-70%
+
+  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+};
+
+// Функция для создания градиента
+const createGradient = (id, imgIndex) => {
+  const color1 = generateGradientColor(id, imgIndex);
+  const color2 = generateGradientColor(id + 1, imgIndex + 1);
+
+  return `linear-gradient(135deg, ${color1}, ${color2})`;
+};
+
 // Mock data for products
 const generateMockProducts = () => {
   const categories = Array.from({ length: 25 }, (_, i) => `Категория ${i + 1}`);
   const products = [];
-  
+
   categories.forEach((category, categoryIndex) => {
     const productCount = Math.floor(Math.random() * 31) + 10; // 10-40 products per category
-    
+
     for (let i = 1; i <= productCount; i++) {
       const id = categoryIndex * 100 + i;
       const hasDiscount = Math.random() > 0.7;
       const basePrice = Math.floor(Math.random() * 10000) + 1000;
       const discountPercent = Math.floor(Math.random() * 30) + 5;
       const stock = Math.floor(Math.random() * 100);
-      
+      const imageCount = Math.floor(Math.random() * 5) + 1; // 1-5 изображений
+
+      // Генерируем массив изображений
+      const images = Array.from({ length: imageCount }, (_, imgIndex) =>
+        createGradient(id, imgIndex)
+      );
+
       products.push({
         id,
         name: `Товар ${id} из ${category}`,
@@ -23,12 +47,13 @@ const generateMockProducts = () => {
         discountPrice: hasDiscount ? Math.round(basePrice * (100 - discountPercent) / 100) : null,
         rating: (Math.random() * 5).toFixed(1),
         stock,
-        image: `https://picsum.photos/300/300?random=${id}`,
+        image: images[0], // Первое изображение для обратной совместимости
+        images, // Массив всех изображений
         description: `Подробное описание товара ${id}. Этот товар относится к категории ${category} и обладает отличными характеристиками.`,
       });
     }
   });
-  
+
   return products.filter(product => product.stock > 0);
 };
 
@@ -77,12 +102,12 @@ const productsSlice = createSlice({
     },
     filterProducts: (state) => {
       let filtered = state.items;
-      
+
       // Apply category filter
       if (state.selectedCategory) {
         filtered = filtered.filter(product => product.category === state.selectedCategory);
       }
-      
+
       // Apply search filter
       if (state.searchQuery) {
         filtered = filtered.filter(product =>
@@ -90,24 +115,24 @@ const productsSlice = createSlice({
           product.category.toLowerCase().includes(state.searchQuery.toLowerCase())
         );
       }
-      
+
       // Apply price filter
       if (state.minPrice !== '' && state.minPrice !== null) {
-        filtered = filtered.filter(product => 
-          product.discountPrice 
-            ? product.discountPrice >= parseFloat(state.minPrice) 
+        filtered = filtered.filter(product =>
+          product.discountPrice
+            ? product.discountPrice >= parseFloat(state.minPrice)
             : product.price >= parseFloat(state.minPrice)
         );
       }
-      
+
       if (state.maxPrice !== '' && state.maxPrice !== null) {
-        filtered = filtered.filter(product => 
-          product.discountPrice 
-            ? product.discountPrice <= parseFloat(state.maxPrice) 
+        filtered = filtered.filter(product =>
+          product.discountPrice
+            ? product.discountPrice <= parseFloat(state.maxPrice)
             : product.price <= parseFloat(state.maxPrice)
         );
       }
-      
+
       state.filteredItems = filtered;
     },
   },

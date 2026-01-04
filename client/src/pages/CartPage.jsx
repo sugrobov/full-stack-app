@@ -8,15 +8,15 @@ import Breadcrumb from '../components/Breadcrumb';
 const CartPage = () => {
   const dispatch = useDispatch();
   const { items, totalAmount, totalQuantity } = useSelector(state => state.cart);
-  
+
   const handleRemoveItem = (id) => {
     dispatch(removeFromCart(id));
   };
-  
+
   const handleClearCart = () => {
     dispatch(clearCart());
   };
-  
+
   if (items.length === 0) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -34,7 +34,7 @@ const CartPage = () => {
       </div>
     );
   }
-  
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
@@ -49,9 +49,9 @@ const CartPage = () => {
           Назад
         </Link>
       </div>
-      
+
       <h1 className="text-3xl font-bold text-gray-800 mb-8">Корзина</h1>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Cart Items */}
         <div className="lg:col-span-2">
@@ -70,18 +70,18 @@ const CartPage = () => {
                 </Button>
               </div>
             </div>
-            
+
             <div className="divide-y divide-gray-200">
               {items.map(item => (
                 <div key={item.id} className="p-4 flex">
                   <div className="flex-shrink-0 w-24 h-24">
-                    <img 
-                      src={item.image} 
-                      alt={item.name} 
+                    <img
+                      src={item.images?.[0] || item.image}
+                      alt={item.name}
                       className="w-full h-full object-cover rounded-md"
                     />
                   </div>
-                  
+
                   <div className="ml-4 flex-grow">
                     <div className="flex justify-between">
                       <div>
@@ -97,7 +97,7 @@ const CartPage = () => {
                           )}
                         </p>
                       </div>
-                      
+
                       <Button
                         variant="ghost"
                         onClick={() => handleRemoveItem(item.id)}
@@ -108,7 +108,7 @@ const CartPage = () => {
                         </svg>
                       </Button>
                     </div>
-                    
+
                     <div className="mt-3 flex items-center">
                       <div className="flex items-center border border-gray-300 rounded-md">
                         <Button
@@ -127,7 +127,7 @@ const CartPage = () => {
                           +
                         </Button>
                       </div>
-                      
+
                       <div className="ml-4 font-medium text-gray-800">
                         {item.totalPrice.toLocaleString()} ₽
                       </div>
@@ -138,12 +138,12 @@ const CartPage = () => {
             </div>
           </div>
         </div>
-        
+
         {/* Order Summary */}
         <div>
           <div className="bg-white rounded-lg shadow-md p-6 sticky top-24">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Итого</h2>
-            
+
             <div className="space-y-3 mb-6">
               <div className="flex justify-between">
                 <span className="text-gray-600">Товары ({totalQuantity})</span>
@@ -160,13 +160,13 @@ const CartPage = () => {
                 </div>
               </div>
             </div>
-            
+
             <Button variant="primary" className="w-full py-3 font-medium">
               Оформить заказ
             </Button>
-            
-            <Link 
-              to="/" 
+
+            <Link
+              to="/"
               className="block text-center mt-4 text-blue-600 hover:text-blue-800 font-medium"
             >
               Продолжить покупки
