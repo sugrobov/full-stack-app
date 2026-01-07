@@ -34,7 +34,7 @@ const generateMockProducts = () => {
           return generateColor(id, imgIndex);
         } else {
           // Для обычных изображений используем заглушку
-          return `https://placehold.co/600x400?text=Product${id}Image${imgIndex+1}`;
+          return `https://placehold.co/600x400?text=${encodeURIComponent(`Product${id}Image${imgIndex + 1}`)}`;
         }
       });
 
