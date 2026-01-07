@@ -1,188 +1,158 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { setSearchQuery, setPriceFilter, setSelectedCategory, filterProducts, setCurrentPage } from '../store/productsSlice';
+import { fetchProducts, setCurrentPage, filterProducts } from '../store/productsSlice';
 import ProductCard from '../components/ProductCard';
-import Pagination from '../components/Pagination';
-import Button from '../components/UI/Button';
-import Select from '../components/UI/Select';
-import Input from '../components/UI/Input';
 import Breadcrumb from '../components/Breadcrumb';
+import Filters from '../components/Filters';
 
 const HomePage = () => {
   const dispatch = useDispatch();
-  const { filteredItems, categories, currentPage, itemsPerPage, searchQuery, minPrice, maxPrice, selectedCategory } = useSelector(state => state.products);
+  const { 
+    filteredItems, 
+    status, 
+    currentPage, 
+    itemsPerPage,
+    searchQuery,
+    selectedCategory,
+    minPrice,
+    maxPrice 
+  } = useSelector(state => state.products);
 
-  const [localMinPrice, setLocalMinPrice] = useState(minPrice);
-  const [localMaxPrice, setLocalMaxPrice] = useState(maxPrice);
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  // Загружаем товары при монтировании
+  useEffect(() => {
+    if (status === 'idle') {
+      dispatch(fetchProducts());
+    }
+  }, [dispatch, status]);
 
-  // Pagination
+  // Фильтруем товары при изменении фильтров
+  useEffect(() => {
+    dispatch(filterProducts());
+  }, [searchQuery, selectedCategory, minPrice, maxPrice, dispatch]);
+
+  // Рассчитываем пагинацию
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-
-  // Handle search with debounce
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      dispatch(filterProducts());
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery, minPrice, maxPrice, selectedCategory, dispatch]);
-
-  const handleSearchChange = (e) => {
-    dispatch(setSearchQuery(e.target.value));
-  };
-
-  const handleClearSearch = () => {
-    dispatch(setSearchQuery(''));
-  };
-
-  const handlePriceFilter = () => {
-    dispatch(setPriceFilter({ minPrice: localMinPrice, maxPrice: localMaxPrice }));
-  };
-
-  const handleClearFilters = () => {
-    setLocalMinPrice('');
-    setLocalMaxPrice('');
-    dispatch(setSelectedCategory(''));
-    dispatch(setPriceFilter({ minPrice: '', maxPrice: '' }));
-    dispatch(setSearchQuery(''));
-  };
+  const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
 
   const handlePageChange = (pageNumber) => {
     dispatch(setCurrentPage(pageNumber));
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Filter products by selected category
-  const filteredByCategory = selectedCategory
-    ? filteredItems.filter(item => item.category === selectedCategory)
-    : filteredItems;
+  if (status === 'loading') {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Загрузка товаров...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const displayedItems = filteredByCategory.slice(indexOfFirstItem, indexOfLastItem);
+  if (status === 'failed') {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center py-12">
+          <div className="text-red-500 text-lg mb-4">Ошибка загрузки товаров</div>
+          <button
+            onClick={() => dispatch(fetchProducts())}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Повторить попытку
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <Breadcrumb />
-
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Каталог товаров</h1>
-        
-        {/* Filters Button for Desktop */}
-        <div className="hidden md:block">
-          <Button
-            variant="secondary"
-            onClick={() => setIsFiltersOpen(!isFiltersOpen)}
-            className="flex items-center space-x-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-            </svg>
-            <span>Фильтры</span>
-          </Button>
-        </div>
+      <div className="mb-6">
+        <Breadcrumb />
       </div>
 
-      {/* Filters Dropdown for Desktop */}
-      {isFiltersOpen && (
-        <div className="hidden md:block bg-white rounded-lg shadow-md p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-            {/* Search */}
-            <div className="md:col-span-2">
-              <Input
-                label="Поиск"
-                type="text"
-                value={searchQuery}
-                onChange={handleSearchChange}
-                placeholder="Поиск товаров..."
-              />
-            </div>
+      <h1 className="text-3xl font-bold text-gray-800 mb-2">Каталог товаров</h1>
+      <p className="text-gray-600 mb-8">Найдено товаров: {filteredItems.length}</p>
 
-            {/* Category Dropdown */}
-            <div>
-              <Select
-                label="Категория"
-                value={selectedCategory}
-                onChange={(e) => dispatch(setSelectedCategory(e.target.value))}
-              >
-                <option value="">Все категории</option>
-                {categories.map((category, index) => (
-                  <option key={index} value={category}>{category}</option>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        {/* Filters sidebar */}
+        <div className="lg:col-span-1">
+          <Filters />
+        </div>
+
+        {/* Products grid */}
+        <div className="lg:col-span-3">
+          {currentItems.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-lg shadow">
+              <div className="text-gray-400 mb-4">
+                <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-800 mb-2">Товары не найдены</h3>
+              <p className="text-gray-600">Попробуйте изменить параметры фильтрации</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {currentItems.map(product => (
+                  <ProductCard key={product.id} product={product} />
                 ))}
-              </Select>
-            </div>
+              </div>
 
-            {/* Empty column for spacing */}
-            <div></div>
-          </div>
-
-          {/* Price Inputs and Filter Buttons */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <Input
-                label="Минимальная цена"
-                type="number"
-                value={localMinPrice}
-                onChange={(e) => setLocalMinPrice(e.target.value)}
-                placeholder="От"
-              />
-            </div>
-
-            <div>
-              <Input
-                label="Максимальная цена"
-                type="number"
-                value={localMaxPrice}
-                onChange={(e) => setLocalMaxPrice(e.target.value)}
-                placeholder="До"
-              />
-            </div>
-          </div>
-
-          {/* Filter Buttons */}
-          <div className="flex justify-center space-x-2 pt-2">
-            <Button
-              variant="primary"
-              onClick={handlePriceFilter}
-              className="whitespace-nowrap"
-            >
-              Фильтровать
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={handleClearFilters}
-              className="px-3"
-              title="Очистить фильтры"
-            >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </Button>
-          </div>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="mt-8 flex justify-center">
+                  <nav className="flex items-center space-x-2">
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Назад
+                    </button>
+                    
+                    {[...Array(totalPages)].map((_, index) => {
+                      const pageNumber = index + 1;
+                      // Показываем только несколько страниц вокруг текущей
+                      if (
+                        pageNumber === 1 ||
+                        pageNumber === totalPages ||
+                        (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+                      ) {
+                        return (
+                          <button
+                            key={pageNumber}
+                            onClick={() => handlePageChange(pageNumber)}
+                            className={`px-3 py-2 rounded-md ${currentPage === pageNumber
+                                ? 'bg-blue-600 text-white'
+                                : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                              }`}
+                          >
+                            {pageNumber}
+                          </button>
+                        );
+                      }
+                      return null;
+                    })}
+                    
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Вперед
+                    </button>
+                  </nav>
+                </div>
+              )}
+            </>
+          )}
         </div>
-      )}
-
-      {/* Products */}
-      {displayedItems.length > 0 ? (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
-            {displayedItems.map(product => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-
-          {/* Pagination */}
-          <Pagination
-            currentPage={currentPage}
-            totalPages={Math.ceil(filteredByCategory.length / itemsPerPage)}
-            onPageChange={handlePageChange}
-          />
-        </>
-      ) : (
-        <div className="text-center py-12">
-          <p className="text-xl text-gray-600">Товары не найдены</p>
-        </div>
-      )}
+      </div>
     </div>
   );
 };

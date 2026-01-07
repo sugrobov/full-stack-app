@@ -29,9 +29,27 @@ const ProductPage = () => {
     );
   }
 
-  const productImages = product.images || [product.image]; const isGradient = typeof productImages[0] === 'string' && productImages[0].startsWith('linear-gradient');
+  const productImages = product.images || [product.image];
+  const isColor = typeof productImages[0] === 'string' && productImages[0].startsWith('hsl(');
   // const displayPrice = product.discountPrice || product.price;
   const isDiscounted = !!product.discountPrice;
+
+  // Функция для генерации цвета на основе id и imgIndex
+  const generateColor = (id, imgIndex) => {
+    const hue = (id * imgIndex) % 360;
+    const saturation = 70 + (id % 30);
+    const lightness = 50 + (imgIndex % 20);
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  };
+
+  // Извлекаем id и imgIndex из строки цвета
+  const getColorFromImageString = (imageString) => {
+    if (typeof imageString === 'string' && imageString.startsWith('color:')) {
+      const [, id, imgIndex] = imageString.split(':');
+      return generateColor(parseInt(id), parseInt(imgIndex));
+    }
+    return null;
+  };
 
   const handleAddToCart = () => {
     dispatch(addToCart(product));
@@ -77,19 +95,19 @@ const ProductPage = () => {
               <div className="flex items-center justify-center mb-4">
                 <div
                   className="w-full h-96 rounded-lg shadow-md flex items-center justify-center"
-                  style={isGradient ? { background: productImages[currentImageIndex] } : {}}
+                  style={{ backgroundColor: isColor ? productImages[currentImageIndex] : '#f3f4f6' }}
                 >
-                  {!isGradient ? (
+                  {isColor ? (
+                    <div className="text-white font-bold text-2xl">
+                      Товар #{product.id}
+                      <div className="text-lg mt-2">Изображение {currentImageIndex + 1}</div>
+                    </div>
+                  ) : (
                     <img
                       src={productImages[currentImageIndex]}
                       alt={`${product.name} - изображение ${currentImageIndex + 1}`}
                       className="max-w-full h-auto rounded-lg"
                     />
-                  ) : (
-                    <div className="text-white font-bold text-2xl">
-                      Товар #{product.id}
-                      <div className="text-lg mt-2">Изображение {currentImageIndex + 1}</div>
-                    </div>
                   )}
                 </div>
               </div>
@@ -130,18 +148,20 @@ const ProductPage = () => {
                       onClick={() => setCurrentImageIndex(index)}
                       className={`w-16 h-16 rounded-md overflow-hidden border-2 ${currentImageIndex === index ? 'border-blue-500' : 'border-transparent'
                         }`}
-                      style={isGradient ? { background: img } : {}}
                     >
-                      {!isGradient ? (
+                      {isColor ? (
+                        <div
+                          className="w-full h-full flex items-center justify-center text-xs text-white font-bold"
+                          style={{ backgroundColor: img }}
+                        >
+                          {index + 1}
+                        </div>
+                      ) : (
                         <img
                           src={img}
                           alt={`Миниатюра ${index + 1}`}
                           className="w-full h-full object-cover"
                         />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xs text-white font-bold">
-                          {index + 1}
-                        </div>
                       )}
                     </button>
                   ))}

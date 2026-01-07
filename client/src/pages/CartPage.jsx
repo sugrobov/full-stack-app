@@ -1,13 +1,37 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { removeFromCart, clearCart, increaseQuantity } from '../store/cartSlice';
 import { Link } from 'react-router-dom';
 import Button from '../components/UI/Button';
 import Breadcrumb from '../components/Breadcrumb';
+import { clearCartStorage } from '../utils/cartStorage';
 
 const CartPage = () => {
   const dispatch = useDispatch();
   const { items, totalAmount, totalQuantity } = useSelector(state => state.cart);
+
+  useEffect(() => {
+    // Clear cart storage to avoid URI encoding issues
+    // This is a temporary fix to resolve the URI malformed error
+    clearCartStorage();
+  }, []);
+
+  // Функция для генерации цвета на основе id и imgIndex
+  const generateColor = (id, imgIndex) => {
+    const hue = (id * imgIndex) % 360;
+    const saturation = 70 + (id % 30);
+    const lightness = 50 + (imgIndex % 20);
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  };
+
+  // Извлекаем id и imgIndex из строки цвета
+  const getColorFromImageString = (imageString) => {
+    if (typeof imageString === 'string' && imageString.startsWith('color:')) {
+      const [, id, imgIndex] = imageString.split(':');
+      return generateColor(parseInt(id), parseInt(imgIndex));
+    }
+    return null;
+  };
 
   const handleRemoveItem = (id) => {
     dispatch(removeFromCart(id));
@@ -38,7 +62,7 @@ const CartPage = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
-        <Breadcrumb />
+        {/* <Breadcrumb /> */}
         <Link
           to="/"
           className="ml-4 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -72,69 +96,77 @@ const CartPage = () => {
             </div>
 
             <div className="divide-y divide-gray-200">
-              {items.map(item => (
-                <div key={item.id} className="p-4 flex">
-                  <div className="flex-shrink-0 w-24 h-24">
-                    <img
-                      src={item.images?.[0] || item.image}
-                      alt={item.name}
-                      className="w-full h-full object-cover rounded-md"
-                    />
-                  </div>
-
-                  <div className="ml-4 flex-grow">
-                    <div className="flex justify-between">
-                      <div>
-                        <h3 className="font-medium text-gray-800">{item.name}</h3>
-                        <p className="text-gray-600 text-sm mt-1">
-                          {item.discountPrice ? (
-                            <span>
-                              <span className="font-medium">{item.discountPrice.toLocaleString()} ₽</span>
-                              <span className="line-through text-gray-500 ml-2">{item.price.toLocaleString()} ₽</span>
-                            </span>
-                          ) : (
-                            <span className="font-medium">{item.price.toLocaleString()} ₽</span>
-                          )}
-                        </p>
-                      </div>
-
-                      <Button
-                        variant="ghost"
-                        onClick={() => handleRemoveItem(item.id)}
-                        className="text-gray-400 hover:text-gray-600"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </Button>
+              {items.map(item => {
+                // Проверяем, использует ли товар цвета
+                const isColor = typeof (item.images?.[0] || item.image) === 'string' && (item.images?.[0] || item.image).startsWith('hsl(');
+                
+                return (
+                  <div key={item.id} className="p-4 flex">
+                    <div className="flex-shrink-0 w-24 h-24 rounded-md flex items-center justify-center"
+                      style={{ backgroundColor: isColor ? (item.images?.[0] || item.image) : '#f3f4f6' }}>
+                      {isColor ? (
+                        <div className="text-white font-bold text-sm">Товар #{item.id}</div>
+                      ) : item.images?.[0] || item.image ? (
+                        <div>Image: {item.images?.[0] || item.image}</div>
+                      ) : (
+                        <div className="text-gray-500 text-sm">Товар #{item.id}</div>
+                      )}
                     </div>
 
-                    <div className="mt-3 flex items-center">
-                      <div className="flex items-center border border-gray-300 rounded-md">
+                    <div className="ml-4 flex-grow">
+                      <div className="flex justify-between">
+                        <div>
+                          <h3 className="font-medium text-gray-800">{item.name}</h3>
+                          <p className="text-gray-600 text-sm mt-1">
+                            {item.discountPrice ? (
+                              <span>
+                                <span className="font-medium">{item.discountPrice.toLocaleString()} ₽</span>
+                                <span className="line-through text-gray-500 ml-2">{item.price.toLocaleString()} ₽</span>
+                              </span>
+                            ) : (
+                              <span className="font-medium">{item.price.toLocaleString()} ₽</span>
+                            )}
+                          </p>
+                        </div>
+
                         <Button
                           variant="ghost"
                           onClick={() => handleRemoveItem(item.id)}
-                          className="px-3 py-1 text-gray-600 hover:bg-gray-100"
+                          className="text-gray-400 hover:text-gray-600"
                         >
-                          -
-                        </Button>
-                        <span className="px-3 py-1 text-gray-800">{item.quantity}</span>
-                        <Button
-                          variant="ghost"
-                          onClick={() => dispatch(increaseQuantity(item.id))}
-                          className="px-3 py-1 text-gray-600 hover:bg-gray-100"
-                        >
-                          +
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
                         </Button>
                       </div>
 
-                      <div className="ml-4 font-medium text-gray-800">
-                        {item.totalPrice.toLocaleString()} ₽
+                      <div className="mt-3 flex items-center">
+                        <div className="flex items-center border border-gray-300 rounded-md">
+                          <Button
+                            variant="ghost"
+                            onClick={() => handleRemoveItem(item.id)}
+                            className="px-3 py-1 text-gray-600 hover:bg-gray-100"
+                          >
+                            -
+                          </Button>
+                          <span className="px-3 py-1 text-gray-800">{item.quantity}</span>
+                          <Button
+                            variant="ghost"
+                            onClick={() => dispatch(increaseQuantity(item.id))}
+                            className="px-3 py-1 text-gray-600 hover:bg-gray-100"
+                          >
+                            +
+                          </Button>
+                        </div>
+
+                        <div className="ml-4 font-medium text-gray-800">
+                          {item.totalPrice.toLocaleString()} ₽
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

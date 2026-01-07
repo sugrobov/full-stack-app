@@ -1,21 +1,13 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
-// Функция для генерации цветного градиента
-const generateGradientColor = (id, imgIndex) => {
+// Функция для генерации цвета на основе id и imgIndex
+const generateColor = (id, imgIndex) => {
   // Генерируем уникальный цвет на основе id и imgIndex
   const hue = (id * imgIndex) % 360;
   const saturation = 70 + (id % 30); // 70-100%
   const lightness = 50 + (imgIndex % 20); // 50-70%
 
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-};
-
-// Функция для создания градиента
-const createGradient = (id, imgIndex) => {
-  const color1 = generateGradientColor(id, imgIndex);
-  const color2 = generateGradientColor(id + 1, imgIndex + 1);
-
-  return `linear-gradient(135deg, ${color1}, ${color2})`;
 };
 
 // Mock data for products
@@ -33,11 +25,18 @@ const generateMockProducts = () => {
       const discountPercent = Math.floor(Math.random() * 30) + 5;
       const stock = Math.floor(Math.random() * 100);
       const imageCount = Math.floor(Math.random() * 5) + 1; // 1-5 изображений
+      const useColor = Math.random() > 0.5; // 50% товаров будут использовать цвета
 
       // Генерируем массив изображений
-      const images = Array.from({ length: imageCount }, (_, imgIndex) =>
-        createGradient(id, imgIndex)
-      );
+      const images = Array.from({ length: imageCount }, (_, imgIndex) => {
+        if (useColor) {
+          // Генерируем реальный цвет вместо строки-заполнителя
+          return generateColor(id, imgIndex);
+        } else {
+          // Для обычных изображений используем заглушку
+          return `https://placehold.co/600x400?text=Product${id}Image${imgIndex+1}`;
+        }
+      });
 
       products.push({
         id,
@@ -49,6 +48,7 @@ const generateMockProducts = () => {
         stock,
         image: images[0], // Первое изображение для обратной совместимости
         images, // Массив всех изображений
+        useColor, // Флаг, указывающий что товар использует цвета
         description: `Подробное описание товара ${id}. Этот товар относится к категории ${category} и обладает отличными характеристиками.`,
       });
     }

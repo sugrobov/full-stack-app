@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-const cartSlice = createSlice({
+const cartSlice = createSlice({ 
   name: 'cart',
   initialState: {
     items: [],
@@ -8,7 +8,7 @@ const cartSlice = createSlice({
     totalAmount: 0,
   },
   reducers: {
-    addToCart: (state, action) => {
+    addToCart: (state, action) => { // добавление в корзину
       const newItem = action.payload;
       const existingItem = state.items.find(item => item.id === newItem.id);
 
@@ -34,7 +34,7 @@ const cartSlice = createSlice({
       state.totalQuantity = state.items.reduce((total, item) => total + item.quantity, 0);
       state.totalAmount = state.items.reduce((total, item) => total + item.totalPrice, 0);
     },
-    removeFromCart: (state, action) => {
+    removeFromCart: (state, action) => { // удаление из корзины
       const id = action.payload;
       const existingItem = state.items.find(item => item.id === id);
 
@@ -50,7 +50,7 @@ const cartSlice = createSlice({
       state.totalQuantity = state.items.reduce((total, item) => total + item.quantity, 0);
       state.totalAmount = state.items.reduce((total, item) => total + item.totalPrice, 0);
     },
-    increaseQuantity: (state, action) => {
+    increaseQuantity: (state, action) => { // увеличение количества
       const id = action.payload;
       const existingItem = state.items.find(item => item.id === id);
 
@@ -62,7 +62,7 @@ const cartSlice = createSlice({
       state.totalQuantity = state.items.reduce((total, item) => total + item.quantity, 0);
       state.totalAmount = state.items.reduce((total, item) => total + item.totalPrice, 0);
     },
-    clearCart: (state) => {
+    clearCart: (state) => { // очистка корзины
       state.items = [];
       state.totalQuantity = 0;
       state.totalAmount = 0;
