@@ -107,7 +107,11 @@ const CartPage = () => {
                       {isColor ? (
                         <div className="text-white font-bold text-sm">Товар #{item.id}</div>
                       ) : item.images?.[0] || item.image ? (
-                        <div>Image: {item.images?.[0] || item.image}</div>
+                        <img
+                          src={item.images?.[0] || item.image}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <div className="text-gray-500 text-sm">Товар #{item.id}</div>
                       )}
