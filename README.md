@@ -1,69 +1,69 @@
-# Интернет-магазин
+# Online Store
 
-Это полнофункциональный интернет-магазин, созданный с использованием React, Redux и Vite.
+This is a full-featured online store built with React, Redux, and Vite.
 
-## Описание проекта
+## Project Description
 
-Интернет-магазин включает в себя следующие функции:
-- Просмотр каталога товаров с фильтрацией по категориям и цене
-- Постраничная навигация
-- Добавление товаров в корзину
-- Управление количеством товаров в корзине
-- Избранное
-- Просмотр деталей товара с возможностью переключения изображений
+The online store includes the following features:
+- Product catalog browsing with category and price filtering
+- Pagination
+- Adding products to cart
+- Managing product quantities in cart
+- Favorites
+- Product details view with image switching capability
 
-## Установка и запуск
+## Installation and Setup
 
-1. Клонируйте репозиторий:
+1. Clone the repository:
    ```
    git clone https://github.com/sugrobov/full-stack-app.git
    ```
 
-2. Перейдите в директорию клиента:
+2. Navigate to the client directory:
    ```
    cd full-stack-app/client
    ```
 
-3. Установите зависимости:
+3. Install dependencies:
    ```
    npm install
    ```
 
-4. Запустите приложение:
+4. Run the application:
    ```
    npm run dev
    ```
 
-5. Откройте браузер и перейдите по адресу `http://localhost:5173`
+5. Open your browser and go to `http://localhost:5173`
 
-## Изображения товаров
+## Product Images
 
-Изображения товаров не включены в репозиторий Git из-за их размера. Вы можете сгенерировать изображения двумя способами:
+Product images are not included in the Git repository due to their size. You can generate images in two ways:
 
-### Способ 1: Использование скрипта Python (рекомендуется)
+### Method 1: Using Python script (recommended)
 
-1. Убедитесь, что у вас установлен Python 3 и библиотека Pillow:
+1. Make sure you have Python 3 and the Pillow library installed:
    ```
    pip install Pillow
    ```
 
-2. Запустите скрипт генерации изображений:
+2. Run the image generation script:
    ```
    python scripts/generate-images.py
    ```
 
-### Способ 2: Использование скрипта Node.js
+### Method 2: Using Node.js script
 
-1. Запустите скрипт генерации изображений:
+1. Run the image generation script:
    ```
    node scripts/generate-images-node.js
    ```
 
-### Способ 3: Скачивание архивов с изображениями
+### Method 3: Downloading image archives
 
-Изображения разделены на 25 архивов по категориям:
+Images are divided into 25 archives by categories:
 
-1. Скачайте архивы с изображениями:
+1. Download the image archives:
    - [Category 1](archives/category1.zip) (22.9 MB)
    - [Category 2](archives/category2.zip) (25.4 MB)
    - [Category 3](archives/category3.zip) (21.6 MB)
@@ -90,7 +90,7 @@
    - [Category 24](archives/category24.zip) (25.6 MB)
    - [Category 25](archives/category25.zip) (23.1 MB)
 
-2. Распакуйте каждый архив в папку `client/public/images`:
+2. Extract each archive to the `client/public/images` folder:
    ```
    client/public/images/
    ├── category1/
@@ -103,44 +103,44 @@
    └── ...
    ```
 
-3. После распаковки всех архивов перезапустите приложение:
+3. After extracting all archives, restart the application:
    ```
    npm run dev
    ```
 
-## Структура проекта
+## Project Structure
 
 ```
 client/
 ├── public/
-│   └── images/          # Изображения товаров (не включены в Git)
+│   └── images/          # Product images (not included in Git)
 ├── src/
-│   ├── components/     # Компоненты React
-│   ├── pages/          # Страницы приложения
-│   ├── store/          # Redux store и слайсы
-│   ├── utils/          # Вспомогательные функции
-│   ├── App.jsx         # Главный компонент приложения
-│   └── main.jsx        # Точка входа
-└── vite.config.js     # Конфигурация Vite
+│   ├── components/     # React components
+│   ├── pages/          # Application pages
+│   ├── store/          # Redux store and slices
+│   ├── utils/          # Utility functions
+│   ├── App.jsx         # Main application component
+│   └── main.jsx        # Entry point
+└── vite.config.js     # Vite configuration
 ```
 
-## Основные компоненты
+## Main Components
 
-- `App.jsx` - Главный компонент приложения с навигацией
-- `HomePage.jsx` - Главная страница с каталогом товаров
-- `ProductPage.jsx` - Страница деталей товара
-- `CartPage.jsx` - Страница корзины
-- `ProductCard.jsx` - Компонент карточки товара
-- `Breadcrumb.jsx` - Компонент навигационной цепочки
-- `Filters.jsx` - Компонент фильтров
+- `App.jsx` - Main application component with navigation
+- `HomePage.jsx` - Home page with product catalog
+- `ProductPage.jsx` - Product details page
+- `CartPage.jsx` - Shopping cart page
+- `ProductCard.jsx` - Product card component
+- `Breadcrumb.jsx` - Breadcrumb navigation component
+- `Filters.jsx` - Filter component
 
 ## Redux Store
 
-- `productsSlice.js` - Управление данными товаров
-- `cartSlice.js` - Управление корзиной
-- `favoritesSlice.js` - Управление избранным
+- `productsSlice.js` - Product data management
+- `cartSlice.js` - Cart management
+- `favoritesSlice.js` - Favorites management
 
-## Технологии
+## Technologies
 
 - React 18
 - Redux Toolkit
@@ -148,6 +148,6 @@ client/
 - Tailwind CSS
 - Vite
 
-## Лицензия
+## License
 
 MIT
