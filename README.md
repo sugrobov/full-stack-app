@@ -108,6 +108,21 @@ Images are divided into 25 archives by categories:
    npm run dev
    ```
 
+## Deployment
+
+### Netlify Deployment
+
+This project is configured for easy deployment to Netlify:
+
+1. Connect your GitHub repository to Netlify
+2. Set the build command to: `npm run build`
+3. Set the publish directory to: `dist`
+4. Deploy the site
+
+The `netlify.toml` configuration file is already included in the project for automatic configuration.
+
+For future backend integration, you can set up environment variables in Netlify to point to your API endpoints.
+
 ## Project Structure
 
 ```
