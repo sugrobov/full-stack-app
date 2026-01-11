@@ -108,7 +108,7 @@ const CartPage = () => {
                         <div className="text-white font-bold text-sm">Товар #{item.id}</div>
                       ) : item.images?.[0] || item.image ? (
                         <img
-                          src={item.images?.[0] || item.image}
+                          src={encodeURIComponent(item.images?.[0] || item.image)}
                           alt={item.name}
                           className="w-full h-full object-cover"
                         />

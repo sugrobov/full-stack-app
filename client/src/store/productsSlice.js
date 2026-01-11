@@ -34,7 +34,7 @@ const generateMockProducts = () => {
           return generateColor(id, imgIndex);
         } else {
           // Для обычных изображений используем заглушку
-          return `/images/category${categoryIndex + 1}/product${id}_image${imgIndex + 1}.jpg`;
+          return `/images/category${categoryIndex + 1}/product${id}_image${imgIndex + 1}.ppm`;
         }
       });
 
