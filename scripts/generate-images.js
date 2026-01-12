@@ -32,6 +32,17 @@ for (let categoryIndex = 1; categoryIndex <= 25; categoryIndex++) {
   }
 }
 
+function generatePPMImage(width, height, color) {
+  let ppm = `P3\n${width} ${height}\n255\n`;
+  // Добавить данные пикселей
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      ppm += `255 0 0\n`; // Пример: красный цвет
+    }
+  }
+  return ppm;
+}
+
 function generateSimpleImage(categoryIndex, productId, imgIndex) {
   // Это упрощенная реализация генерации изображения
   // В реальном приложении здесь будет код для создания реальных изображений

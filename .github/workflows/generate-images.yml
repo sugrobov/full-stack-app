@@ -1,0 +1,78 @@
+name: Generate and Archive Images
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'scripts/generate-images.py'
+  workflow_dispatch:
+    inputs:
+      force_run:
+        description: 'Run manually?'
+        required: false
+        default: 'false'
+
+jobs:
+  generate-and-archive:
+    name: Generate images and create archives
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Pillow
+        run: |
+          python -m pip install --upgrade pip
+          pip install Pillow
+
+      - name: Generate images
+        run: |
+          python scripts/generate-images.py
+        working-directory: ./client
+
+      - name: Create ZIP archives
+        run: |
+          mkdir -p client/archives
+          for i in $(seq 1 25); do
+            category="category$i"
+            dir="client/public/images/$category"
+            if [ -d "$dir" ]; then
+              zip -r "client/archives/$category.zip" "$dir"
+              echo "✅ Archive $category.zip created"
+            else
+              echo "❌ Directory $dir not found"
+            fi
+          done
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add client/archives/*.zip
+          if git diff-index --quiet HEAD --; then
+            echo "no_changes=true" >> $GITHUB_OUTPUT
+            echo "❌ No changes in archives"
+          else
+            echo "no_changes=false" >> $GITHUB_OUTPUT
+            echo "✅ Changes detected in archives"
+          fi
+
+      - name: Commit and Push Archives
+        if: steps.changes.outputs.no_changes == 'false'
+        run: |
+          git add client/archives/*.zip
+          git commit -m "chore(archives): update image archives [auto]"
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
