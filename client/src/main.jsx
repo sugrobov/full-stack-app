@@ -11,10 +11,13 @@ import store, { persistor } from './store/store.js'
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Provider store={store}>
-        <PersistGate loading={null} persistor={persistor}>
-      <BrowserRouter>
-           <App />
-      </BrowserRouter>
+      <PersistGate loading={null} persistor={persistor}>
+        <BrowserRouter future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}>
+          <App />
+        </BrowserRouter>
       </PersistGate>
     </Provider>
   </StrictMode>,

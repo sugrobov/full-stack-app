@@ -1,4 +1,17 @@
 {
+  "name": "full-stack-app",
+  "version": "1.0.0",
+  "description": "Full-stack online store application",
+  "main": "index.js",
+  "scripts": {
+    "install-all": "npm install && cd client && npm install && cd ../server && npm install",
+    "client": "cd client && npm run dev",
+    "server": "cd server && npm run dev",
+    "start": "concurrently \"npm run server\" \"npm run client\"",
+    "build": "cd client && npm run build",
+    "dev": "npm run start",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
@@ -10,5 +23,11 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.8.0"
-  }
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }

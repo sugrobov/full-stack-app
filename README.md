@@ -14,27 +14,88 @@ The online store includes the following features:
 
 ## Installation and Setup
 
+### Option 1: Run from root directory (recommended)
+
 1. Clone the repository:
    ```
    git clone https://github.com/sugrobov/full-stack-app.git
+   cd full-stack-app
    ```
 
-2. Navigate to the client directory:
+2. Install all dependencies (client, server, and root):
+   ```
+   npm run install-all
+   ```
+   Or install manually:
+   ```
+   npm install
+   cd client && npm install
+   cd ../server && npm install
+   ```
+
+3. Start both client and server simultaneously:
+   ```
+   npm start
+   ```
+   Or start them separately:
+   ```
+   npm run server   # starts backend on port 5000
+   npm run client   # starts frontend on port 5173
+   ```
+
+4. Open your browser:
+   - Frontend: `http://localhost:5173`
+   - Backend API: `http://localhost:5000`
+
+### Option 2: Run client only (legacy)
+
+1. Navigate to the client directory:
    ```
    cd full-stack-app/client
    ```
 
-3. Install dependencies:
+2. Install dependencies:
    ```
    npm install
    ```
 
-4. Run the application:
+3. Run the application:
    ```
    npm run dev
    ```
 
-5. Open your browser and go to `http://localhost:5173`
+4. Open your browser and go to `http://localhost:5173`
+
+## Database Setup
+
+The backend server requires MySQL to be running. Follow these steps to set up the database:
+
+1. **Install MySQL** if you don't have it already:
+   - [MySQL Download](https://dev.mysql.com/downloads/mysql/)
+   - Or use XAMPP/WAMP which includes MySQL
+
+2. **Start MySQL service** and ensure it's running on port 3306
+
+3. **Configure environment variables**:
+   - Copy the example environment file:
+     ```
+     cp server/.env.example server/.env
+     ```
+   - Edit `server/.env` with your MySQL credentials
+
+4. **Initialize the database** (optional - tables are created automatically):
+   ```
+   cd server
+   npm run init-db
+   ```
+
+5. **Default credentials** (if using the .env.example as-is):
+   - Host: `localhost`
+   - User: `root`
+   - Password: (empty)
+   - Database: `store_db`
+
+**Note**: If you don't need the backend API to function (e.g., just testing the frontend), the server will still start but will show database connection errors. The frontend will work independently.
 
 ## Product Images
 
