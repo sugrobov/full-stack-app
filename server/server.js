@@ -3,7 +3,6 @@ const mysql = require('mysql2');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const nodemailer = require('nodemailer');
-const path = require('path');
 
 // Load environment variables
 dotenv.config();
@@ -29,122 +28,30 @@ const db = mysql.createConnection({
 db.connect((err) => {
   if (err) {
     console.error('Error connecting to MySQL:', err);
-    return;
+    console.log('Make sure you have run "npm run init-db" first and MySQL is running.');
+    process.exit(1);
   }
   console.log('Connected to MySQL database');
 });
 
-// Initialize database tables
-const initDb = () => {
-  // Create categories table
-  const createCategoriesTable = `
-    CREATE TABLE IF NOT EXISTS categories (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      name VARCHAR(255) NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-  `;
-  
-  db.query(createCategoriesTable, (err) => {
-    if (err) {
-      console.error('Error creating categories table:', err);
-      return;
-    }
-    console.log('Categories table ready');
-    
-    // Create products table
-    const createProductsTable = `
-      CREATE TABLE IF NOT EXISTS products (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        category_id INT,
-        price DECIMAL(10, 2) NOT NULL,
-        discount_price DECIMAL(10, 2),
-        rating DECIMAL(3, 1),
-        stock INT DEFAULT 0,
-        image VARCHAR(500),
-        description TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (category_id) REFERENCES categories(id)
-      )
-    `;
-    
-    db.query(createProductsTable, (err) => {
-      if (err) {
-        console.error('Error creating products table:', err);
-        return;
-      }
-      console.log('Products table ready');
-      
-      // Create users table
-      const createUsersTable = `
-        CREATE TABLE IF NOT EXISTS users (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          username VARCHAR(255) NOT NULL UNIQUE,
-          email VARCHAR(255) NOT NULL UNIQUE,
-          password VARCHAR(255) NOT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `;
-      
-      db.query(createUsersTable, (err) => {
-        if (err) {
-          console.error('Error creating users table:', err);
-          return;
-        }
-        console.log('Users table ready');
-        
-        // Create orders table
-        const createOrdersTable = `
-          CREATE TABLE IF NOT EXISTS orders (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT,
-            total_amount DECIMAL(10, 2) NOT NULL,
-            status VARCHAR(50) DEFAULT 'pending',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id)
-          )
-        `;
-        
-        db.query(createOrdersTable, (err) => {
-          if (err) {
-            console.error('Error creating orders table:', err);
-            return;
-          }
-          console.log('Orders table ready');
-          
-          // Create order_items table
-          const createOrderItemsTable = `
-            CREATE TABLE IF NOT EXISTS order_items (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              order_id INT,
-              product_id INT,
-              quantity INT NOT NULL,
-              price DECIMAL(10, 2) NOT NULL,
-              FOREIGN KEY (order_id) REFERENCES orders(id),
-              FOREIGN KEY (product_id) REFERENCES products(id)
-            )
-          `;
-          
-          db.query(createOrderItemsTable, (err) => {
-            if (err) {
-              console.error('Error creating order_items table:', err);
-              return;
-            }
-            console.log('Order items table ready');
-          });
-        });
-      });
+// Helper function to get images for multiple products
+const getImagesForProducts = (productIds, callback) => {
+  if (productIds.length === 0) return callback(null, {});
+  const query = 'SELECT product_id, image_url FROM product_images WHERE product_id IN (?) ORDER BY sort_order';
+  db.query(query, [productIds], (err, images) => {
+    if (err) return callback(err);
+    const imagesMap = {};
+    images.forEach(img => {
+      if (!imagesMap[img.product_id]) imagesMap[img.product_id] = [];
+      imagesMap[img.product_id].push(img.image_url);
     });
+    callback(null, imagesMap);
   });
 };
 
-// Initialize database
-initDb();
-
 // Routes
 app.get('/api/products', (req, res) => {
-  const { page = 1, limit = 12, search = '', minPrice = '', maxPrice = '' } = req.query;
+  const { page = 1, limit = 12, search = '', minPrice = '', maxPrice = '', category = '' } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
   let query = `
@@ -171,6 +78,11 @@ app.get('/api/products', (req, res) => {
     params.push(maxPrice, maxPrice);
   }
 
+  if (category) {
+    query += ` AND c.name = ?`;
+    params.push(category);
+  }
+
   query += ` ORDER BY p.id LIMIT ? OFFSET ?`;
   params.push(parseInt(limit), offset);
 
@@ -180,44 +92,62 @@ app.get('/api/products', (req, res) => {
       return res.status(500).json({ error: 'Database error' });
     }
 
-    // Get total count for pagination
-    let countQuery = `
-      SELECT COUNT(*) as total
-      FROM products p
-      JOIN categories c ON p.category_id = c.id
-      WHERE p.stock > 0
-    `;
-
-    const countParams = [];
-
-    if (search) {
-      countQuery += ` AND (p.name LIKE ? OR c.name LIKE ?)`;
-      countParams.push(`%${search}%`, `%${search}%`);
+    if (results.length === 0) {
+      return res.json({ products: [], pagination: { currentPage: parseInt(page), totalPages: 0, totalItems: 0 } });
     }
 
-    if (minPrice) {
-      countQuery += ` AND (p.discount_price >= ? OR (p.discount_price IS NULL AND p.price >= ?))`;
-      countParams.push(minPrice, minPrice);
-    }
-
-    if (maxPrice) {
-      countQuery += ` AND (p.discount_price <= ? OR (p.discount_price IS NULL AND p.price <= ?))`;
-      countParams.push(maxPrice, maxPrice);
-    }
-
-    db.execute(countQuery, countParams, (countErr, countResults) => {
-      if (countErr) {
-        console.error(countErr);
+    const productIds = results.map(p => p.id);
+    getImagesForProducts(productIds, (err, imagesMap) => {
+      if (err) {
+        console.error(err);
         return res.status(500).json({ error: 'Database error' });
       }
 
-      res.json({
-        products: results,
-        pagination: {
-          currentPage: parseInt(page),
-          totalPages: Math.ceil(countResults[0].total / limit),
-          totalItems: countResults[0].total
+      const productsWithImages = results.map(p => ({
+        ...p,
+        images: imagesMap[p.id] || []
+      }));
+
+      // Count total items for pagination
+      let countQuery = `
+        SELECT COUNT(*) as total
+        FROM products p
+        JOIN categories c ON p.category_id = c.id
+        WHERE p.stock > 0
+      `;
+      const countParams = [];
+
+      if (search) {
+        countQuery += ` AND (p.name LIKE ? OR c.name LIKE ?)`;
+        countParams.push(`%${search}%`, `%${search}%`);
+      }
+      if (minPrice) {
+        countQuery += ` AND (p.discount_price >= ? OR (p.discount_price IS NULL AND p.price >= ?))`;
+        countParams.push(minPrice, minPrice);
+      }
+      if (maxPrice) {
+        countQuery += ` AND (p.discount_price <= ? OR (p.discount_price IS NULL AND p.price <= ?))`;
+        countParams.push(maxPrice, maxPrice);
+      }
+      if (category) {
+        countQuery += ` AND c.name = ?`;
+        countParams.push(category);
+      }
+
+      db.execute(countQuery, countParams, (countErr, countResults) => {
+        if (countErr) {
+          console.error(countErr);
+          return res.status(500).json({ error: 'Database error' });
         }
+
+        res.json({
+          products: productsWithImages,
+          pagination: {
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(countResults[0].total / limit),
+            totalItems: countResults[0].total
+          }
+        });
       });
     });
   });
@@ -243,7 +173,17 @@ app.get('/api/products/:id', (req, res) => {
       return res.status(404).json({ error: 'Product not found' });
     }
 
-    res.json(results[0]);
+    const product = results[0];
+    const imagesQuery = 'SELECT image_url FROM product_images WHERE product_id = ? ORDER BY sort_order';
+    db.execute(imagesQuery, [id], (err, images) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+
+      product.images = images.map(img => img.image_url);
+      res.json(product);
+    });
   });
 });
 
@@ -294,7 +234,6 @@ app.post('/api/contact', (req, res) => {
     if (error) {
       console.error('Error sending email:', error);
       // Even if email fails, we still want to show success to the user
-      // In a real application, you might want to log this error for monitoring
     } else {
       console.log('Email sent: ' + info.response);
     }
