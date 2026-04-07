@@ -1,85 +1,68 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
-// Функция для генерации цвета на основе id и imgIndex
-const generateColor = (id, imgIndex) => {
-  // Генерируем уникальный цвет на основе id и imgIndex
-  const hue = (id * imgIndex) % 360;
-  const saturation = 70 + (id % 30); // 70-100%
-  const lightness = 50 + (imgIndex % 20); // 50-70%
-
-  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-};
-
-// Mock data for products
-const generateMockProducts = () => {
-  const categories = Array.from({ length: 25 }, (_, i) => `Категория ${i + 1}`);
-  const products = [];
-
-  categories.forEach((category, categoryIndex) => {
-    const productCount = Math.floor(Math.random() * 31) + 10; // 10-40 products per category
-
-    for (let i = 1; i <= productCount; i++) {
-      const id = categoryIndex * 100 + i;
-      const hasDiscount = Math.random() > 0.7;
-      const basePrice = Math.floor(Math.random() * 10000) + 1000;
-      const discountPercent = Math.floor(Math.random() * 30) + 5;
-      const stock = Math.floor(Math.random() * 100);
-      const imageCount = Math.floor(Math.random() * 5) + 1; // 1-5 изображений
-      const useColor = Math.random() > 0.5; // 50% товаров будут использовать цвета
-
-      // Генерируем массив изображений
-      const images = Array.from({ length: imageCount }, (_, imgIndex) => {
-        if (useColor) {
-          // Генерируем реальный цвет вместо строки-заполнителя
-          return generateColor(id, imgIndex);
-        } else {
-          // Для обычных изображений используем заглушку
-          const imageNames = ['product1.jpg', 'product2.jpg', 'product3.jpg'];
-          const randomImage = imageNames[Math.floor(Math.random() * imageNames.length)];
-          return `/images/${randomImage}`;
-        }
-      });
-
-      products.push({
-        id,
-        name: `Товар ${id} из ${category}`,
-        category,
-        price: basePrice,
-        discountPrice: hasDiscount ? Math.round(basePrice * (100 - discountPercent) / 100) : null,
-        rating: (Math.random() * 5).toFixed(1),
-        stock,
-        image: images[0], // Первое изображение для обратной совместимости
-        images, // Массив всех изображений
-        useColor, // Флаг, указывающий что товар использует цвета
-        description: `Подробное описание товара ${id}. Этот товар относится к категории ${category} и обладает отличными характеристиками.`,
-      });
+// Helper to build query string
+const buildQueryString = (params) => {
+  const searchParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      searchParams.append(key, value);
     }
   });
-
-  return products.filter(product => product.stock > 0);
+  return searchParams.toString();
 };
-
-const mockProducts = generateMockProducts();
 
 export const fetchProducts = createAsyncThunk(
   'products/fetchProducts',
+  async (_, { getState }) => {
+    const state = getState().products;
+    const params = {
+      page: state.currentPage,
+      limit: state.itemsPerPage,
+      search: state.searchQuery,
+      minPrice: state.minPrice,
+      maxPrice: state.maxPrice,
+      category: state.selectedCategory,
+    };
+    const query = buildQueryString(params);
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/products?${query}`);
+    if (!response.ok) throw new Error('Failed to fetch products');
+    const data = await response.json();
+    return data; // { products, pagination }
+  }
+);
+
+export const fetchCategories = createAsyncThunk(
+  'products/fetchCategories',
   async () => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return mockProducts;
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/categories`);
+    if (!response.ok) throw new Error('Failed to fetch categories');
+    const data = await response.json();
+    return data;
+  }
+);
+
+export const fetchProductById = createAsyncThunk(
+  'products/fetchProductById',
+  async (id) => {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/products/${id}`);
+    if (!response.ok) throw new Error('Failed to fetch product');
+    const data = await response.json();
+    return data;
   }
 );
 
 const productsSlice = createSlice({
   name: 'products',
   initialState: {
-    items: [],
-    filteredItems: [],
-    status: 'idle',
+    items: [],               // products for current page
+    currentProduct: null,   // single product view
+    status: 'idle',         // 'idle' | 'loading' | 'succeeded' | 'failed'
     error: null,
     categories: [],
     currentPage: 1,
     itemsPerPage: 12,
+    totalPages: 1,
+    totalItems: 0,
     searchQuery: '',
     minPrice: '',
     maxPrice: '',
@@ -88,7 +71,7 @@ const productsSlice = createSlice({
   reducers: {
     setSearchQuery: (state, action) => {
       state.searchQuery = action.payload;
-      state.currentPage = 1;
+      state.currentPage = 1; // reset to first page
     },
     setPriceFilter: (state, action) => {
       state.minPrice = action.payload.minPrice;
@@ -102,60 +85,57 @@ const productsSlice = createSlice({
     setCurrentPage: (state, action) => {
       state.currentPage = action.payload;
     },
-    filterProducts: (state) => {
-      let filtered = state.items;
-
-      // Apply category filter
-      if (state.selectedCategory) {
-        filtered = filtered.filter(product => product.category === state.selectedCategory);
-      }
-
-      // Apply search filter
-      if (state.searchQuery) {
-        filtered = filtered.filter(product =>
-          product.name.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
-          product.category.toLowerCase().includes(state.searchQuery.toLowerCase())
-        );
-      }
-
-      // Apply price filter
-      if (state.minPrice !== '' && state.minPrice !== null) {
-        filtered = filtered.filter(product =>
-          product.discountPrice
-            ? product.discountPrice >= parseFloat(state.minPrice)
-            : product.price >= parseFloat(state.minPrice)
-        );
-      }
-
-      if (state.maxPrice !== '' && state.maxPrice !== null) {
-        filtered = filtered.filter(product =>
-          product.discountPrice
-            ? product.discountPrice <= parseFloat(state.maxPrice)
-            : product.price <= parseFloat(state.maxPrice)
-        );
-      }
-
-      state.filteredItems = filtered;
+    clearFilters: (state) => {
+      state.searchQuery = '';
+      state.minPrice = '';
+      state.maxPrice = '';
+      state.selectedCategory = '';
+      state.currentPage = 1;
     },
   },
   extraReducers: (builder) => {
     builder
+      // fetchProducts
       .addCase(fetchProducts.pending, (state) => {
         state.status = 'loading';
+        state.error = null;
       })
       .addCase(fetchProducts.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.items = action.payload;
-        state.filteredItems = action.payload;
-        // Extract unique categories
-        state.categories = [...new Set(action.payload.map(product => product.category))];
+        state.items = action.payload.products;
+        state.totalPages = action.payload.pagination.totalPages;
+        state.totalItems = action.payload.pagination.totalItems;
       })
       .addCase(fetchProducts.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.error.message;
+      })
+      // fetchCategories
+      .addCase(fetchCategories.fulfilled, (state, action) => {
+        state.categories = action.payload.map(cat => cat.name);
+      })
+      // fetchProductById
+      .addCase(fetchProductById.pending, (state) => {
+        state.status = 'loading';
+        state.currentProduct = null;
+      })
+      .addCase(fetchProductById.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.currentProduct = action.payload;
+      })
+      .addCase(fetchProductById.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.error.message;
       });
   },
 });
 
-export const { setSearchQuery, setPriceFilter, setSelectedCategory, setCurrentPage, filterProducts } = productsSlice.actions;
+export const {
+  setSearchQuery,
+  setPriceFilter,
+  setSelectedCategory,
+  setCurrentPage,
+  clearFilters,
+} = productsSlice.actions;
+
 export default productsSlice.reducer;

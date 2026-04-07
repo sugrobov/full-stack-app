@@ -51,8 +51,14 @@ const getImagesForProducts = (productIds, callback) => {
 
 // Routes
 app.get('/api/products', (req, res) => {
-  const { page = 1, limit = 12, search = '', minPrice = '', maxPrice = '', category = '' } = req.query;
-  const offset = (parseInt(page) - 1) * parseInt(limit);
+  let { page = 1, limit = 12, search = '', minPrice = '', maxPrice = '', category = '' } = req.query;
+  
+  // Преобразование в числа и валидация
+  page = parseInt(page, 10);
+  limit = parseInt(limit, 10);
+  if (isNaN(page) || page < 1) page = 1;
+  if (isNaN(limit) || limit < 1) limit = 12;
+  const offset = (page - 1) * limit;
 
   let query = `
     SELECT p.*, c.name as category_name
@@ -84,16 +90,16 @@ app.get('/api/products', (req, res) => {
   }
 
   query += ` ORDER BY p.id LIMIT ? OFFSET ?`;
-  params.push(parseInt(limit), offset);
+  params.push(limit, offset);  // числа
 
-  db.execute(query, params, (err, results) => {
+  db.query(query, params, (err, results) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ error: 'Database error' });
     }
 
     if (results.length === 0) {
-      return res.json({ products: [], pagination: { currentPage: parseInt(page), totalPages: 0, totalItems: 0 } });
+      return res.json({ products: [], pagination: { currentPage: page, totalPages: 0, totalItems: 0 } });
     }
 
     const productIds = results.map(p => p.id);
@@ -134,7 +140,7 @@ app.get('/api/products', (req, res) => {
         countParams.push(category);
       }
 
-      db.execute(countQuery, countParams, (countErr, countResults) => {
+      db.query(countQuery, countParams, (countErr, countResults) => {
         if (countErr) {
           console.error(countErr);
           return res.status(500).json({ error: 'Database error' });
@@ -143,7 +149,7 @@ app.get('/api/products', (req, res) => {
         res.json({
           products: productsWithImages,
           pagination: {
-            currentPage: parseInt(page),
+            currentPage: page,
             totalPages: Math.ceil(countResults[0].total / limit),
             totalItems: countResults[0].total
           }
@@ -155,6 +161,10 @@ app.get('/api/products', (req, res) => {
 
 app.get('/api/products/:id', (req, res) => {
   const { id } = req.params;
+  const productId = parseInt(id, 10);
+  if (isNaN(productId)) {
+    return res.status(400).json({ error: 'Invalid product ID' });
+  }
 
   const query = `
     SELECT p.*, c.name as category_name
@@ -163,7 +173,7 @@ app.get('/api/products/:id', (req, res) => {
     WHERE p.id = ? AND p.stock > 0
   `;
 
-  db.execute(query, [id], (err, results) => {
+  db.query(query, [productId], (err, results) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ error: 'Database error' });
@@ -175,7 +185,7 @@ app.get('/api/products/:id', (req, res) => {
 
     const product = results[0];
     const imagesQuery = 'SELECT image_url FROM product_images WHERE product_id = ? ORDER BY sort_order';
-    db.execute(imagesQuery, [id], (err, images) => {
+    db.execute(imagesQuery, [productId], (err, images) => {
       if (err) {
         console.error(err);
         return res.status(500).json({ error: 'Database error' });
@@ -189,13 +199,11 @@ app.get('/api/products/:id', (req, res) => {
 
 app.get('/api/categories', (req, res) => {
   const query = 'SELECT * FROM categories ORDER BY name';
-
-  db.execute(query, (err, results) => {
+  db.query(query, (err, results) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ error: 'Database error' });
     }
-
     res.json(results);
   });
 });
@@ -203,7 +211,6 @@ app.get('/api/categories', (req, res) => {
 app.post('/api/contact', (req, res) => {
   const { subject, message } = req.body;
 
-  // Simple spam protection
   if (!subject || subject.length < 3) {
     return res.status(400).json({ error: 'Subject is too short' });
   }
@@ -212,16 +219,21 @@ app.post('/api/contact', (req, res) => {
     return res.status(400).json({ error: 'Message is too short' });
   }
 
-  // Send email
-  const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: process.env.EMAIL_PORT || 587,
-    secure: false, // true for 465, false for other ports
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
+  let transporter;
+  try {
+    transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+      port: process.env.EMAIL_PORT || 587,
+      secure: false,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+  } catch (err) {
+    console.warn('Nodemailer not configured properly, simulating email send');
+    return res.json({ success: true, message: 'Message sent successfully (simulated)' });
+  }
 
   const mailOptions = {
     from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
@@ -233,11 +245,9 @@ app.post('/api/contact', (req, res) => {
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
       console.error('Error sending email:', error);
-      // Even if email fails, we still want to show success to the user
     } else {
       console.log('Email sent: ' + info.response);
     }
-
     res.json({ success: true, message: 'Message sent successfully' });
   });
 });

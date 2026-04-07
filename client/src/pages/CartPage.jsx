@@ -1,40 +1,23 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { removeFromCart, clearCart, increaseQuantity } from '../store/cartSlice';
+import { removeFromCart, clearCart, increaseQuantity, decreaseQuantity } from '../store/cartSlice';
 import { Link } from 'react-router-dom';
 import Button from '../components/UI/Button';
-import Breadcrumb from '../components/Breadcrumb';
-import { clearCartStorage } from '../utils/cartStorage';
 
 const CartPage = () => {
   const dispatch = useDispatch();
   const { items, totalAmount, totalQuantity } = useSelector(state => state.cart);
 
-  useEffect(() => {
-    // Clear cart storage to avoid URI encoding issues
-    // This is a temporary fix to resolve the URI malformed error
-    clearCartStorage();
-  }, []);
-
-  // Функция для генерации цвета на основе id и imgIndex
-  const generateColor = (id, imgIndex) => {
-    const hue = (id * imgIndex) % 360;
-    const saturation = 70 + (id % 30);
-    const lightness = 50 + (imgIndex % 20);
-    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-  };
-
-  // Извлекаем id и imgIndex из строки цвета
-  const getColorFromImageString = (imageString) => {
-    if (typeof imageString === 'string' && imageString.startsWith('color:')) {
-      const [, id, imgIndex] = imageString.split(':');
-      return generateColor(parseInt(id), parseInt(imgIndex));
-    }
-    return null;
-  };
-
   const handleRemoveItem = (id) => {
     dispatch(removeFromCart(id));
+  };
+
+  const handleDecreaseQuantity = (id) => {
+    dispatch(decreaseQuantity(id));
+  };
+
+  const handleIncreaseQuantity = (id) => {
+    dispatch(increaseQuantity(id));
   };
 
   const handleClearCart = () => {
@@ -47,12 +30,8 @@ const CartPage = () => {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Ваша корзина пуста</h2>
           <p className="text-gray-600 mb-6">Добавьте товары в корзину, чтобы оформить заказ.</p>
-          <Link
-            to="/"
-          >
-            <Button variant="primary">
-              Перейти к покупкам
-            </Button>
+          <Link to="/">
+            <Button variant="primary">Перейти к покупкам</Button>
           </Link>
         </div>
       </div>
@@ -62,10 +41,9 @@ const CartPage = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
-        {/* <Breadcrumb /> */}
         <Link
           to="/"
-          className="ml-4 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           <svg className="mr-2 -ml-1 h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -97,21 +75,15 @@ const CartPage = () => {
 
             <div className="divide-y divide-gray-200">
               {items.map(item => {
-                // Проверяем, использует ли товар цвета
-                const isColor = typeof (item.images?.[0] || item.image) === 'string' && (item.images?.[0] || item.image).startsWith('hsl(');
-                
+                const firstImage = item.images?.[0] || item.image;
                 return (
                   <div key={item.id} className="p-4 flex">
-                    <div className="flex-shrink-0 w-24 h-24 rounded-md flex items-center justify-center"
-                      style={{ backgroundColor: isColor ? (item.images?.[0] || item.image) : '#f3f4f6' }}>
-                      {isColor ? (
-                        <div className="text-white font-bold text-sm">Товар #{item.id}</div>
-                      ) : item.images?.[0] || item.image ? (
-                        <img
-                          src={encodeURIComponent(item.images?.[0] || item.image)}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                        />
+                    <div className="flex-shrink-0 w-24 h-24 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
+                      {firstImage ? (
+                        <img 
+                        src={firstImage} 
+                        alt={item.name} 
+                        className="w-full h-full object-cover" />
                       ) : (
                         <div className="text-gray-500 text-sm">Товар #{item.id}</div>
                       )}
@@ -123,10 +95,10 @@ const CartPage = () => {
                           <h3 className="font-medium text-gray-800">{item.name}</h3>
                           <p className="text-gray-600 text-sm mt-1">
                             {item.discountPrice ? (
-                              <span>
+                              <>
                                 <span className="font-medium">{item.discountPrice.toLocaleString()} ₽</span>
                                 <span className="line-through text-gray-500 ml-2">{item.price.toLocaleString()} ₽</span>
-                              </span>
+                              </>
                             ) : (
                               <span className="font-medium">{item.price.toLocaleString()} ₽</span>
                             )}
@@ -148,15 +120,16 @@ const CartPage = () => {
                         <div className="flex items-center border border-gray-300 rounded-md">
                           <Button
                             variant="ghost"
-                            onClick={() => handleRemoveItem(item.id)}
+                            onClick={() => handleDecreaseQuantity(item.id)}
                             className="px-3 py-1 text-gray-600 hover:bg-gray-100"
+                            disabled={item.quantity <= 1}
                           >
                             -
                           </Button>
                           <span className="px-3 py-1 text-gray-800">{item.quantity}</span>
                           <Button
                             variant="ghost"
-                            onClick={() => dispatch(increaseQuantity(item.id))}
+                            onClick={() => handleIncreaseQuantity(item.id)}
                             className="px-3 py-1 text-gray-600 hover:bg-gray-100"
                           >
                             +

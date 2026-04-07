@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-const cartSlice = createSlice({ 
+const cartSlice = createSlice({
   name: 'cart',
   initialState: {
     items: [],
@@ -8,7 +8,7 @@ const cartSlice = createSlice({
     totalAmount: 0,
   },
   reducers: {
-    addToCart: (state, action) => { // добавление в корзину
+    addToCart: (state, action) => {
       const newItem = action.payload;
       const existingItem = state.items.find(item => item.id === newItem.id);
 
@@ -17,15 +17,15 @@ const cartSlice = createSlice({
         existingItem.totalPrice = existingItem.quantity * (existingItem.discountPrice || existingItem.price);
       } else {
         const price = newItem.discountPrice || newItem.price;
-        const images = newItem.images || [newItem.image];
+        const images = newItem.images || (newItem.image ? [newItem.image] : []);
 
         state.items.push({
           id: newItem.id,
           name: newItem.name,
           price: newItem.price,
           discountPrice: newItem.discountPrice,
-          image: images[0], // Используем первое изображение
-          images: images, // Сохраняем все изображения
+          image: images[0],
+          images: images,
           quantity: 1,
           totalPrice: price,
         });
@@ -34,10 +34,25 @@ const cartSlice = createSlice({
       state.totalQuantity = state.items.reduce((total, item) => total + item.quantity, 0);
       state.totalAmount = state.items.reduce((total, item) => total + item.totalPrice, 0);
     },
-    removeFromCart: (state, action) => { // удаление из корзины
+    removeFromCart: (state, action) => {
+      const id = action.payload;
+      state.items = state.items.filter(item => item.id !== id);
+      state.totalQuantity = state.items.reduce((total, item) => total + item.quantity, 0);
+      state.totalAmount = state.items.reduce((total, item) => total + item.totalPrice, 0);
+    },
+    increaseQuantity: (state, action) => {
       const id = action.payload;
       const existingItem = state.items.find(item => item.id === id);
-
+      if (existingItem) {
+        existingItem.quantity++;
+        existingItem.totalPrice = existingItem.quantity * (existingItem.discountPrice || existingItem.price);
+      }
+      state.totalQuantity = state.items.reduce((total, item) => total + item.quantity, 0);
+      state.totalAmount = state.items.reduce((total, item) => total + item.totalPrice, 0);
+    },
+    decreaseQuantity: (state, action) => {
+      const id = action.payload;
+      const existingItem = state.items.find(item => item.id === id);
       if (existingItem) {
         if (existingItem.quantity === 1) {
           state.items = state.items.filter(item => item.id !== id);
@@ -46,23 +61,10 @@ const cartSlice = createSlice({
           existingItem.totalPrice = existingItem.quantity * (existingItem.discountPrice || existingItem.price);
         }
       }
-
       state.totalQuantity = state.items.reduce((total, item) => total + item.quantity, 0);
       state.totalAmount = state.items.reduce((total, item) => total + item.totalPrice, 0);
     },
-    increaseQuantity: (state, action) => { // увеличение количества
-      const id = action.payload;
-      const existingItem = state.items.find(item => item.id === id);
-
-      if (existingItem) {
-        existingItem.quantity++;
-        existingItem.totalPrice = existingItem.quantity * (existingItem.discountPrice || existingItem.price);
-      }
-
-      state.totalQuantity = state.items.reduce((total, item) => total + item.quantity, 0);
-      state.totalAmount = state.items.reduce((total, item) => total + item.totalPrice, 0);
-    },
-    clearCart: (state) => { // очистка корзины
+    clearCart: (state) => {
       state.items = [];
       state.totalQuantity = 0;
       state.totalAmount = 0;
@@ -70,5 +72,5 @@ const cartSlice = createSlice({
   },
 });
 
-export const { addToCart, removeFromCart, clearCart, increaseQuantity } = cartSlice.actions;
+export const { addToCart, removeFromCart, increaseQuantity, decreaseQuantity, clearCart } = cartSlice.actions;
 export default cartSlice.reducer;

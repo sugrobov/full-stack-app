@@ -1,43 +1,27 @@
 import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchProducts, setCurrentPage, filterProducts } from '../store/productsSlice';
+import { fetchProducts, fetchCategories, setCurrentPage } from '../store/productsSlice';
 import ProductCard from '../components/ProductCard';
 import Breadcrumb from '../components/Breadcrumb';
 import Filters from '../components/Filters';
+import Pagination from '../components/Pagination';
 
 const HomePage = () => {
   const dispatch = useDispatch();
-  const { 
-    filteredItems, 
-    status, 
-    currentPage, 
-    itemsPerPage,
-    searchQuery,
-    selectedCategory,
-    minPrice,
-    maxPrice 
-  } = useSelector(state => state.products);
+  const { items, status, currentPage, totalPages, totalItems, searchQuery, selectedCategory, minPrice, maxPrice } = useSelector(state => state.products);
 
-  // Загружаем товары при монтировании
+  // Загружаем товары при изменении фильтров или страницы
   useEffect(() => {
-    if (status === 'idle') {
-      dispatch(fetchProducts());
-    }
-  }, [dispatch, status]);
+    dispatch(fetchProducts());
+  }, [dispatch, currentPage, searchQuery, selectedCategory, minPrice, maxPrice]);
 
-  // Фильтруем товары при изменении фильтров
+  // Загружаем категории один раз при монтировании
   useEffect(() => {
-    dispatch(filterProducts());
-  }, [searchQuery, selectedCategory, minPrice, maxPrice, dispatch]);
+    dispatch(fetchCategories());
+  }, [dispatch]);
 
-  // Рассчитываем пагинацию
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
-
-  const handlePageChange = (pageNumber) => {
-    dispatch(setCurrentPage(pageNumber));
+  const handlePageChange = (page) => {
+    dispatch(setCurrentPage(page));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -75,17 +59,15 @@ const HomePage = () => {
       </div>
 
       <h1 className="text-3xl font-bold text-gray-800 mb-2">Каталог товаров</h1>
-      <p className="text-gray-600 mb-8">Найдено товаров: {filteredItems.length}</p>
+      <p className="text-gray-600 mb-8">Найдено товаров: {totalItems}</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Filters sidebar */}
         <div className="lg:col-span-1">
           <Filters />
         </div>
 
-        {/* Products grid */}
         <div className="lg:col-span-3">
-          {currentItems.length === 0 ? (
+          {items.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-lg shadow">
               <div className="text-gray-400 mb-4">
                 <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,57 +80,13 @@ const HomePage = () => {
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {currentItems.map(product => (
+                {items.map(product => (
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="mt-8 flex justify-center">
-                  <nav className="flex items-center space-x-2">
-                    <button
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className="px-3 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Назад
-                    </button>
-                    
-                    {[...Array(totalPages)].map((_, index) => {
-                      const pageNumber = index + 1;
-                      // Показываем только несколько страниц вокруг текущей
-                      if (
-                        pageNumber === 1 ||
-                        pageNumber === totalPages ||
-                        (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
-                      ) {
-                        return (
-                          <button
-                            key={pageNumber}
-                            onClick={() => handlePageChange(pageNumber)}
-                            className={`px-3 py-2 rounded-md ${currentPage === pageNumber
-                                ? 'bg-blue-600 text-white'
-                                : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                              }`}
-                          >
-                            {pageNumber}
-                          </button>
-                        );
-                      }
-                      return null;
-                    })}
-                    
-                    <button
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                      className="px-3 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Вперед
-                    </button>
-                  </nav>
-                </div>
-              )}
+              <div className="mt-8 flex justify-center">
+                <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+              </div>
             </>
           )}
         </div>

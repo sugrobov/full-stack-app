@@ -1,22 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { addToCart } from '../store/cartSlice';
 import { toggleFavorite } from '../store/favoritesSlice';
+import { fetchProductById } from '../store/productsSlice';
 import Button from '../components/UI/Button';
 import Breadcrumb from '../components/Breadcrumb';
 
 const ProductPage = () => {
   const { id } = useParams();
-  // const location = useLocation();
   const dispatch = useDispatch();
-  const product = useSelector(state =>
+  const productFromList = useSelector(state =>
     state.products.items.find(item => item.id === parseInt(id))
   );
+  const currentProduct = useSelector(state => state.products.currentProduct);
+  const status = useSelector(state => state.products.status);
   const favorites = useSelector(state => state.favorites.items);
 
+  // Use product from list if available, otherwise from currentProduct
+  const product = productFromList || currentProduct;
   const isFavorite = favorites.includes(parseInt(id));
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  useEffect(() => {
+    // If product not in list and not loaded separately, fetch it
+    if (!productFromList && !currentProduct && status !== 'loading') {
+      dispatch(fetchProductById(id));
+    }
+  }, [dispatch, id, productFromList, currentProduct, status]);
+
+  if (status === 'loading' && !product) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Загрузка товара...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -29,30 +51,18 @@ const ProductPage = () => {
     );
   }
 
-  const productImages = product.images || [product.image];
-  const isColor = typeof productImages[0] === 'string' && productImages[0].startsWith('hsl(');
-  // const displayPrice = product.discountPrice || product.price;
-  const isDiscounted = !!product.discountPrice;
-
-  // Функция для генерации цвета на основе id и imgIndex
-  const generateColor = (id, imgIndex) => {
-    const hue = (id * imgIndex) % 360;
-    const saturation = 70 + (id % 30);
-    const lightness = 50 + (imgIndex % 20);
-    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-  };
-
-  // Извлекаем id и imgIndex из строки цвета
-  const getColorFromImageString = (imageString) => {
-    if (typeof imageString === 'string' && imageString.startsWith('color:')) {
-      const [, id, imgIndex] = imageString.split(':');
-      return generateColor(parseInt(id), parseInt(imgIndex));
-    }
-    return null;
-  };
+  const productImages = product.images || (product.image ? [product.image] : []);
+  const isDiscounted = !!product.discount_price;
 
   const handleAddToCart = () => {
-    dispatch(addToCart(product));
+    // Transform product to cart item format (add images array)
+    const cartItem = {
+      ...product,
+      discountPrice: product.discount_price,
+      price: product.price,
+      images: productImages,
+    };
+    dispatch(addToCart(cartItem));
   };
 
   const handleToggleFavorite = () => {
@@ -60,24 +70,20 @@ const ProductPage = () => {
   };
 
   const handlePrevImage = () => {
-    setCurrentImageIndex((prevIndex) =>
-      prevIndex === 0 ? productImages.length - 1 : prevIndex - 1
-    );
+    setCurrentImageIndex((prev) => (prev === 0 ? productImages.length - 1 : prev - 1));
   };
 
   const handleNextImage = () => {
-    setCurrentImageIndex((prevIndex) =>
-      prevIndex === productImages.length - 1 ? 0 : prevIndex + 1
-    );
+    setCurrentImageIndex((prev) => (prev === productImages.length - 1 ? 0 : prev + 1));
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
-        <Breadcrumb productName={product ? product.name : 'Товар не найден'} />
+        <Breadcrumb productName={product.name} />
         <Link
           to="/"
-          className="ml-4 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          className="ml-4 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
         >
           <svg className="mr-2 -ml-1 h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -91,28 +97,20 @@ const ProductPage = () => {
           {/* Product Images Slider */}
           <div>
             <div className="relative">
-              {/* Main Image */}
               <div className="flex items-center justify-center mb-4">
-                <div
-                  className="w-full h-96 rounded-lg shadow-md flex items-center justify-center"
-                  style={{ backgroundColor: isColor ? productImages[currentImageIndex] : '#f3f4f6' }}
-                >
-                  {isColor ? (
-                    <div className="text-white font-bold text-2xl">
-                      Товар #{product.id}
-                      <div className="text-lg mt-2">Изображение {currentImageIndex + 1}</div>
-                    </div>
-                  ) : (
-                    <img
-                      src={productImages[currentImageIndex]}
-                      alt={`${product.name} - изображение ${currentImageIndex + 1}`}
-                      className="max-w-full h-auto rounded-lg"
-                    />
-                  )}
-                </div>
+                {productImages.length > 0 ? (
+                  <img
+                    src={productImages[currentImageIndex]}
+                    alt={`${product.name} - изображение ${currentImageIndex + 1}`}
+                    className="max-w-full h-auto rounded-lg object-contain max-h-96"
+                  />
+                ) : (
+                  <div className="w-full h-96 bg-gray-100 flex items-center justify-center rounded-lg">
+                    <span className="text-gray-500">Нет изображения</span>
+                  </div>
+                )}
               </div>
 
-              {/* Navigation Arrows */}
               {productImages.length > 1 && (
                 <>
                   <button
@@ -131,38 +129,21 @@ const ProductPage = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
-
-                  {/* Image Counter */}
                   <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white text-sm px-3 py-1 rounded-full">
                     {currentImageIndex + 1} / {productImages.length}
                   </div>
                 </>
               )}
 
-              {/* Thumbnails */}
               {productImages.length > 1 && (
                 <div className="flex justify-center space-x-2 mt-4">
                   {productImages.map((img, index) => (
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
-                      className={`w-16 h-16 rounded-md overflow-hidden border-2 ${currentImageIndex === index ? 'border-blue-500' : 'border-transparent'
-                        }`}
+                      className={`w-16 h-16 rounded-md overflow-hidden border-2 ${currentImageIndex === index ? 'border-blue-500' : 'border-transparent'}`}
                     >
-                      {isColor ? (
-                        <div
-                          className="w-full h-full flex items-center justify-center text-xs text-white font-bold"
-                          style={{ backgroundColor: img }}
-                        >
-                          {index + 1}
-                        </div>
-                      ) : (
-                        <img
-                          src={img}
-                          alt={`Миниатюра ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      )}
+                      <img src={img} alt={`Миниатюра ${index + 1}`} className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>
@@ -173,11 +154,10 @@ const ProductPage = () => {
           {/* Product Details */}
           <div>
             <div className="mb-4">
-              <span className="text-sm text-gray-500">{product.category}</span>
+              <span className="text-sm text-gray-500">{product.category_name || product.category}</span>
               <h1 className="text-3xl font-bold text-gray-800 mt-2">{product.name}</h1>
             </div>
 
-            {/* Rating */}
             <div className="flex items-center mb-4">
               <div className="flex">
                 {[...Array(5)].map((_, i) => (
@@ -193,14 +173,13 @@ const ProductPage = () => {
               <span className="ml-2 text-gray-600">{product.rating}</span>
             </div>
 
-            {/* Price */}
             <div className="mb-6">
               {isDiscounted ? (
                 <div className="flex items-center">
-                  <span className="text-3xl font-bold text-gray-800">{product.discountPrice.toLocaleString()} ₽</span>
+                  <span className="text-3xl font-bold text-gray-800">{product.discount_price.toLocaleString()} ₽</span>
                   <span className="ml-4 text-xl text-gray-500 line-through">{product.price.toLocaleString()} ₽</span>
                   <span className="ml-4 bg-red-100 text-red-800 text-sm font-medium px-2.5 py-0.5 rounded">
-                    Экономия {product.price - product.discountPrice} ₽
+                    Экономия {product.price - product.discount_price} ₽
                   </span>
                 </div>
               ) : (
@@ -208,7 +187,6 @@ const ProductPage = () => {
               )}
             </div>
 
-            {/* Stock */}
             <div className="mb-6">
               <div className="flex items-center">
                 <span className="text-gray-600 mr-2">В наличии:</span>
@@ -218,13 +196,11 @@ const ProductPage = () => {
               </div>
             </div>
 
-            {/* Description */}
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-2">Описание</h2>
               <p className="text-gray-600">{product.description}</p>
             </div>
 
-            {/* Actions */}
             <div className="flex flex-wrap gap-4">
               <Button
                 variant={product.stock === 0 ? "secondary" : "primary"}
@@ -253,7 +229,6 @@ const ProductPage = () => {
         </div>
       </div>
     </div>
-
   );
 };
 

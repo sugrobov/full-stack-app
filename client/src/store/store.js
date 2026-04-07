@@ -14,27 +14,18 @@ localforage.config({
   description: 'Redux persist store'
 });
 
-// Создаем storage engine для Redux Persist на основе localForage
 const localForageStorage = {
-  getItem: (key) => {
-    return localforage.getItem(key);
-  },
-  setItem: (key, value) => {
-    return localforage.setItem(key, value);
-  },
-  removeItem: (key) => {
-    return localforage.removeItem(key);
-  },
+  getItem: (key) => localforage.getItem(key),
+  setItem: (key, value) => localforage.setItem(key, value),
+  removeItem: (key) => localforage.removeItem(key),
 };
 
-// Конфигурация для корзины
 const cartPersistConfig = {
   key: 'cart',
   storage: localForageStorage,
   whitelist: ['items', 'totalQuantity', 'totalAmount']
 };
 
-// Конфигурация для избранного
 const favoritesPersistConfig = {
   key: 'favorites',
   storage: localForageStorage,
@@ -46,7 +37,7 @@ const persistedFavoritesReducer = persistReducer(favoritesPersistConfig, favorit
 
 const store = configureStore({
   reducer: {
-    products: productsReducer,
+    products: productsReducer,   // no persist for products
     cart: persistedCartReducer,
     favorites: persistedFavoritesReducer,
   },
