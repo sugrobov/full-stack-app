@@ -53,7 +53,6 @@ const getImagesForProducts = (productIds, callback) => {
 app.get('/api/products', (req, res) => {
   let { page = 1, limit = 12, search = '', minPrice = '', maxPrice = '', category = '' } = req.query;
   
-  // Преобразование в числа и валидация
   page = parseInt(page, 10);
   limit = parseInt(limit, 10);
   if (isNaN(page) || page < 1) page = 1;
@@ -66,31 +65,27 @@ app.get('/api/products', (req, res) => {
     JOIN categories c ON p.category_id = c.id
     WHERE p.stock > 0
   `;
-
   const params = [];
 
   if (search) {
     query += ` AND (p.name LIKE ? OR c.name LIKE ?)`;
     params.push(`%${search}%`, `%${search}%`);
   }
-
   if (minPrice) {
     query += ` AND (p.discount_price >= ? OR (p.discount_price IS NULL AND p.price >= ?))`;
     params.push(minPrice, minPrice);
   }
-
   if (maxPrice) {
     query += ` AND (p.discount_price <= ? OR (p.discount_price IS NULL AND p.price <= ?))`;
     params.push(maxPrice, maxPrice);
   }
-
   if (category) {
     query += ` AND c.name = ?`;
     params.push(category);
   }
 
   query += ` ORDER BY p.id LIMIT ? OFFSET ?`;
-  params.push(limit, offset);  // числа
+  params.push(limit, offset);
 
   db.query(query, params, (err, results) => {
     if (err) {
@@ -114,7 +109,6 @@ app.get('/api/products', (req, res) => {
         images: imagesMap[p.id] || []
       }));
 
-      // Count total items for pagination
       let countQuery = `
         SELECT COUNT(*) as total
         FROM products p
@@ -155,6 +149,60 @@ app.get('/api/products', (req, res) => {
           }
         });
       });
+    });
+  });
+});
+
+app.get('/api/products/search', (req, res) => {
+  const { q = '', limit = 5 } = req.query;
+  if (!q.trim()) {
+    return res.json({ products: [] });
+  }
+
+  const searchQuery = `
+    SELECT p.*, c.name as category_name
+    FROM products p
+    JOIN categories c ON p.category_id = c.id
+    WHERE p.stock > 0 AND (p.name LIKE ? OR c.name LIKE ?)
+    ORDER BY 
+      CASE WHEN p.name LIKE ? THEN 1 ELSE 2 END,
+      p.id
+    LIMIT ?
+  `;
+  const searchPattern = `%${q}%`;
+  const params = [searchPattern, searchPattern, searchPattern, parseInt(limit)];
+
+  db.query(searchQuery, params, (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    // Получаем изображения для найденных товаров
+    if (results.length === 0) {
+      return res.json({ products: [] });
+    }
+
+    const productIds = results.map(p => p.id);
+    const imagesQuery = 'SELECT product_id, image_url FROM product_images WHERE product_id IN (?) ORDER BY sort_order';
+    db.query(imagesQuery, [productIds], (err, images) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+
+      const imagesMap = {};
+      images.forEach(img => {
+        if (!imagesMap[img.product_id]) imagesMap[img.product_id] = [];
+        imagesMap[img.product_id].push(img.image_url);
+      });
+
+      const productsWithImages = results.map(p => ({
+        ...p,
+        images: imagesMap[p.id] || []
+      }));
+
+      res.json({ products: productsWithImages });
     });
   });
 });

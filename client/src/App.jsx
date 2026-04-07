@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage';
 import ProductPage from './pages/ProductPage';
 import CartPage from './pages/CartPage';
 import ContactPage from './pages/ContactPage';
+import SearchPage from './pages/SearchPage';
 import { fetchProducts } from './store/productsSlice';
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
             <Route path="/product/:id" element={<ProductPage />} />
             <Route path="/cart" element={<CartPage />} />
             <Route path="/contact" element={<ContactPage />} />
+            <Route path="/search" element={<SearchPage />} />
           </Routes>
         </main>
         <footer className="bg-gray-800 text-white py-6">

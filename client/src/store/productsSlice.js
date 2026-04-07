@@ -1,6 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
-// Helper to build query string
 const buildQueryString = (params) => {
   const searchParams = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
@@ -18,7 +17,6 @@ export const fetchProducts = createAsyncThunk(
     const params = {
       page: state.currentPage,
       limit: state.itemsPerPage,
-      search: state.searchQuery,
       minPrice: state.minPrice,
       maxPrice: state.maxPrice,
       category: state.selectedCategory,
@@ -27,7 +25,7 @@ export const fetchProducts = createAsyncThunk(
     const response = await fetch(`${import.meta.env.VITE_API_URL}/products?${query}`);
     if (!response.ok) throw new Error('Failed to fetch products');
     const data = await response.json();
-    return data; // { products, pagination }
+    return data;
   }
 );
 
@@ -54,25 +52,20 @@ export const fetchProductById = createAsyncThunk(
 const productsSlice = createSlice({
   name: 'products',
   initialState: {
-    items: [],               // products for current page
-    currentProduct: null,   // single product view
-    status: 'idle',         // 'idle' | 'loading' | 'succeeded' | 'failed'
+    items: [],
+    currentProduct: null,
+    status: 'idle',
     error: null,
     categories: [],
     currentPage: 1,
     itemsPerPage: 12,
     totalPages: 1,
     totalItems: 0,
-    searchQuery: '',
     minPrice: '',
     maxPrice: '',
     selectedCategory: '',
   },
   reducers: {
-    setSearchQuery: (state, action) => {
-      state.searchQuery = action.payload;
-      state.currentPage = 1; // reset to first page
-    },
     setPriceFilter: (state, action) => {
       state.minPrice = action.payload.minPrice;
       state.maxPrice = action.payload.maxPrice;
@@ -86,7 +79,6 @@ const productsSlice = createSlice({
       state.currentPage = action.payload;
     },
     clearFilters: (state) => {
-      state.searchQuery = '';
       state.minPrice = '';
       state.maxPrice = '';
       state.selectedCategory = '';
@@ -95,7 +87,6 @@ const productsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // fetchProducts
       .addCase(fetchProducts.pending, (state) => {
         state.status = 'loading';
         state.error = null;
@@ -110,11 +101,9 @@ const productsSlice = createSlice({
         state.status = 'failed';
         state.error = action.error.message;
       })
-      // fetchCategories
       .addCase(fetchCategories.fulfilled, (state, action) => {
         state.categories = action.payload.map(cat => cat.name);
       })
-      // fetchProductById
       .addCase(fetchProductById.pending, (state) => {
         state.status = 'loading';
         state.currentProduct = null;
@@ -131,7 +120,6 @@ const productsSlice = createSlice({
 });
 
 export const {
-  setSearchQuery,
   setPriceFilter,
   setSelectedCategory,
   setCurrentPage,

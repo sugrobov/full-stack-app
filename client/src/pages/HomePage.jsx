@@ -5,17 +5,16 @@ import ProductCard from '../components/ProductCard';
 import Breadcrumb from '../components/Breadcrumb';
 import Filters from '../components/Filters';
 import Pagination from '../components/Pagination';
+import ProductSearch from '../components/ProductSearch';
 
 const HomePage = () => {
   const dispatch = useDispatch();
-  const { items, status, currentPage, totalPages, totalItems, searchQuery, selectedCategory, minPrice, maxPrice } = useSelector(state => state.products);
+  const { items, status, currentPage, totalPages, totalItems, selectedCategory, minPrice, maxPrice } = useSelector(state => state.products);
 
-  // Загружаем товары при изменении фильтров или страницы
   useEffect(() => {
     dispatch(fetchProducts());
-  }, [dispatch, currentPage, searchQuery, selectedCategory, minPrice, maxPrice]);
+  }, [dispatch, currentPage, selectedCategory, minPrice, maxPrice]);
 
-  // Загружаем категории один раз при монтировании
   useEffect(() => {
     dispatch(fetchCategories());
   }, [dispatch]);
@@ -60,6 +59,9 @@ const HomePage = () => {
 
       <h1 className="text-3xl font-bold text-gray-800 mb-2">Каталог товаров</h1>
       <p className="text-gray-600 mb-8">Найдено товаров: {totalItems}</p>
+
+      {/* компонент поиска */}
+      <ProductSearch />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-1">
