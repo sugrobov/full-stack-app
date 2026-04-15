@@ -98,19 +98,11 @@ const createTables = () => {
 };
 
 const insertSampleData = () => {
-  // Generate SVG images
-  const generateSvgImage = (productId, imageIndex) => {
-    const hue = (productId * (imageIndex + 1)) % 360;
-    const saturation = 70;
-    const lightness = 60;
-    const text = `Product ${productId}`;
-    // URL-кодируем SVG
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
-    <rect width="300" height="300" fill="hsl(${hue}, ${saturation}%, ${lightness}%)"/>
-    <text x="50%" y="50%" font-size="20" fill="white" text-anchor="middle" dy=".3em">${text}</text>
-  </svg>`;
-    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
-  };
+
+  const getRandomProductImage = (productId) => {
+  const hue = (productId * 37) % 360;
+  return `https://moqimg.ru/400/400?bg=${hue.toString(16).padStart(6, '0')}`;
+};
 
   // Insert categories
   const categories = [];
@@ -143,7 +135,8 @@ const insertSampleData = () => {
           const discountPercent = Math.floor(Math.random() * 30) + 5;
           const stock = Math.floor(Math.random() * 100);
 
-          const firstImage = generateSvgImage(id, 0);
+          // const firstImage = generateSvgImage(id, 0);
+          const firstImage = getRandomProductImage(id);
 
           products.push([
             `Товар ${id} из категории ${categoryIndex + 1}`,
@@ -176,8 +169,8 @@ const insertSampleData = () => {
           productResults.forEach(product => {
             const numImages = Math.floor(Math.random() * 5) + 1; // 1-5 images per product
             for (let i = 0; i < numImages; i++) {
-              const svgImage = generateSvgImage(product.id, i);
-              imageValues.push([product.id, svgImage, i]);
+const imageUrl = getRandomProductImage(product.id);
+      imageValues.push([product.id, imageUrl, i]);
             }
           });
 
