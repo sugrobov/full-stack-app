@@ -6,6 +6,7 @@ import { PersistGate } from 'redux-persist/integration/react'
 import './index.css'
 import App from './App.jsx'
 import store, { persistor } from './store/store.js'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 
 
 createRoot(document.getElementById('root')).render(
@@ -16,7 +17,8 @@ createRoot(document.getElementById('root')).render(
           v7_startTransition: true,
           v7_relativeSplatPath: true,
         }}>
-          <App />
+          <ErrorBoundary><App /></ErrorBoundary>
+
         </BrowserRouter>
       </PersistGate>
     </Provider>
