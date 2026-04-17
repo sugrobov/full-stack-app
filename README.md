@@ -17,52 +17,52 @@ The online store includes the following features:
 ### Option 1: Run from root directory (recommended)
 
 1. Clone the repository:
-   ```
-   git clone https://github.com/sugrobov/full-stack-app.git
-   cd full-stack-app
-   ```
+```bash
+git clone https://github.com/sugrobov/full-stack-app.git
+cd full-stack-app
+```
 
 2. Install all dependencies (client, server, and root):
-   ```
-   npm run install-all
-   ```
-   Or install manually:
-   ```
-   npm install
-   cd client && npm install
-   cd ../server && npm install
-   ```
+```bash
+npm run install-all
+```
+Or install manually:
+```bash
+npm install
+cd client && npm install
+cd ../server && npm install
+```
 
 3. Start both client and server simultaneously:
-   ```
-   npm start
-   ```
-   Or start them separately:
-   ```
-   npm run server   # starts backend on port 5000
-   npm run client   # starts frontend on port 5173
-   ```
+```bash
+npm start
+```
+Or start them separately:
+```bash
+npm run server # starts backend on port 5000
+npm run client # starts frontend on port 5173
+```
 
 4. Open your browser:
-   - Frontend: `http://localhost:5173`
-   - Backend API: `http://localhost:5000`
+- Frontend: `http://localhost:5173`
+- Backend API: `http://localhost:5000`
 
 ### Option 2: Run client only (legacy)
 
 1. Navigate to the client directory:
-   ```
-   cd full-stack-app/client
-   ```
+```bash
+cd full-stack-app/client
+```
 
 2. Install dependencies:
-   ```
-   npm install
-   ```
+```bash
+npm install
+```
 
 3. Run the application:
-   ```
-   npm run dev
-   ```
+```bash
+npm run dev
+```
 
 4. Open your browser and go to `http://localhost:5173`
 
@@ -71,103 +71,45 @@ The online store includes the following features:
 The backend server requires MySQL to be running. Follow these steps to set up the database:
 
 1. **Install MySQL** if you don't have it already:
-   - [MySQL Download](https://dev.mysql.com/downloads/mysql/)
-   - Or use XAMPP/WAMP which includes MySQL
+- [MySQL Download](https://dev.mysql.com/downloads/mysql/)
+- Or use XAMPP/WAMP which includes MySQL
 
 2. **Start MySQL service** and ensure it's running on port 3306
 
 3. **Configure environment variables**:
-   - Copy the example environment file:
-     ```
-     cp server/.env.example server/.env
-     ```
-   - Edit `server/.env` with your MySQL credentials
+- Copy the example environment file:
+```bash
+cp server/.env.example server/.env
+```
+- Edit `server/.env` with your MySQL credentials
 
 4. **Initialize the database** (optional - tables are created automatically):
-   ```
-   cd server
-   npm run init-db
-   ```
+```bash
+cd server
+npm run init-db
+```
 
 5. **Default credentials** (if using the .env.example as-is):
-   - Host: `localhost`
-   - User: `root`
-   - Password: (empty)
-   - Database: `store_db`
+- Host: `localhost`
+- User: `root`
+- Password: (empty)
+- Database: `store_db`
 
 **Note**: If you don't need the backend API to function (e.g., just testing the frontend), the server will still start but will show database connection errors. The frontend will work independently.
 
 ## Product Images
 
-Product images are not included in the Git repository due to their size. You can generate images in two ways:
+The application now uses **client-side SVG placeholders** for product images. No external image downloads or archives are required. 
 
-### Method 1: Using Python script (recommended)
+- Product cards and detail pages display colorful SVG tiles with product names.
+- The placeholder color is derived from the product ID, ensuring consistent and varied visuals.
+- Images are generated entirely on the client side, eliminating network requests and broken image errors.
 
-1. Make sure you have Python 3 and the Pillow library installed:
-   ```
-   pip install Pillow
-   ```
-
-2. Run the image generation script:
-   ```
-   python scripts/generate-images.py
-   ```
-
-### Method 2: Using Node.js script
-
-1. Run the image generation script:
-   ```
-   node scripts/generate-images-node.js
-   ```
-
-### Method 3: Downloading image archives
-
-Images are divided into 25 archives by categories:
-
-1. Download the image archives:
-   - [Category 1](archives/category1.zip) (22.9 MB)
-   - [Category 2](archives/category2.zip) (25.4 MB)
-   - [Category 3](archives/category3.zip) (21.6 MB)
-   - [Category 4](archives/category4.zip) (18.9 MB)
-   - [Category 5](archives/category5.zip) (24.4 MB)
-   - [Category 6](archives/category6.zip) (23.6 MB)
-   - [Category 7](archives/category7.zip) (21.2 MB)
-   - [Category 8](archives/category8.zip) (25.3 MB)
-   - [Category 9](archives/category9.zip) (20.2 MB)
-   - [Category 10](archives/category10.zip) (22.5 MB)
-   - [Category 11](archives/category11.zip) (26.9 MB)
-   - [Category 12](archives/category12.zip) (23.7 MB)
-   - [Category 13](archives/category13.zip) (21.9 MB)
-   - [Category 14](archives/category14.zip) (23.5 MB)
-   - [Category 15](archives/category15.zip) (20.1 MB)
-   - [Category 16](archives/category16.zip) (25.9 MB)
-   - [Category 17](archives/category17.zip) (26.5 MB)
-   - [Category 18](archives/category18.zip) (17.9 MB)
-   - [Category 19](archives/category19.zip) (23.4 MB)
-   - [Category 20](archives/category20.zip) (24.3 MB)
-   - [Category 21](archives/category21.zip) (26.2 MB)
-   - [Category 22](archives/category22.zip) (2.0 MB)
-   - [Category 23](archives/category23.zip) (22.7 MB)
-   - [Category 24](archives/category24.zip) (25.6 MB)
-   - [Category 25](archives/category25.zip) (23.1 MB)
-
-2. Extract each archive to the `client/public/images` folder:
-   ```
-   client/public/images/
-   ├── category1/
-   │   ├── product101_image1.ppm
-   │   ├── product101_image2.ppm
-   │   └── ...
-   ├── category2/
-   │   ├── product201_image1.ppm
-   │   └── ...
-   └── ...
-   ```
-
-3. After extracting all archives, restart the application:
-   ```
-   npm run dev
-   ```
+If you later wish to add real product images:
+1. Place your images in the `client/public/images/` folder following the pattern:  
+`/images/categoryX/productXXX_imageY.jpg` (or `.png`, `.webp`).
+2. Update the `isValidLocalImage` logic in `ProductCard.jsx` and `ProductPage.jsx` to recognize your local paths.
+3. Modify `server/init-db.js` to populate the database with your local image URLs.
 
 ## Deployment
 
@@ -185,19 +127,18 @@ The `netlify.toml` configuration file is already included in the project for aut
 For future backend integration, you can set up environment variables in Netlify to point to your API endpoints.
 
 ## Project Structure
-
 ```
 client/
 ├── public/
-│   └── images/          # Product images (not included in Git)
+│   └── images/ # Optional: place real product images here
 ├── src/
-│   ├── components/     # React components
-│   ├── pages/          # Application pages
-│   ├── store/          # Redux store and slices
-│   ├── utils/          # Utility functions
-│   ├── App.jsx         # Main application component
-│   └── main.jsx        # Entry point
-└── vite.config.js     # Vite configuration
+│   ├── components/ # React components
+│   ├── pages/ # Application pages
+│   ├── store/ # Redux store and slices
+│   ├── utils/ # Utility functions
+│   ├── App.jsx # Main application component
+│   └── main.jsx # Entry point
+└── vite.config.js # Vite configuration
 ```
 
 ## Main Components

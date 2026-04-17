@@ -10,16 +10,20 @@ const ProductCard = ({ product }) => {
   const firstImage = images.length > 0 ? images[0] : null;
   const isDiscounted = !!product.discount_price;
 
+  // функция проверки валидного локального изображения
+  const isValidLocalImage = (url) => {
+    return url && typeof url === 'string' && url.startsWith('/images/');
+  };
+
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    // Преобразуем продукт в формат корзины
     const cartItem = {
       id: product.id,
       name: product.name,
       price: product.price,
       discountPrice: product.discount_price,
-      image: firstImage,
+      image: isValidLocalImage(firstImage) ? firstImage : null,
       images: images,
       quantity: 1,
       totalPrice: product.discount_price || product.price,
@@ -30,20 +34,25 @@ const ProductCard = ({ product }) => {
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full">
       <Link to={`/product/${product.id}`} className="flex-grow flex flex-col">
-        <div className="relative h-56 overflow-hidden bg-gray-100">
-          {firstImage ? (
-            <img src={firstImage} alt={product.name} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-500">
-              Нет фото
-            </div>
-          )}
-          {isDiscounted && (
-            <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">
-              -{Math.round((1 - product.discount_price / product.price) * 100)}%
-            </div>
-          )}
+        {/* блок изображения с SVG-заглушкой */}
+        <div className="relative h-56 overflow-hidden bg-gray-100 flex items-center justify-center">
+          {(() => {
+            if (isValidLocalImage(firstImage)) {
+              return <img src={firstImage} alt={product.name} className="w-full h-full object-cover" />;
+            } else {
+              const hue = (product.id * 37) % 360;
+              return (
+                <svg width="100%" height="100%" viewBox="0 0 400 400" preserveAspectRatio="none">
+                  <rect width="400" height="400" fill={`hsl(${hue}, 70%, 80%)`} />
+                  <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fill="#333" fontSize="20" fontFamily="Arial, sans-serif">
+                    {product.name}
+                  </text>
+                </svg>
+              );
+            }
+          })()}
         </div>
+
         <div className="p-4 flex-grow flex flex-col">
           <div className="mb-2">
             <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">

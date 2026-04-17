@@ -17,13 +17,11 @@ const ProductPage = () => {
   const status = useSelector(state => state.products.status);
   const favorites = useSelector(state => state.favorites.items);
 
-  // Use product from list if available, otherwise from currentProduct
   const product = productFromList || currentProduct;
   const isFavorite = favorites.includes(parseInt(id));
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
-    // If product not in list and not loaded separately, fetch it
     if (!productFromList && !currentProduct && status !== 'loading') {
       dispatch(fetchProductById(id));
     }
@@ -55,7 +53,6 @@ const ProductPage = () => {
   const isDiscounted = !!product.discount_price;
 
   const handleAddToCart = () => {
-    // Transform product to cart item format (add images array)
     const cartItem = {
       ...product,
       discountPrice: product.discount_price,
@@ -77,6 +74,11 @@ const ProductPage = () => {
     setCurrentImageIndex((prev) => (prev === productImages.length - 1 ? 0 : prev + 1));
   };
 
+  // вспомогательная функция для проверки валидности локального изображения
+  const isValidLocalImage = (url) => {
+    return url && typeof url === 'string' && url.startsWith('/images/');
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
@@ -96,19 +98,32 @@ const ProductPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6">
           {/* Product Images Slider */}
           <div>
+            {/* блок главного изображения с SVG-заглушкой */}
             <div className="relative">
               <div className="flex items-center justify-center mb-4">
-                {productImages.length > 0 ? (
-                  <img
-                    src={productImages[currentImageIndex]}
-                    alt={`${product.name} - изображение ${currentImageIndex + 1}`}
-                    className="max-w-full h-auto rounded-lg object-contain max-h-96"
-                  />
-                ) : (
-                  <div className="w-full h-96 bg-gray-100 flex items-center justify-center rounded-lg">
-                    <span className="text-gray-500">Нет изображения</span>
-                  </div>
-                )}
+                {(() => {
+                  const currentImage = productImages[currentImageIndex];
+                  if (isValidLocalImage(currentImage)) {
+                    return (
+                      <img
+                        src={currentImage}
+                        alt={`${product.name} - изображение ${currentImageIndex + 1}`}
+                        className="max-w-full h-auto rounded-lg object-contain max-h-96"
+                      />
+                    );
+                  } else {
+                    // SVG-заглушка
+                    const hue = (product.id * 37 + currentImageIndex * 17) % 360;
+                    return (
+                      <svg width="400" height="400" viewBox="0 0 400 400" className="max-w-full h-auto rounded-lg max-h-96">
+                        <rect width="400" height="400" fill={`hsl(${hue}, 70%, 80%)`} />
+                        <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fill="#333" fontSize="24" fontFamily="Arial, sans-serif">
+                          {product.name}
+                        </text>
+                      </svg>
+                    );
+                  }
+                })()}
               </div>
 
               {productImages.length > 1 && (
@@ -135,6 +150,7 @@ const ProductPage = () => {
                 </>
               )}
 
+              {/* блок миниатюр с SVG-заглушками для невалидных изображений */}
               {productImages.length > 1 && (
                 <div className="flex justify-center space-x-2 mt-4">
                   {productImages.map((img, index) => (
@@ -143,7 +159,16 @@ const ProductPage = () => {
                       onClick={() => setCurrentImageIndex(index)}
                       className={`w-16 h-16 rounded-md overflow-hidden border-2 ${currentImageIndex === index ? 'border-blue-500' : 'border-transparent'}`}
                     >
-                      <img src={img} alt={`Миниатюра ${index + 1}`} className="w-full h-full object-cover" />
+                      {isValidLocalImage(img) ? (
+                        <img src={img} alt={`Миниатюра ${index + 1}`} className="w-full h-full object-cover" />
+                      ) : (
+                        <svg width="64" height="64" viewBox="0 0 64 64" className="w-full h-full">
+                          <rect width="64" height="64" fill={`hsl(${(product.id * 37 + index * 17) % 360}, 70%, 80%)`} />
+                          <text x="32" y="32" dominantBaseline="middle" textAnchor="middle" fill="#333" fontSize="10">
+                            {index + 1}
+                          </text>
+                        </svg>
+                      )}
                     </button>
                   ))}
                 </div>
