@@ -51,7 +51,7 @@ const getImagesForProducts = (productIds, callback) => {
 
 // Routes
 app.get('/api/products', (req, res) => {
-  let { page = 1, limit = 12, search = '', minPrice = '', maxPrice = '', category = '' } = req.query;
+  let { page = 1, limit = 12, search = '', minPrice = '', maxPrice = '', category = '', sort = '' } = req.query;
   
   page = parseInt(page, 10);
   limit = parseInt(limit, 10);
@@ -84,7 +84,25 @@ app.get('/api/products', (req, res) => {
     params.push(category);
   }
 
-  query += ` ORDER BY p.id LIMIT ? OFFSET ?`;
+  // Сортировка
+  let orderBy = 'p.id'; // по умолчанию
+  switch (sort) {
+    case 'price_asc':
+      orderBy = 'COALESCE(p.discount_price, p.price) ASC';
+      break;
+    case 'price_desc':
+      orderBy = 'COALESCE(p.discount_price, p.price) DESC';
+      break;
+    case 'rating_desc':
+      orderBy = 'p.rating DESC';
+      break;
+    case 'newest':
+      orderBy = 'p.id DESC';
+      break;
+    default:
+      orderBy = 'p.id';
+  }
+  query += ` ORDER BY ${orderBy} LIMIT ? OFFSET ?`;
   params.push(limit, offset);
 
   db.query(query, params, (err, results) => {
@@ -106,6 +124,7 @@ app.get('/api/products', (req, res) => {
 
       const productsWithImages = results.map(p => ({
         ...p,
+        rating: parseFloat(p.rating) || 0,
         images: imagesMap[p.id] || []
       }));
 

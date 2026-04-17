@@ -1,18 +1,19 @@
 import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useSearchParams } from 'react-router-dom';
-import { fetchProducts, fetchCategories, setCurrentPage, setSelectedCategory, setPriceFilter, setFiltersFromURL } from '../store/productsSlice';
+import { fetchProducts, fetchCategories, setCurrentPage, setFiltersFromURL } from '../store/productsSlice';
 import ProductCard from '../components/ProductCard';
 import Breadcrumb from '../components/Breadcrumb';
 import Filters from '../components/Filters';
 import Pagination from '../components/Pagination';
 import ProductSearch from '../components/ProductSearch';
 import ProductCardSkeleton from '../components/ProductCardSkeleton';
+import SortSelect from '../components/SortSelect';
 
 const HomePage = () => {
   const dispatch = useDispatch();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { items, status, currentPage, totalPages, totalItems, selectedCategory, minPrice, maxPrice } = useSelector(state => state.products);
+  const { items, status, currentPage, totalPages, totalItems, selectedCategory, minPrice, maxPrice, sort } = useSelector(state => state.products);
 
   // При монтировании читаем URL и обновляем Redux состояние
   useEffect(() => {
@@ -20,14 +21,16 @@ const HomePage = () => {
     const minPriceParam = searchParams.get('minPrice') || '';
     const maxPriceParam = searchParams.get('maxPrice') || '';
     const page = searchParams.get('page') || '1';
-    
+    const sortParam = searchParams.get('sort') || 'default';
+
     dispatch(setFiltersFromURL({
       category,
       minPrice: minPriceParam,
       maxPrice: maxPriceParam,
       page,
+      sort: sortParam,
     }));
-  }, []); // только один раз при загрузке компонента
+  }, []);
 
   // Загрузка категорий
   useEffect(() => {
@@ -37,7 +40,7 @@ const HomePage = () => {
   // Загрузка товаров при изменении фильтров
   useEffect(() => {
     dispatch(fetchProducts());
-  }, [dispatch, currentPage, selectedCategory, minPrice, maxPrice]);
+  }, [dispatch, currentPage, selectedCategory, minPrice, maxPrice, sort]);
 
   // Синхронизация URL с Redux состоянием (когда фильтры меняются через интерфейс)
   useEffect(() => {
@@ -46,9 +49,10 @@ const HomePage = () => {
     if (minPrice) params.minPrice = minPrice;
     if (maxPrice) params.maxPrice = maxPrice;
     if (currentPage > 1) params.page = currentPage;
-    
+    if (sort && sort !== 'default') params.sort = sort;
+
     setSearchParams(params, { replace: true });
-  }, [selectedCategory, minPrice, maxPrice, currentPage, setSearchParams]);
+  }, [selectedCategory, minPrice, maxPrice, currentPage, sort, setSearchParams]);
 
   const handlePageChange = (page) => {
     dispatch(setCurrentPage(page));
@@ -93,9 +97,11 @@ const HomePage = () => {
       </div>
 
       <h1 className="text-3xl font-bold text-gray-800 mb-2">Каталог товаров</h1>
-      <p className="text-gray-600 mb-8">Найдено товаров: {totalItems}</p>
+      <div className="flex justify-between items-center mb-8">
+        <p className="text-gray-600">Найдено товаров: {totalItems}</p>
+        <SortSelect />
+      </div>
 
-      {/* компонент поиска */}
       <ProductSearch />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">

@@ -20,6 +20,7 @@ export const fetchProducts = createAsyncThunk(
       minPrice: state.minPrice,
       maxPrice: state.maxPrice,
       category: state.selectedCategory,
+      sort: state.sort,
     };
     const query = buildQueryString(params);
     const response = await fetch(`${import.meta.env.VITE_API_URL}/products?${query}`);
@@ -64,6 +65,7 @@ const productsSlice = createSlice({
     minPrice: '',
     maxPrice: '',
     selectedCategory: '',
+    sort: 'default',
   },
   reducers: {
     setPriceFilter: (state, action) => {
@@ -90,7 +92,13 @@ const productsSlice = createSlice({
       if (minPrice !== undefined && minPrice !== null) state.minPrice = minPrice;
       if (maxPrice !== undefined && maxPrice !== null) state.maxPrice = maxPrice;
       if (page !== undefined && page !== null) state.currentPage = parseInt(page) || 1;
-
+      if (action.payload.sort !== undefined && action.payload.sort !== null) {
+        state.sort = action.payload.sort;
+      }
+    },
+    setSort: (state, action) => {
+      state.sort = action.payload;
+      state.currentPage = 1; // сброс страницы при изменении сортировки
     },
   },
   extraReducers: (builder) => {
@@ -133,6 +141,7 @@ export const {
   setCurrentPage,
   clearFilters,
   setFiltersFromURL,
+  setSort,
 } = productsSlice.actions;
 
 export default productsSlice.reducer;
