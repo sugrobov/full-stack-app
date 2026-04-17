@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchProducts, fetchCategories, setCurrentPage } from '../store/productsSlice';
+import { useSearchParams } from 'react-router-dom';
+import { fetchProducts, fetchCategories, setCurrentPage, setSelectedCategory, setPriceFilter, setFiltersFromURL } from '../store/productsSlice';
 import ProductCard from '../components/ProductCard';
 import Breadcrumb from '../components/Breadcrumb';
 import Filters from '../components/Filters';
@@ -10,15 +11,44 @@ import ProductCardSkeleton from '../components/ProductCardSkeleton';
 
 const HomePage = () => {
   const dispatch = useDispatch();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { items, status, currentPage, totalPages, totalItems, selectedCategory, minPrice, maxPrice } = useSelector(state => state.products);
 
+  // При монтировании читаем URL и обновляем Redux состояние
+  useEffect(() => {
+    const category = searchParams.get('category') || '';
+    const minPriceParam = searchParams.get('minPrice') || '';
+    const maxPriceParam = searchParams.get('maxPrice') || '';
+    const page = searchParams.get('page') || '1';
+    
+    dispatch(setFiltersFromURL({
+      category,
+      minPrice: minPriceParam,
+      maxPrice: maxPriceParam,
+      page,
+    }));
+  }, []); // только один раз при загрузке компонента
+
+  // Загрузка категорий
+  useEffect(() => {
+    dispatch(fetchCategories());
+  }, [dispatch]);
+
+  // Загрузка товаров при изменении фильтров
   useEffect(() => {
     dispatch(fetchProducts());
   }, [dispatch, currentPage, selectedCategory, minPrice, maxPrice]);
 
+  // Синхронизация URL с Redux состоянием (когда фильтры меняются через интерфейс)
   useEffect(() => {
-    dispatch(fetchCategories());
-  }, [dispatch]);
+    const params = {};
+    if (selectedCategory) params.category = selectedCategory;
+    if (minPrice) params.minPrice = minPrice;
+    if (maxPrice) params.maxPrice = maxPrice;
+    if (currentPage > 1) params.page = currentPage;
+    
+    setSearchParams(params, { replace: true });
+  }, [selectedCategory, minPrice, maxPrice, currentPage, setSearchParams]);
 
   const handlePageChange = (page) => {
     dispatch(setCurrentPage(page));

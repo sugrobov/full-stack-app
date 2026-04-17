@@ -84,6 +84,14 @@ const productsSlice = createSlice({
       state.selectedCategory = '';
       state.currentPage = 1;
     },
+    setFiltersFromURL: (state, action) => {
+      const { category, minPrice, maxPrice, page, sort } = action.payload;
+      if (category !== undefined && category !== null) state.selectedCategory = category;
+      if (minPrice !== undefined && minPrice !== null) state.minPrice = minPrice;
+      if (maxPrice !== undefined && maxPrice !== null) state.maxPrice = maxPrice;
+      if (page !== undefined && page !== null) state.currentPage = parseInt(page) || 1;
+
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -124,6 +132,7 @@ export const {
   setSelectedCategory,
   setCurrentPage,
   clearFilters,
+  setFiltersFromURL,
 } = productsSlice.actions;
 
 export default productsSlice.reducer;
