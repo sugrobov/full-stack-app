@@ -6,6 +6,7 @@ import Breadcrumb from '../components/Breadcrumb';
 import Filters from '../components/Filters';
 import Pagination from '../components/Pagination';
 import ProductSearch from '../components/ProductSearch';
+import ProductCardSkeleton from '../components/ProductCardSkeleton';
 
 const HomePage = () => {
   const dispatch = useDispatch();
@@ -27,9 +28,13 @@ const HomePage = () => {
   if (status === 'loading') {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Загрузка товаров...</p>
+        <div className="mb-6">
+          <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, index) => (
+            <ProductCardSkeleton key={index} />
+          ))}
         </div>
       </div>
     );

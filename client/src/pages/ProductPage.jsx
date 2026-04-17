@@ -6,6 +6,7 @@ import { toggleFavorite } from '../store/favoritesSlice';
 import { fetchProductById } from '../store/productsSlice';
 import Button from '../components/UI/Button';
 import Breadcrumb from '../components/Breadcrumb';
+import ProductPageSkeleton from '../components/ProductPageSkeleton';
 
 const ProductPage = () => {
   const { id } = useParams();
@@ -29,12 +30,7 @@ const ProductPage = () => {
 
   if (status === 'loading' && !product) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Загрузка товара...</p>
-        </div>
-      </div>
+      <ProductPageSkeleton />
     );
   }
 
