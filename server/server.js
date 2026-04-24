@@ -3,19 +3,20 @@ const mysql = require('mysql2');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const nodemailer = require('nodemailer');
+const bcrypt = require('bcryptjs');
+const { body, validationResult } = require('express-validator');
+const { generateToken, verifyToken } = require('./auth');
 
-// Load environment variables
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// MySQL database connection
-const db = mysql.createConnection({
+// Пул с промисами (для всех запросов)
+const db = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
@@ -23,303 +24,251 @@ const db = mysql.createConnection({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
-});
+}).promise();
 
-db.connect((err) => {
-  if (err) {
+// Проверка подключения
+db.query('SELECT 1')
+  .then(() => console.log('Connected to MySQL database'))
+  .catch(err => {
     console.error('Error connecting to MySQL:', err);
-    console.log('Make sure you have run "npm run init-db" first and MySQL is running.');
     process.exit(1);
-  }
-  console.log('Connected to MySQL database');
-});
-
-// Helper function to get images for multiple products
-const getImagesForProducts = (productIds, callback) => {
-  if (productIds.length === 0) return callback(null, {});
-  const query = 'SELECT product_id, image_url FROM product_images WHERE product_id IN (?) ORDER BY sort_order';
-  db.query(query, [productIds], (err, images) => {
-    if (err) return callback(err);
-    const imagesMap = {};
-    images.forEach(img => {
-      if (!imagesMap[img.product_id]) imagesMap[img.product_id] = [];
-      imagesMap[img.product_id].push(img.image_url);
-    });
-    callback(null, imagesMap);
   });
-};
 
-// Routes
-app.get('/api/products', (req, res) => {
-  let { page = 1, limit = 12, search = '', minPrice = '', maxPrice = '', category = '', sort = '' } = req.query;
-  
-  page = parseInt(page, 10);
-  limit = parseInt(limit, 10);
-  if (isNaN(page) || page < 1) page = 1;
-  if (isNaN(limit) || limit < 1) limit = 12;
-  const offset = (page - 1) * limit;
+// Вспомогательная функция получения изображений для массива товаров (промис-версия)
+async function getImagesForProducts(productIds) {
+  if (!productIds.length) return {};
+  const query = 'SELECT product_id, image_url FROM product_images WHERE product_id IN (?) ORDER BY sort_order';
+  const [rows] = await db.query(query, [productIds]);
+  const imagesMap = {};
+  rows.forEach(img => {
+    if (!imagesMap[img.product_id]) imagesMap[img.product_id] = [];
+    imagesMap[img.product_id].push(img.image_url);
+  });
+  return imagesMap;
+}
 
-  let query = `
-    SELECT p.*, c.name as category_name
-    FROM products p
-    JOIN categories c ON p.category_id = c.id
-    WHERE p.stock > 0
-  `;
-  const params = [];
+// ==================== РОУТЫ ====================
 
-  if (search) {
-    query += ` AND (p.name LIKE ? OR c.name LIKE ?)`;
-    params.push(`%${search}%`, `%${search}%`);
-  }
-  if (minPrice) {
-    query += ` AND (p.discount_price >= ? OR (p.discount_price IS NULL AND p.price >= ?))`;
-    params.push(minPrice, minPrice);
-  }
-  if (maxPrice) {
-    query += ` AND (p.discount_price <= ? OR (p.discount_price IS NULL AND p.price <= ?))`;
-    params.push(maxPrice, maxPrice);
-  }
-  if (category) {
-    query += ` AND c.name = ?`;
-    params.push(category);
-  }
+app.get('/api/products', async (req, res) => {
+  try {
+    let { page = 1, limit = 12, search = '', minPrice = '', maxPrice = '', category = '', sort = '' } = req.query;
+    page = parseInt(page); limit = parseInt(limit);
+    const offset = (page - 1) * limit;
 
-  // Сортировка
-  let orderBy = 'p.id'; // по умолчанию
-  switch (sort) {
-    case 'price_asc':
-      orderBy = 'COALESCE(p.discount_price, p.price) ASC';
-      break;
-    case 'price_desc':
-      orderBy = 'COALESCE(p.discount_price, p.price) DESC';
-      break;
-    case 'rating_desc':
-      orderBy = 'p.rating DESC';
-      break;
-    case 'newest':
-      orderBy = 'p.id DESC';
-      break;
-    default:
-      orderBy = 'p.id';
-  }
-  query += ` ORDER BY ${orderBy} LIMIT ? OFFSET ?`;
-  params.push(limit, offset);
+    let query = `
+      SELECT p.*, c.name as category_name
+      FROM products p
+      JOIN categories c ON p.category_id = c.id
+      WHERE p.stock > 0
+    `;
+    const params = [];
 
-  db.query(query, params, (err, results) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ error: 'Database error' });
+    if (search) {
+      query += ` AND (p.name LIKE ? OR c.name LIKE ?)`;
+      params.push(`%${search}%`, `%${search}%`);
+    }
+    if (minPrice) {
+      query += ` AND (p.discount_price >= ? OR (p.discount_price IS NULL AND p.price >= ?))`;
+      params.push(minPrice, minPrice);
+    }
+    if (maxPrice) {
+      query += ` AND (p.discount_price <= ? OR (p.discount_price IS NULL AND p.price <= ?))`;
+      params.push(maxPrice, maxPrice);
+    }
+    if (category) {
+      query += ` AND c.name = ?`;
+      params.push(category);
     }
 
-    if (results.length === 0) {
+    // Сортировка
+    let orderBy = 'p.id';
+    switch (sort) {
+      case 'price_asc': orderBy = 'COALESCE(p.discount_price, p.price) ASC'; break;
+      case 'price_desc': orderBy = 'COALESCE(p.discount_price, p.price) DESC'; break;
+      case 'rating_desc': orderBy = 'p.rating DESC'; break;
+      case 'newest': orderBy = 'p.id DESC'; break;
+    }
+    query += ` ORDER BY ${orderBy} LIMIT ? OFFSET ?`;
+    params.push(limit, offset);
+
+    const [products] = await db.query(query, params);
+    if (!products.length) {
       return res.json({ products: [], pagination: { currentPage: page, totalPages: 0, totalItems: 0 } });
     }
 
-    const productIds = results.map(p => p.id);
-    getImagesForProducts(productIds, (err, imagesMap) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ error: 'Database error' });
-      }
+    const productIds = products.map(p => p.id);
+    const imagesMap = await getImagesForProducts(productIds);
+    const productsWithImages = products.map(p => ({
+      ...p,
+      rating: parseFloat(p.rating) || 0,
+      images: imagesMap[p.id] || []
+    }));
 
-      const productsWithImages = results.map(p => ({
-        ...p,
-        rating: parseFloat(p.rating) || 0,
-        images: imagesMap[p.id] || []
-      }));
-
-      let countQuery = `
-        SELECT COUNT(*) as total
-        FROM products p
-        JOIN categories c ON p.category_id = c.id
-        WHERE p.stock > 0
-      `;
-      const countParams = [];
-
-      if (search) {
-        countQuery += ` AND (p.name LIKE ? OR c.name LIKE ?)`;
-        countParams.push(`%${search}%`, `%${search}%`);
+    let countQuery = `
+      SELECT COUNT(*) as total
+      FROM products p
+      JOIN categories c ON p.category_id = c.id
+      WHERE p.stock > 0
+    `;
+    const countParams = [];
+    if (search) {
+      countQuery += ` AND (p.name LIKE ? OR c.name LIKE ?)`;
+      countParams.push(`%${search}%`, `%${search}%`);
+    }
+    if (minPrice) {
+      countQuery += ` AND (p.discount_price >= ? OR (p.discount_price IS NULL AND p.price >= ?))`;
+      countParams.push(minPrice, minPrice);
+    }
+    if (maxPrice) {
+      countQuery += ` AND (p.discount_price <= ? OR (p.discount_price IS NULL AND p.price <= ?))`;
+      countParams.push(maxPrice, maxPrice);
+    }
+    if (category) {
+      countQuery += ` AND c.name = ?`;
+      countParams.push(category);
+    }
+    const [countResult] = await db.query(countQuery, countParams);
+    const total = countResult[0]?.total || 0;
+    res.json({
+      products: productsWithImages,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        totalItems: total
       }
-      if (minPrice) {
-        countQuery += ` AND (p.discount_price >= ? OR (p.discount_price IS NULL AND p.price >= ?))`;
-        countParams.push(minPrice, minPrice);
-      }
-      if (maxPrice) {
-        countQuery += ` AND (p.discount_price <= ? OR (p.discount_price IS NULL AND p.price <= ?))`;
-        countParams.push(maxPrice, maxPrice);
-      }
-      if (category) {
-        countQuery += ` AND c.name = ?`;
-        countParams.push(category);
-      }
-
-      db.query(countQuery, countParams, (countErr, countResults) => {
-        if (countErr) {
-          console.error(countErr);
-          return res.status(500).json({ error: 'Database error' });
-        }
-
-        res.json({
-          products: productsWithImages,
-          pagination: {
-            currentPage: page,
-            totalPages: Math.ceil(countResults[0].total / limit),
-            totalItems: countResults[0].total
-          }
-        });
-      });
     });
-  });
-});
-
-app.get('/api/products/search', (req, res) => {
-  const { q = '', limit = 5 } = req.query;
-  if (!q.trim()) {
-    return res.json({ products: [] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
   }
-
-  const searchQuery = `
-    SELECT p.*, c.name as category_name
-    FROM products p
-    JOIN categories c ON p.category_id = c.id
-    WHERE p.stock > 0 AND (p.name LIKE ? OR c.name LIKE ?)
-    ORDER BY 
-      CASE WHEN p.name LIKE ? THEN 1 ELSE 2 END,
-      p.id
-    LIMIT ?
-  `;
-  const searchPattern = `%${q}%`;
-  const params = [searchPattern, searchPattern, searchPattern, parseInt(limit)];
-
-  db.query(searchQuery, params, (err, results) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    // Получаем изображения для найденных товаров
-    if (results.length === 0) {
-      return res.json({ products: [] });
-    }
-
-    const productIds = results.map(p => p.id);
-    const imagesQuery = 'SELECT product_id, image_url FROM product_images WHERE product_id IN (?) ORDER BY sort_order';
-    db.query(imagesQuery, [productIds], (err, images) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ error: 'Database error' });
-      }
-
-      const imagesMap = {};
-      images.forEach(img => {
-        if (!imagesMap[img.product_id]) imagesMap[img.product_id] = [];
-        imagesMap[img.product_id].push(img.image_url);
-      });
-
-      const productsWithImages = results.map(p => ({
-        ...p,
-        images: imagesMap[p.id] || []
-      }));
-
-      res.json({ products: productsWithImages });
-    });
-  });
 });
 
-app.get('/api/products/:id', (req, res) => {
-  const { id } = req.params;
-  const productId = parseInt(id, 10);
-  if (isNaN(productId)) {
-    return res.status(400).json({ error: 'Invalid product ID' });
+app.get('/api/products/search', async (req, res) => {
+  try {
+    const { q = '', limit = 5 } = req.query;
+    if (!q.trim()) return res.json({ products: [] });
+    const searchPattern = `%${q}%`;
+    const query = `
+      SELECT p.*, c.name as category_name
+      FROM products p
+      JOIN categories c ON p.category_id = c.id
+      WHERE p.stock > 0 AND (p.name LIKE ? OR c.name LIKE ?)
+      ORDER BY CASE WHEN p.name LIKE ? THEN 1 ELSE 2 END, p.id
+      LIMIT ?
+    `;
+    const [products] = await db.query(query, [searchPattern, searchPattern, searchPattern, parseInt(limit)]);
+    if (!products.length) return res.json({ products: [] });
+    const productIds = products.map(p => p.id);
+    const imagesMap = await getImagesForProducts(productIds);
+    const productsWithImages = products.map(p => ({
+      ...p,
+      images: imagesMap[p.id] || []
+    }));
+    res.json({ products: productsWithImages });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
   }
-
-  const query = `
-    SELECT p.*, c.name as category_name
-    FROM products p
-    JOIN categories c ON p.category_id = c.id
-    WHERE p.id = ? AND p.stock > 0
-  `;
-
-  db.query(query, [productId], (err, results) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    if (results.length === 0) {
-      return res.status(404).json({ error: 'Product not found' });
-    }
-
-    const product = results[0];
-    const imagesQuery = 'SELECT image_url FROM product_images WHERE product_id = ? ORDER BY sort_order';
-    db.execute(imagesQuery, [productId], (err, images) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ error: 'Database error' });
-      }
-
-      product.images = images.map(img => img.image_url);
-      res.json(product);
-    });
-  });
 });
 
-app.get('/api/categories', (req, res) => {
-  const query = 'SELECT * FROM categories ORDER BY name';
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ error: 'Database error' });
+app.get('/api/products/:id', async (req, res) => {
+  try {
+    const productId = parseInt(req.params.id);
+    if (isNaN(productId)) return res.status(400).json({ error: 'Invalid product ID' });
+    const query = `
+      SELECT p.*, c.name as category_name
+      FROM products p
+      JOIN categories c ON p.category_id = c.id
+      WHERE p.id = ? AND p.stock > 0
+    `;
+    const [products] = await db.query(query, [productId]);
+    if (!products.length) return res.status(404).json({ error: 'Product not found' });
+    const product = products[0];
+    const [images] = await db.query('SELECT image_url FROM product_images WHERE product_id = ? ORDER BY sort_order', [productId]);
+    product.images = images.map(img => img.image_url);
+    res.json(product);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+app.get('/api/categories', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM categories ORDER BY name');
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+app.post('/api/auth/register', [
+  body('email').isEmail().normalizeEmail(),
+  body('password').isLength({ min: 6 }),
+  body('name').trim().notEmpty()
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  const { email, password, name } = req.body;
+  try {
+    const [existing] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
+    if (existing.length) {
+      return res.status(400).json({ error: 'User already exists' });
     }
-    res.json(results);
-  });
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const [result] = await db.query('INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)', [name, email, hashedPassword]);
+    const token = generateToken(result.insertId, email, 'user');
+    res.status(201).json({ token, user: { id: result.insertId, name, email, role: 'user' } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/api/auth/login', [
+  body('email').isEmail().normalizeEmail(),
+  body('password').notEmpty()
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  const { email, password } = req.body;
+  try {
+    const [rows] = await db.query('SELECT id, name, email, password_hash, role FROM users WHERE email = ?', [email]);
+    if (!rows.length) return res.status(401).json({ error: 'Invalid credentials' });
+    const user = rows[0];
+    const isMatch = await bcrypt.compare(password, user.password_hash);
+    if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
+    const token = generateToken(user.id, user.email, user.role);
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.get('/api/auth/me', verifyToken, async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT id, name, email, role FROM users WHERE id = ?', [req.user.userId]);
+    if (!rows.length) return res.status(404).json({ error: 'User not found' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 app.post('/api/contact', (req, res) => {
   const { subject, message } = req.body;
-
-  if (!subject || subject.length < 3) {
-    return res.status(400).json({ error: 'Subject is too short' });
+  if (!subject || subject.length < 3 || !message || message.length < 10) {
+    return res.status(400).json({ error: 'Invalid data' });
   }
-
-  if (!message || message.length < 10) {
-    return res.status(400).json({ error: 'Message is too short' });
-  }
-
-  let transporter;
-  try {
-    transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-      port: process.env.EMAIL_PORT || 587,
-      secure: false,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-  } catch (err) {
-    console.warn('Nodemailer not configured properly, simulating email send');
-    return res.json({ success: true, message: 'Message sent successfully (simulated)' });
-  }
-
-  const mailOptions = {
-    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-    to: process.env.CONTACT_EMAIL || process.env.EMAIL_USER,
-    subject: `Contact Form: ${subject}`,
-    text: `You have received a new message from the contact form:\n\nSubject: ${subject}\n\nMessage:\n${message}`,
-  };
-
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.error('Error sending email:', error);
-    } else {
-      console.log('Email sent: ' + info.response);
-    }
-    res.json({ success: true, message: 'Message sent successfully' });
-  });
+  // имитация отправки почты (nodemailer настройте по желанию)
+  res.json({ success: true, message: 'Message sent successfully (simulated)' });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));

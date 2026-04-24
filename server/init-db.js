@@ -31,6 +31,23 @@ db.connect((err) => {
   });
 });
 
+// Определение таблицы пользователей (перенесено вверх)
+const createUsersTable = `
+  CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    role ENUM('user', 'admin') DEFAULT 'user',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )
+`;
+
+const getRandomProductImage = (productId, imageIndex) => {
+  const categoryId = Math.floor(productId / 100);
+  return `/images/category${categoryId}/product${productId}_image${imageIndex + 1}.jpg`;
+};
+
 const createTables = () => {
   const createCategoriesTable = `
     CREATE TABLE IF NOT EXISTS categories (
@@ -74,15 +91,15 @@ const createTables = () => {
       db.query(createProductImagesTable, (err) => {
         if (err) throw err;
         console.log('Product images table ready');
-        insertSampleData();
+        // Создаём таблицу users, затем заполняем данные
+        db.query(createUsersTable, (err) => {
+          if (err) throw err;
+          console.log('Users table ready');
+          insertSampleData();
+        });
       });
     });
   });
-};
-
-const getRandomProductImage = (productId, imageIndex) => {
-  const categoryId = Math.floor(productId / 100);
-  return `/images/category${categoryId}/product${productId}_image${imageIndex + 1}.jpg`;
 };
 
 const insertSampleData = () => {
