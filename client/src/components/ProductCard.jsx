@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../store/cartSlice';
@@ -6,14 +6,13 @@ import Button from './UI/Button';
 
 const ProductCard = ({ product }) => {
   const dispatch = useDispatch();
-  const images = product.images || (product.image ? [product.image] : []);
-  const firstImage = images.length > 0 ? images[0] : null;
+  // Берём первое изображение: из массива images или из поля image
+  const imageUrl = product.images?.[0] || product.image || null;
   const isDiscounted = !!product.discount_price;
+  const [imgError, setImgError] = useState(false);
 
-  // функция проверки валидного локального изображения
-  const isValidLocalImage = (url) => {
-    return url && typeof url === 'string' && url.startsWith('/images/');
-  };
+  // Проверяем валидность URL (должен начинаться с /images/)
+  const isValidImage = imageUrl && imageUrl.startsWith('/images/');
 
   const handleAddToCart = (e) => {
     e.preventDefault();
@@ -23,8 +22,8 @@ const ProductCard = ({ product }) => {
       name: product.name,
       price: product.price,
       discountPrice: product.discount_price,
-      image: isValidLocalImage(firstImage) ? firstImage : null,
-      images: images,
+      image: isValidImage && !imgError ? imageUrl : null,
+      images: product.images || [],
       quantity: 1,
       totalPrice: product.discount_price || product.price,
     };
@@ -34,23 +33,22 @@ const ProductCard = ({ product }) => {
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full">
       <Link to={`/product/${product.id}`} className="flex-grow flex flex-col">
-        {/* блок изображения с SVG-заглушкой */}
         <div className="relative h-56 overflow-hidden bg-gray-100 flex items-center justify-center">
-          {(() => {
-            if (isValidLocalImage(firstImage)) {
-              return <img src={firstImage} alt={product.name} className="w-full h-full object-cover" />;
-            } else {
-              const hue = (product.id * 37) % 360;
-              return (
-                <svg width="100%" height="100%" viewBox="0 0 400 400" preserveAspectRatio="none">
-                  <rect width="400" height="400" fill={`hsl(${hue}, 70%, 80%)`} />
-                  <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fill="#333" fontSize="20" fontFamily="Arial, sans-serif">
-                    {product.name}
-                  </text>
-                </svg>
-              );
-            }
-          })()}
+          {isValidImage && !imgError ? (
+            <img
+              src={imageUrl}
+              alt={product.name}
+              className="w-full h-full object-cover"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <svg width="100%" height="100%" viewBox="0 0 400 400" preserveAspectRatio="none">
+              <rect width="400" height="400" fill={`hsl(${(product.id * 37) % 360}, 70%, 80%)`} />
+              <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fill="#333" fontSize="20" fontFamily="Arial, sans-serif">
+                {product.name}
+              </text>
+            </svg>
+          )}
         </div>
 
         <div className="p-4 flex-grow flex flex-col">
