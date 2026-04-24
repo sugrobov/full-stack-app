@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useSearchParams } from 'react-router-dom';
 import { fetchProducts, fetchCategories, setCurrentPage, setFiltersFromURL } from '../store/productsSlice';
@@ -55,25 +55,20 @@ const HomePage = () => {
     setSearchParams(params, { replace: true });
   }, [selectedCategory, minPrice, maxPrice, currentPage, sort, setSearchParams]);
 
+  // Пропускаем первый рендер (чтобы не прокручивать при начальной загрузке)
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    // Мгновенная прокрутка страницы вверх при изменении параметров
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [currentPage, selectedCategory, minPrice, maxPrice, sort]);
+
   const handlePageChange = (page) => {
     dispatch(setCurrentPage(page));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  if (status === 'loading') {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, index) => (
-            <ProductCardSkeleton key={index} />
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   if (status === 'failed') {
     return (
@@ -91,6 +86,8 @@ const HomePage = () => {
     );
   }
 
+  const showSkeletons = items.length === 0 && status === 'loading';
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-6">
@@ -98,7 +95,7 @@ const HomePage = () => {
       </div>
 
       <h1 className="text-3xl font-bold text-gray-800 mb-2">Каталог товаров</h1>
-      <div className="flex justify-between items-center mb-8  flex-wrap gap-4">
+      <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
         <p className="text-gray-600">Найдено товаров: {totalItems}</p>
         <SortSelect />
         <ResetFiltersButton />
@@ -112,28 +109,42 @@ const HomePage = () => {
         </div>
 
         <div className="lg:col-span-3">
-          {items.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-lg shadow">
-              <div className="text-gray-400 mb-4">
-                <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-800 mb-2">Товары не найдены</h3>
-              <p className="text-gray-600">Попробуйте изменить параметры фильтрации</p>
-            </div>
-          ) : (
-            <>
+          <div className="relative">
+            {showSkeletons ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {items.map(product => (
-                  <ProductCard key={product.id} product={product} />
+                {[...Array(6)].map((_, index) => (
+                  <ProductCardSkeleton key={index} />
                 ))}
               </div>
-              <div className="mt-8 flex justify-center">
-                <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+            ) : items.length === 0 ? (
+              <div className="text-center py-12 bg-white rounded-lg shadow">
+                <div className="text-gray-400 mb-4">
+                  <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-gray-800 mb-2">Товары не найдены</h3>
+                <p className="text-gray-600">Попробуйте изменить параметры фильтрации</p>
               </div>
-            </>
-          )}
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {items.map(product => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+                <div className="mt-8 flex justify-center">
+                  <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+                </div>
+              </>
+            )}
+
+            {status === 'loading' && items.length > 0 && (
+              <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
