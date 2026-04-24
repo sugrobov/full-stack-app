@@ -100,6 +100,13 @@ const productsSlice = createSlice({
       state.sort = action.payload;
       state.currentPage = 1; // сброс страницы при изменении сортировки
     },
+    resetAllFilters: (state) => {
+      state.selectedCategory = '';
+      state.minPrice = '';
+      state.maxPrice = '';
+      state.sort = 'default';
+      state.currentPage = 1;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -142,6 +149,7 @@ export const {
   clearFilters,
   setFiltersFromURL,
   setSort,
+  resetAllFilters,
 } = productsSlice.actions;
 
 export default productsSlice.reducer;

@@ -9,6 +9,7 @@ import Pagination from '../components/Pagination';
 import ProductSearch from '../components/ProductSearch';
 import ProductCardSkeleton from '../components/ProductCardSkeleton';
 import SortSelect from '../components/SortSelect';
+import ResetFiltersButton from '../components/ResetFiltersButton';
 
 const HomePage = () => {
   const dispatch = useDispatch();
@@ -97,9 +98,10 @@ const HomePage = () => {
       </div>
 
       <h1 className="text-3xl font-bold text-gray-800 mb-2">Каталог товаров</h1>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-8  flex-wrap gap-4">
         <p className="text-gray-600">Найдено товаров: {totalItems}</p>
         <SortSelect />
+        <ResetFiltersButton />
       </div>
 
       <ProductSearch />
