@@ -22,6 +22,13 @@ const ProductPage = () => {
   const isFavorite = favorites.includes(parseInt(id));
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
+  // состояние для отслеживания неудачных загрузок изображений
+  const [failedImages, setFailedImages] = useState({});
+
+  const handleImageError = (imageUrl) => {
+    setFailedImages(prev => ({ ...prev, [imageUrl]: true }));
+  };
+
   useEffect(() => {
     if (!productFromList && !currentProduct && status !== 'loading') {
       dispatch(fetchProductById(id));
@@ -29,9 +36,7 @@ const ProductPage = () => {
   }, [dispatch, id, productFromList, currentProduct, status]);
 
   if (status === 'loading' && !product) {
-    return (
-      <ProductPageSkeleton />
-    );
+    return <ProductPageSkeleton />;
   }
 
   if (!product) {
@@ -47,6 +52,8 @@ const ProductPage = () => {
 
   const productImages = product.images || (product.image ? [product.image] : []);
   const isDiscounted = !!product.discount_price;
+  const currentImage = productImages[currentImageIndex]; // определяем currentImage
+  const hue = (product.id * 37 + currentImageIndex * 17) % 360; // <-- вычисляем цвет для SVG
 
   const handleAddToCart = () => {
     const cartItem = {
@@ -70,7 +77,7 @@ const ProductPage = () => {
     setCurrentImageIndex((prev) => (prev === productImages.length - 1 ? 0 : prev + 1));
   };
 
-  // вспомогательная функция для проверки валидности локального изображения
+  // функция для проверки валидности локального изображения
   const isValidLocalImage = (url) => {
     return url && typeof url === 'string' && url.startsWith('/images/');
   };
@@ -94,32 +101,23 @@ const ProductPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6">
           {/* Product Images Slider */}
           <div>
-            {/* блок главного изображения с SVG-заглушкой */}
             <div className="relative">
               <div className="flex items-center justify-center mb-4">
-                {(() => {
-                  const currentImage = productImages[currentImageIndex];
-                  if (isValidLocalImage(currentImage)) {
-                    return (
-                      <img
-                        src={currentImage}
-                        alt={`${product.name} - изображение ${currentImageIndex + 1}`}
-                        className="max-w-full h-auto rounded-lg object-contain max-h-96"
-                      />
-                    );
-                  } else {
-                    // SVG-заглушка
-                    const hue = (product.id * 37 + currentImageIndex * 17) % 360;
-                    return (
-                      <svg width="400" height="400" viewBox="0 0 400 400" className="max-w-full h-auto rounded-lg max-h-96">
-                        <rect width="400" height="400" fill={`hsl(${hue}, 70%, 80%)`} />
-                        <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fill="#333" fontSize="24" fontFamily="Arial, sans-serif">
-                          {product.name}
-                        </text>
-                      </svg>
-                    );
-                  }
-                })()}
+                {isValidLocalImage(currentImage) && !failedImages[currentImage] ? (
+                  <img
+                    src={currentImage}
+                    alt={`${product.name} - изображение ${currentImageIndex + 1}`}
+                    className="max-w-full h-auto rounded-lg object-contain max-h-96"
+                    onError={() => handleImageError(currentImage)}
+                  />
+                ) : (
+                  <svg width="400" height="400" viewBox="0 0 400 400" className="max-w-full h-auto rounded-lg max-h-96">
+                    <rect width="400" height="400" fill={`hsl(${hue}, 70%, 80%)`} />
+                    <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fill="#333" fontSize="24">
+                      {product.name}
+                    </text>
+                  </svg>
+                )}
               </div>
 
               {productImages.length > 1 && (
@@ -140,35 +138,38 @@ const ProductPage = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
-                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white text-sm px-3 py-1 rounded-full">
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white/70 backdrop-blur-sm text-gray-800 text-sm px-3 py-1 rounded-full font-medium shadow-md">
                     {currentImageIndex + 1} / {productImages.length}
                   </div>
                 </>
               )}
 
-              {/* блок миниатюр с SVG-заглушками для невалидных изображений */}
-              {productImages.length > 1 && (
-                <div className="flex justify-center space-x-2 mt-4">
-                  {productImages.map((img, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentImageIndex(index)}
-                      className={`w-16 h-16 rounded-md overflow-hidden border-2 ${currentImageIndex === index ? 'border-blue-500' : 'border-transparent'}`}
-                    >
-                      {isValidLocalImage(img) ? (
-                        <img src={img} alt={`Миниатюра ${index + 1}`} className="w-full h-full object-cover" />
-                      ) : (
-                        <svg width="64" height="64" viewBox="0 0 64 64" className="w-full h-full">
-                          <rect width="64" height="64" fill={`hsl(${(product.id * 37 + index * 17) % 360}, 70%, 80%)`} />
-                          <text x="32" y="32" dominantBaseline="middle" textAnchor="middle" fill="#333" fontSize="10">
-                            {index + 1}
-                          </text>
-                        </svg>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
+              {/* Миниатюры */}
+              <div className="flex justify-center space-x-2 mt-4">
+                {productImages.map((img, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentImageIndex(index)}
+                    className={`w-16 h-16 rounded-md overflow-hidden border-2 ${currentImageIndex === index ? 'border-blue-500' : 'border-transparent'}`}
+                  >
+                    {isValidLocalImage(img) && !failedImages[img] ? (
+                      <img
+                        src={img}
+                        alt={`Миниатюра ${index + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={() => handleImageError(img)}
+                      />
+                    ) : (
+                      <svg width="64" height="64" viewBox="0 0 64 64" className="w-full h-full">
+                        <rect width="64" height="64" fill={`hsl(${(product.id * 37 + index * 17) % 360}, 70%, 80%)`} />
+                        <text x="32" y="32" dominantBaseline="middle" textAnchor="middle" fill="#333" fontSize="10">
+                          {index + 1}
+                        </text>
+                      </svg>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
