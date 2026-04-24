@@ -4,6 +4,7 @@ import localforage from 'localforage';
 import productsReducer from './productsSlice';
 import cartReducer from './cartSlice';
 import favoritesReducer from './favoritesSlice';
+import authReducer from './authSlice';
 
 // Конфигурация localForage для Redux Persist
 localforage.config({
@@ -35,11 +36,20 @@ const favoritesPersistConfig = {
 const persistedCartReducer = persistReducer(cartPersistConfig, cartReducer);
 const persistedFavoritesReducer = persistReducer(favoritesPersistConfig, favoritesReducer);
 
+const authPersistConfig = {
+  key: 'auth',
+  storage: localForageStorage,
+  whitelist: ['user', 'token']
+};
+
+const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
+
 const store = configureStore({
   reducer: {
     products: productsReducer,   // no persist for products
     cart: persistedCartReducer,
     favorites: persistedFavoritesReducer,
+    auth: persistedAuthReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

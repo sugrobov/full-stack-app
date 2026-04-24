@@ -1,7 +1,7 @@
 import React from 'react';
 import Button from './UI/Button';
 
-const Pagination = ({ currentPage, totalPages, onPageChange }) => {
+const Pagination = ({ currentPage, totalPages, onPageChange, totalItems, itemsPerPage }) => {
   const getPageNumbers = () => {
     const pages = [];
     const maxVisiblePages = 5;
@@ -33,43 +33,53 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
         pages.push(totalPages);
       }
     }
-    
     return pages;
   };
+
+  // Вычисление диапазона отображаемых товаров
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex justify-center items-center space-x-2">
-      {/* Previous Button */}
-      <Button
-        variant="secondary"
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-      >
-        Назад
-      </Button>
+    <div className="flex flex-col items-center space-y-4">
+      {/* Информация о диапазоне товаров */}
+      <div className="text-sm text-gray-600">
+        Показаны {startItem}–{endItem} из {totalItems} товаров
+      </div>
 
-      {/* Page Numbers */}
-      {getPageNumbers().map((page, index) => (
+      <div className="flex justify-center items-center space-x-2">
+        {/* Previous Button */}
         <Button
-          key={index}
-          variant={page === currentPage ? "primary" : "secondary"}
-          onClick={() => typeof page === 'number' && onPageChange(page)}
-          disabled={page === '...'}
+          variant="secondary"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
         >
-          {page}
+          Назад
         </Button>
-      ))}
 
-      {/* Next Button */}
-      <Button
-        variant="secondary"
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-      >
-        Вперед
-      </Button>
+        {/* Page Numbers */}
+        {getPageNumbers().map((page, index) => (
+          <Button
+            key={index}
+            variant={page === currentPage ? "primary" : "secondary"}
+            onClick={() => typeof page === 'number' && onPageChange(page)}
+            disabled={page === '...'}
+          >
+            {page}
+          </Button>
+        ))}
+
+        {/* Next Button */}
+        <Button
+          variant="secondary"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          Вперед
+        </Button>
+      </div>
     </div>
   );
 };

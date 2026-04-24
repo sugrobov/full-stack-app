@@ -3,17 +3,21 @@ import { useSelector, useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { clearCart } from '../store/cartSlice';
 import { clearFilters } from '../store/productsSlice';
+import { logout } from '../store/authSlice';
 import Button from './UI/Button';
 
 const Header = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { user } = useSelector(state => state.auth);
+
   const { totalQuantity } = useSelector(state => state.cart);
   const favorites = useSelector(state => state.favorites.items);
 
   const handleLogout = () => {
     dispatch(clearCart());
     dispatch(clearFilters());
+    dispatch(logout());
     navigate('/');
   };
 
@@ -21,7 +25,7 @@ const Header = () => {
     <header className="bg-white shadow-md">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <Link to="/" className="text-2xl font-bold text-blue-600">Мой магазин</Link>
-        
+
         <nav className="flex items-center space-x-6">
           <Link to="/favorites" className="relative">
             <svg className="w-6 h-6 text-gray-600 hover:text-red-500 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,7 +37,7 @@ const Header = () => {
               </span>
             )}
           </Link>
-          
+
           <Link to="/cart" className="relative">
             <svg className="w-6 h-6 text-gray-600 hover:text-blue-500 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-1.5 6M17 13l1.5 6M9 21h6M9 21a2 2 0 100-4 2 2 0 000 4zm6 0a2 2 0 100-4 2 2 0 000 4z" />
@@ -44,10 +48,24 @@ const Header = () => {
               </span>
             )}
           </Link>
-          
-          <Button variant="secondary" onClick={handleLogout}>
-            Выйти
-          </Button>
+
+          {user ? (
+            <div className="flex items-center space-x-4">
+              <span className="text-gray-700">Привет, {user.name}</span>
+              <Button variant="secondary" onClick={handleLogout}>
+                Выйти
+              </Button>
+            </div>
+          ) : (
+            <div className="flex space-x-2">
+              <Link to="/login">
+                <Button variant="primary">Войти</Button>
+              </Link>
+              <Link to="/register">
+                <Button variant="secondary">Регистрация</Button>
+              </Link>
+            </div>
+          )}
         </nav>
       </div>
     </header>

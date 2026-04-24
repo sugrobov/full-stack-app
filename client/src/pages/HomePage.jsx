@@ -23,14 +23,7 @@ const HomePage = () => {
     const maxPriceParam = searchParams.get('maxPrice') || '';
     const page = searchParams.get('page') || '1';
     const sortParam = searchParams.get('sort') || 'default';
-
-    dispatch(setFiltersFromURL({
-      category,
-      minPrice: minPriceParam,
-      maxPrice: maxPriceParam,
-      page,
-      sort: sortParam,
-    }));
+    dispatch(setFiltersFromURL({ category, minPrice: minPriceParam, maxPrice: maxPriceParam, page, sort: sortParam }));
   }, []);
 
   // Загрузка категорий
@@ -43,7 +36,7 @@ const HomePage = () => {
     dispatch(fetchProducts());
   }, [dispatch, currentPage, selectedCategory, minPrice, maxPrice, sort]);
 
-  // Синхронизация URL с Redux состоянием (когда фильтры меняются через интерфейс)
+  // Синхронизация URL с Redux
   useEffect(() => {
     const params = {};
     if (selectedCategory) params.category = selectedCategory;
@@ -51,18 +44,16 @@ const HomePage = () => {
     if (maxPrice) params.maxPrice = maxPrice;
     if (currentPage > 1) params.page = currentPage;
     if (sort && sort !== 'default') params.sort = sort;
-
     setSearchParams(params, { replace: true });
   }, [selectedCategory, minPrice, maxPrice, currentPage, sort, setSearchParams]);
 
-  // Пропускаем первый рендер (чтобы не прокручивать при начальной загрузке)
+  // Прокрутка вверх при изменении параметров (пропускаем первый рендер)
   const isFirstRender = useRef(true);
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
-    // Мгновенная прокрутка страницы вверх при изменении параметров
     window.scrollTo({ top: 0, behavior: 'auto' });
   }, [currentPage, selectedCategory, minPrice, maxPrice, sort]);
 
@@ -70,51 +61,37 @@ const HomePage = () => {
     dispatch(setCurrentPage(page));
   };
 
-  if (status === 'failed') {
+  // Показываем скелетоны только при первой загрузке (когда нет товаров и статус loading)
+  const showSkeletons = items.length === 0 && status === 'loading';
+  // Показываем ошибку, если она есть и нет товаров
+  if (status === 'failed' && items.length === 0) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center py-12">
           <div className="text-red-500 text-lg mb-4">Ошибка загрузки товаров</div>
-          <button
-            onClick={() => dispatch(fetchProducts())}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            Повторить попытку
-          </button>
+          <button onClick={() => dispatch(fetchProducts())} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Повторить попытку</button>
         </div>
       </div>
     );
   }
 
-  const showSkeletons = items.length === 0 && status === 'loading';
-
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-6">
-        <Breadcrumb />
-      </div>
-
+      <div className="mb-6"><Breadcrumb /></div>
       <h1 className="text-3xl font-bold text-gray-800 mb-2">Каталог товаров</h1>
       <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
         <p className="text-gray-600">Найдено товаров: {totalItems}</p>
         <SortSelect />
         <ResetFiltersButton />
       </div>
-
       <ProductSearch />
-
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        <div className="lg:col-span-1">
-          <Filters />
-        </div>
-
+        <div className="lg:col-span-1"><Filters /></div>
         <div className="lg:col-span-3">
           <div className="relative">
             {showSkeletons ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[...Array(6)].map((_, index) => (
-                  <ProductCardSkeleton key={index} />
-                ))}
+                {[...Array(6)].map((_, idx) => <ProductCardSkeleton key={idx} />)}
               </div>
             ) : items.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-lg shadow">
@@ -129,16 +106,14 @@ const HomePage = () => {
             ) : (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {items.map(product => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
+                  {items.map(product => <ProductCard key={product.id} product={product} />)}
                 </div>
                 <div className="mt-8 flex justify-center">
-                  <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+                  <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} totalItems={totalItems} itemsPerPage={12} />
                 </div>
               </>
             )}
-
+            {/* Оверлей загрузки – появляется поверх существующих карточек */}
             {status === 'loading' && items.length > 0 && (
               <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
