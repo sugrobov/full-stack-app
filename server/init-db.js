@@ -31,7 +31,7 @@ db.connect((err) => {
   });
 });
 
-// Определение таблицы пользователей (перенесено вверх)
+// Определение таблицы пользователей
 const createUsersTable = `
   CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -40,6 +40,31 @@ const createUsersTable = `
     password_hash VARCHAR(255) NOT NULL,
     role ENUM('user', 'admin') DEFAULT 'user',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )
+`;
+
+const createOrdersTable = `
+  CREATE TABLE IF NOT EXISTS orders (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    total DECIMAL(10, 2) NOT NULL,
+    status ENUM('pending', 'paid', 'shipped', 'delivered', 'cancelled') DEFAULT 'pending',
+    address TEXT NOT NULL,
+    phone VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  )
+`;
+
+const createOrderItemsTable = `
+  CREATE TABLE IF NOT EXISTS order_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id)
   )
 `;
 
@@ -82,6 +107,7 @@ const createTables = () => {
     )
   `;
 
+  // Создаём таблицы
   db.query(createCategoriesTable, (err) => {
     if (err) throw err;
     console.log('Categories table ready');
@@ -91,11 +117,18 @@ const createTables = () => {
       db.query(createProductImagesTable, (err) => {
         if (err) throw err;
         console.log('Product images table ready');
-        // Создаём таблицу users, затем заполняем данные
         db.query(createUsersTable, (err) => {
           if (err) throw err;
           console.log('Users table ready');
-          insertSampleData();
+          db.query(createOrdersTable, (err) => {
+            if (err) throw err;
+            console.log('Orders table ready');
+            db.query(createOrderItemsTable, (err) => {
+              if (err) throw err;
+              console.log('Order items table ready');
+              insertSampleData();
+            });
+          });
         });
       });
     });
