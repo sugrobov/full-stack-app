@@ -55,6 +55,7 @@ const Header = () => {
               <Button variant="secondary" onClick={handleLogout}>
                 Выйти
               </Button>
+              <Link to="/profile" className="text-gray-700 hover:text-blue-600">Профиль</Link>
             </div>
           ) : (
             <div className="flex space-x-2">

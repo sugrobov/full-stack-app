@@ -6,6 +6,7 @@ import { PersistGate } from 'redux-persist/integration/react'
 import './index.css'
 import App from './App.jsx'
 import store, { persistor } from './store/store.js'
+import './utils/axiosConfig.js'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 
 
