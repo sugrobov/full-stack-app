@@ -11,6 +11,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ProfilePage from './pages/ProfilePage';
 import CheckoutPage from './pages/CheckoutPage';
+import FavoritesPage from './pages/FavoritesPage';
 import { fetchProducts } from './store/productsSlice';
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/favorites" element={<FavoritesPage />} />
         </Routes>
       </main>
       <footer className="bg-gray-800 text-white py-6">
