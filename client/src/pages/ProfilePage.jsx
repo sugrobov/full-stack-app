@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { loadUser } from '../store/authSlice';
 import axios from 'axios';
 
@@ -16,6 +17,9 @@ const ProfilePage = () => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
+  const [searchParams] = useSearchParams();
+  const orderSuccess = searchParams.get('orderSuccess');
+
   useEffect(() => {
     if (!user) navigate('/login');
     else {
@@ -24,6 +28,14 @@ const ProfilePage = () => {
       fetchOrders();
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (orderSuccess === 'true') {
+      setMessage('Заказ успешно оформлен!');
+      // Убираем параметр из URL, не перезагружая страницу
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [orderSuccess]);
 
   const fetchOrders = async () => {
     try {
@@ -76,7 +88,7 @@ const ProfilePage = () => {
       <h1 className="text-3xl font-bold mb-8">Личный кабинет</h1>
       {message && <div className="bg-green-100 text-green-700 p-3 rounded mb-4">{message}</div>}
       {error && <div className="bg-red-100 text-red-700 p-3 rounded mb-4">{error}</div>}
-      
+
       <div className="bg-white rounded-lg shadow p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4">Редактировать профиль</h2>
         <form onSubmit={handleUpdateProfile} className="space-y-4">
@@ -113,28 +125,36 @@ const ProfilePage = () => {
           <p className="text-gray-500">У вас пока нет заказов.</p>
         ) : (
           <div className="space-y-4">
-            {orders.map(order => (
-              <div key={order.id} className="border rounded p-4">
-                <div className="flex justify-between mb-2">
-                  <span className="font-medium">Заказ №{order.id}</span>
-                  <span className="text-sm text-gray-500">{new Date(order.created_at).toLocaleDateString()}</span>
+            {orders.map(order => {
+              let itemsArray = [];
+              try {
+                itemsArray = typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []);
+              } catch (e) {
+                console.error('Ошибка парсинга заказа', order.id, e);
+                itemsArray = [];
+              }
+              return (
+                <div key={order.id} className="border rounded p-4">
+                  <div className="flex justify-between mb-2">
+                    <span className="font-medium">Заказ №{order.id}</span>
+                    <span className="text-sm text-gray-500">{new Date(order.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <div>Сумма: {order.total.toLocaleString()} ₽</div>
+                  <div>Статус: {order.status === 'pending' ? 'Оформлен' : order.status}</div>
+                  <div className="mt-2 text-sm text-gray-600">Адрес: {order.address}</div>
+                  {order.items && itemsArray.length > 0 && (
+                    <details className="mt-2">
+                      <summary className="cursor-pointer text-blue-600">Состав заказа</summary>
+                      <ul className="mt-2 pl-4">
+                        {itemsArray.map((item, idx) => (
+                          <li key={idx}>{item.name} x {item.quantity} = {item.price * item.quantity} ₽</li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
                 </div>
-                <div>Сумма: {order.total.toLocaleString()} ₽</div>
-                <div>Статус: {order.status === 'pending' ? 'Оформлен' : order.status}</div>
-                <div className="mt-2 text-sm text-gray-600">Адрес: {order.address}</div>
-                {order.items && (
-                  <details className="mt-2">
-                    <summary className="cursor-pointer text-blue-600">Состав заказа</summary>
-                    <ul className="mt-2 pl-4">
-                      // проверяем orders.items на null
-                      {order.items && JSON.parse(order.items).map((item, idx) => (
-                        <li key={idx}>{item.name} x {item.quantity} = {item.price * item.quantity} ₽</li>
-                      ))}
-                    </ul>
-                  </details>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
