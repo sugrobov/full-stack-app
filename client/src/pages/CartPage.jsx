@@ -80,10 +80,10 @@ const CartPage = () => {
                   <div key={item.id} className="p-4 flex">
                     <div className="flex-shrink-0 w-24 h-24 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
                       {firstImage ? (
-                        <img 
-                        src={firstImage} 
-                        alt={item.name} 
-                        className="w-full h-full object-cover" />
+                        <img
+                          src={firstImage}
+                          alt={item.name}
+                          className="w-full h-full object-cover" />
                       ) : (
                         <div className="text-gray-500 text-sm">Товар #{item.id}</div>
                       )}
@@ -170,9 +170,11 @@ const CartPage = () => {
               </div>
             </div>
 
-            <Button variant="primary" className="w-full py-3 font-medium">
-              Оформить заказ
-            </Button>
+            <Link to="/checkout">
+              <Button variant="primary" className="w-full py-3 font-medium">
+                Оформить заказ
+              </Button>
+            </Link>
 
             <Link
               to="/"
