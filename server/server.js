@@ -262,6 +262,113 @@ app.get('/api/auth/me', verifyToken, async (req, res) => {
   }
 });
 
+// Получить профиль пользователя
+app.get('/api/users/profile', verifyToken, async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT id, name, email, role, created_at FROM users WHERE id = ?', [req.user.userId]);
+    if (!rows.length) return res.status(404).json({ error: 'User not found' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Обновить профиль (имя, email)
+app.put('/api/users/profile', verifyToken, [
+  body('name').optional().trim().notEmpty(),
+  body('email').optional().isEmail().normalizeEmail()
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+  const { name, email } = req.body;
+  const updates = [];
+  const values = [];
+  if (name) { updates.push('name = ?'); values.push(name); }
+  if (email) {
+    // Проверим, не занят ли email другим пользователем
+    const [existing] = await db.query('SELECT id FROM users WHERE email = ? AND id != ?', [email, req.user.userId]);
+    if (existing.length) return res.status(400).json({ error: 'Email already in use' });
+    updates.push('email = ?'); values.push(email);
+  }
+  if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' });
+  values.push(req.user.userId);
+  await db.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
+  const [updated] = await db.query('SELECT id, name, email, role, created_at FROM users WHERE id = ?', [req.user.userId]);
+  res.json(updated[0]);
+});
+
+// Сменить пароль
+app.put('/api/users/password', verifyToken, [
+  body('currentPassword').notEmpty(),
+  body('newPassword').isLength({ min: 6 })
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+  const { currentPassword, newPassword } = req.body;
+  const [rows] = await db.query('SELECT password_hash FROM users WHERE id = ?', [req.user.userId]);
+  const isMatch = await bcrypt.compare(currentPassword, rows[0].password_hash);
+  if (!isMatch) return res.status(401).json({ error: 'Current password is incorrect' });
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  await db.query('UPDATE users SET password_hash = ? WHERE id = ?', [hashedPassword, req.user.userId]);
+  res.json({ message: 'Password updated successfully' });
+});
+
+// Получить историю заказов
+app.get('/api/users/orders', verifyToken, async (req, res) => {
+  try {
+    const orders = await db.query(`
+      SELECT o.*,
+        (SELECT JSON_ARRAYAGG(JSON_OBJECT('product_id', oi.product_id, 'quantity', oi.quantity, 'price', oi.price, 'name', p.name))
+         FROM order_items oi
+         JOIN products p ON oi.product_id = p.id
+         WHERE oi.order_id = o.id) as items
+      FROM orders o
+      WHERE o.user_id = ?
+      ORDER BY o.created_at DESC
+    `, [req.user.userId]);
+    res.json(orders[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Создать заказ (из корзины)
+app.post('/api/orders', verifyToken, [
+  body('address').notEmpty(),
+  body('phone').optional()
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+  const { address, phone, items } = req.body;
+  if (!items || !items.length) return res.status(400).json({ error: 'Cart is empty' });
+  const total = items.reduce((sum, it) => sum + it.price * it.quantity, 0);
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [result] = await connection.query(
+      'INSERT INTO orders (user_id, total, address, phone, status) VALUES (?, ?, ?, ?, ?)',
+      [req.user.userId, total, address, phone, 'pending']
+    );
+    const orderId = result.insertId;
+    for (const item of items) {
+      await connection.query(
+        'INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)',
+        [orderId, item.productId, item.quantity, item.price]
+      );
+    }
+    await connection.commit();
+    res.status(201).json({ orderId, message: 'Order created' });
+  } catch (err) {
+    await connection.rollback();
+    console.error(err);
+    res.status(500).json({ error: 'Failed to create order' });
+  } finally {
+    connection.release();
+  }
+});
+
 app.post('/api/contact', (req, res) => {
   const { subject, message } = req.body;
   if (!subject || subject.length < 3 || !message || message.length < 10) {
