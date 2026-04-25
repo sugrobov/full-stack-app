@@ -378,4 +378,15 @@ app.post('/api/contact', (req, res) => {
   res.json({ success: true, message: 'Message sent successfully (simulated)' });
 });
 
+app.post('/api/products/by-ids', async (req, res) => {
+  const { ids } = req.body;
+  if (!ids || !ids.length) return res.json([]);
+  const placeholders = ids.map(() => '?').join(',');
+  const query = `SELECT p.*, c.name as category_name FROM products p JOIN categories c ON p.category_id = c.id WHERE p.id IN (${placeholders}) AND p.stock > 0`;
+  const [products] = await db.query(query, ids);
+  const imagesMap = await getImagesForProducts(products.map(p => p.id));
+  const result = products.map(p => ({ ...p, images: imagesMap[p.id] || [] }));
+  res.json(result);
+});
+
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
