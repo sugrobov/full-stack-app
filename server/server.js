@@ -5,7 +5,7 @@ const dotenv = require('dotenv');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
-const { generateToken, verifyToken } = require('./auth');
+const { generateToken, verifyToken, requireAdmin } = require('./auth');
 
 dotenv.config();
 
@@ -387,6 +387,140 @@ app.post('/api/products/by-ids', async (req, res) => {
   const imagesMap = await getImagesForProducts(products.map(p => p.id));
   const result = products.map(p => ({ ...p, images: imagesMap[p.id] || [] }));
   res.json(result);
+});
+
+// ==================== АДМИН-ПАНЕЛЬ (только для админов) ====================
+
+// Получить все товары (без фильтра stock)
+app.get('/api/admin/products', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const [products] = await db.query('SELECT * FROM products ORDER BY id');
+    const imagesMap = await getImagesForProducts(products.map(p => p.id));
+    const result = products.map(p => ({ ...p, images: imagesMap[p.id] || [] }));
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// Создать товар
+app.post('/api/admin/products', verifyToken, requireAdmin, async (req, res) => {
+  const { name, category_id, price, discount_price, rating, stock, description, images } = req.body;
+  try {
+    const [result] = await db.query(
+      'INSERT INTO products (name, category_id, price, discount_price, rating, stock, description) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [name, category_id, price, discount_price || null, rating || null, stock, description]
+    );
+    const productId = result.insertId;
+    if (images && images.length) {
+      for (let i = 0; i < images.length; i++) {
+        await db.query('INSERT INTO product_images (product_id, image_url, sort_order) VALUES (?, ?, ?)', [productId, images[i], i]);
+      }
+    }
+    res.status(201).json({ id: productId, name, category_id, price, discount_price, rating, stock, description, images });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to create product' });
+  }
+});
+
+// Обновить товар
+app.put('/api/admin/products/:id', verifyToken, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { name, category_id, price, discount_price, rating, stock, description } = req.body;
+  try {
+    await db.query(
+      'UPDATE products SET name=?, category_id=?, price=?, discount_price=?, rating=?, stock=?, description=? WHERE id=?',
+      [name, category_id, price, discount_price, rating, stock, description, id]
+    );
+    res.json({ message: 'Product updated' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update product' });
+  }
+});
+
+// Удалить товар (каскадное удаление изображений)
+app.delete('/api/admin/products/:id', verifyToken, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    await db.query('DELETE FROM product_images WHERE product_id = ?', [id]);
+    await db.query('DELETE FROM products WHERE id = ?', [id]);
+    res.json({ message: 'Product deleted' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete product' });
+  }
+});
+
+// Получить все заказы (с данными пользователя)
+app.get('/api/admin/orders', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const [orders] = await db.query(`
+      SELECT o.*, u.name as user_name, u.email as user_email
+      FROM orders o
+      JOIN users u ON o.user_id = u.id
+      ORDER BY o.created_at DESC
+    `);
+    for (let order of orders) {
+      const [items] = await db.query(`
+        SELECT oi.*, p.name
+        FROM order_items oi
+        JOIN products p ON oi.product_id = p.id
+        WHERE oi.order_id = ?
+      `, [order.id]);
+      order.items = items;
+    }
+    res.json(orders);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// Обновить статус заказа
+app.put('/api/admin/orders/:id/status', verifyToken, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  const allowed = ['pending', 'paid', 'shipped', 'delivered', 'cancelled'];
+  if (!allowed.includes(status)) {
+    return res.status(400).json({ error: 'Invalid status' });
+  }
+  try {
+    await db.query('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
+    res.json({ message: 'Order status updated' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update status' });
+  }
+});
+
+// Получить всех пользователей
+app.get('/api/admin/users', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const [users] = await db.query('SELECT id, name, email, role, created_at FROM users ORDER BY id');
+    res.json(users);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// Обновить роль пользователя
+app.put('/api/admin/users/:id/role', verifyToken, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { role } = req.body;
+  if (!['user', 'admin'].includes(role)) {
+    return res.status(400).json({ error: 'Invalid role' });
+  }
+  try {
+    await db.query('UPDATE users SET role = ? WHERE id = ?', [role, id]);
+    res.json({ message: 'User role updated' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update role' });
+  }
 });
 
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));

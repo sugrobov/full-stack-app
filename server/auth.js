@@ -21,4 +21,12 @@ const verifyToken = (req, res, next) => {
   }
 };
 
-module.exports = { generateToken, verifyToken };
+// Новая middleware для проверки роли администратора
+const requireAdmin = (req, res, next) => {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Access denied. Admin only.' });
+  }
+  next();
+};
+
+module.exports = { generateToken, verifyToken, requireAdmin };
