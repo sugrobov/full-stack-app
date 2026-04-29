@@ -18,6 +18,7 @@ import AdminProducts from './pages/Admin/AdminProducts';
 import AdminOrders from './pages/Admin/AdminOrders';
 import AdminUsers from './pages/Admin/AdminUsers';
 import { fetchProducts } from './store/productsSlice';
+import routes  from './routes';
 
 function App() {
   const dispatch = useDispatch();
@@ -31,22 +32,11 @@ function App() {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
       <main className="flex-grow">
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/product/:id" element={<ProductPage />} />
-          <Route path="/cart" element={<CartPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/favorites" element={<FavoritesPage />} />
-          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-          <Route path="/admin/products" element={<AdminRoute><AdminProducts /></AdminRoute>} />
-          <Route path="/admin/orders" element={<AdminRoute><AdminOrders /></AdminRoute>} />
-          <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
-        </Routes>
+<Routes>
+  {routes.map(route => (
+    <Route key={route.path} path={route.path} element={route.element} />
+  ))}
+</Routes>
       </main>
       <footer className="bg-gray-800 text-white py-6">
         <div className="container mx-auto px-4 text-center">
