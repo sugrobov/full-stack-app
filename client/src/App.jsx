@@ -12,6 +12,9 @@ import Register from './pages/Register';
 import ProfilePage from './pages/ProfilePage';
 import CheckoutPage from './pages/CheckoutPage';
 import FavoritesPage from './pages/FavoritesPage';
+import AdminRoute from './components/AdminRoute';
+// import AdminDashboard from './pages/Admin/AdminDashboard';
+import AdminProducts from './pages/Admin/AdminProducts';
 import { fetchProducts } from './store/productsSlice';
 
 function App() {
@@ -37,6 +40,8 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/favorites" element={<FavoritesPage />} />
+          {/* <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} /> */}
+          <Route path="/admin/products" element={<AdminRoute><AdminProducts /></AdminRoute>} />
         </Routes>
       </main>
       <footer className="bg-gray-800 text-white py-6">
