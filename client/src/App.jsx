@@ -13,8 +13,10 @@ import ProfilePage from './pages/ProfilePage';
 import CheckoutPage from './pages/CheckoutPage';
 import FavoritesPage from './pages/FavoritesPage';
 import AdminRoute from './components/AdminRoute';
-// import AdminDashboard from './pages/Admin/AdminDashboard';
+import AdminDashboard from './pages/Admin/AdminDashboard';
 import AdminProducts from './pages/Admin/AdminProducts';
+import AdminOrders from './pages/Admin/AdminOrders';
+import AdminUsers from './pages/Admin/AdminUsers';
 import { fetchProducts } from './store/productsSlice';
 
 function App() {
@@ -40,8 +42,10 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/favorites" element={<FavoritesPage />} />
-          {/* <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} /> */}
+          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/admin/products" element={<AdminRoute><AdminProducts /></AdminRoute>} />
+          <Route path="/admin/orders" element={<AdminRoute><AdminOrders /></AdminRoute>} />
+          <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
         </Routes>
       </main>
       <footer className="bg-gray-800 text-white py-6">
