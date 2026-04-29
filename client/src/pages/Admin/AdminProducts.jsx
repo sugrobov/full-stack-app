@@ -7,6 +7,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 const AdminProducts = () => {
   const { token } = useSelector(state => state.auth);
   const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -21,10 +22,20 @@ const AdminProducts = () => {
     images: []
   });
 
+  // Состояния фильтров
+  const [search, setSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+
   useEffect(() => {
     fetchProducts();
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [products, search, selectedCategory, minPrice, maxPrice]);
 
   const fetchProducts = async () => {
     try {
@@ -42,16 +53,29 @@ const AdminProducts = () => {
   const fetchCategories = async () => {
     try {
       const res = await axios.get(`${API_URL}/categories`);
-      if (Array.isArray(res.data)) {
-        setCategories(res.data);
-      } else {
-        console.error('Категории не массив:', res.data);
-        setCategories([]);
-      }
+      setCategories(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error('Ошибка загрузки категорий:', err);
-      setCategories([]);
     }
+  };
+
+  const applyFilters = () => {
+    let filtered = [...products];
+    if (search) {
+      filtered = filtered.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
+    }
+    if (selectedCategory) {
+      filtered = filtered.filter(p => p.category_id === parseInt(selectedCategory));
+    }
+    if (minPrice) {
+      const min = parseFloat(minPrice);
+      filtered = filtered.filter(p => (p.discount_price || p.price) >= min);
+    }
+    if (maxPrice) {
+      const max = parseFloat(maxPrice);
+      filtered = filtered.filter(p => (p.discount_price || p.price) <= max);
+    }
+    setFilteredProducts(filtered);
   };
 
   const handleInputChange = (e) => {
@@ -105,13 +129,20 @@ const AdminProducts = () => {
     }
   };
 
+  const resetFilters = () => {
+    setSearch('');
+    setSelectedCategory('');
+    setMinPrice('');
+    setMaxPrice('');
+  };
+
   if (loading) return <div className="text-center py-8">Загрузка...</div>;
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Управление товарами</h1>
 
-      {/* Форма */}
+      {/* Форма добавления/редактирования */}
       <div className="bg-white rounded-lg shadow p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4">{editingProduct ? 'Редактировать товар' : 'Добавить товар'}</h2>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -136,6 +167,25 @@ const AdminProducts = () => {
         </form>
       </div>
 
+      {/* Фильтры */}
+      <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <h2 className="text-xl font-semibold mb-4">Фильтры</h2>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <input type="text" placeholder="Поиск по названию" value={search} onChange={(e) => setSearch(e.target.value)} className="border p-2 rounded" />
+          <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="border p-2 rounded">
+            <option value="">Все категории</option>
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
+          <input type="number" placeholder="Цена от (₽)" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} className="border p-2 rounded" />
+          <input type="number" placeholder="Цена до (₽)" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className="border p-2 rounded" />
+        </div>
+        <div className="mt-4">
+          <button onClick={resetFilters} className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Сбросить фильтры</button>
+        </div>
+      </div>
+
       {/* Таблица товаров */}
       <div className="bg-white rounded-lg shadow overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
@@ -152,7 +202,7 @@ const AdminProducts = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {products.map(product => (
+            {filteredProducts.map(product => (
               <tr key={product.id}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.id}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.name}</td>
@@ -162,8 +212,8 @@ const AdminProducts = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.rating || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.stock}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button onClick={() => handleEdit(product)} className="text-blue-600 hover:text-blue-900 mr-4">Редактировать</button>
-                  <button onClick={() => handleDelete(product.id)} className="text-red-600 hover:text-red-900">Удалить</button>
+                  <button onClick={() => handleEdit(product)} className="text-blue-600 hover:text-blue-900 mr-4">Ред.</button>
+                  <button onClick={() => handleDelete(product.id)} className="text-red-600 hover:text-red-900">Уд.</button>
                 </td>
               </tr>
             ))}
