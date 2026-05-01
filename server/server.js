@@ -565,8 +565,8 @@ app.post('/api/products/:id/reviews', verifyToken, [
     await db.query('UPDATE products SET rating = ? WHERE id = ?', [avgRating, productId]);
     res.status(201).json({ message: 'Review added' });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to add review' });
+    console.error('Error adding review:', err);
+    res.status(500).json({ error: 'Failed to add review', details: err.message });
   }
 });
 
