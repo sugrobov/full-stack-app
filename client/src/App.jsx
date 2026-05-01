@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import Header from './components/Header';
-import HomePage from './pages/HomePage';
+/* import HomePage from './pages/HomePage';
 import ProductPage from './pages/ProductPage';
 import CartPage from './pages/CartPage';
 import ContactPage from './pages/ContactPage';
@@ -16,7 +16,7 @@ import AdminRoute from './components/AdminRoute';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import AdminProducts from './pages/Admin/AdminProducts';
 import AdminOrders from './pages/Admin/AdminOrders';
-import AdminUsers from './pages/Admin/AdminUsers';
+import AdminUsers from './pages/Admin/AdminUsers'; */
 import { fetchProducts } from './store/productsSlice';
 import routes  from './routes';
 

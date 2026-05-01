@@ -13,6 +13,7 @@ import AdminDashboard from '../pages/Admin/AdminDashboard';
 import AdminProducts from '../pages/Admin/AdminProducts';
 import AdminOrders from '../pages/Admin/AdminOrders';
 import AdminUsers from '../pages/Admin/AdminUsers';
+import AdminReviews from '../pages/Admin/AdminReviews';
 
 const routes = [
   { path: '/', element: <HomePage /> },
@@ -29,6 +30,7 @@ const routes = [
   { path: '/admin/products', element: <AdminRoute><AdminProducts /></AdminRoute> },
   { path: '/admin/orders', element: <AdminRoute><AdminOrders /></AdminRoute> },
   { path: '/admin/users', element: <AdminRoute><AdminUsers /></AdminRoute> },
+  { path:'/admin/reviews', element: <AdminRoute><AdminReviews /></AdminRoute>},
 ];
 
 export default routes;

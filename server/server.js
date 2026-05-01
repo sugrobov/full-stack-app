@@ -523,6 +523,110 @@ app.put('/api/admin/users/:id/role', verifyToken, requireAdmin, async (req, res)
   }
 });
 
+// ==================== АДМИН-ПАНЕЛЬ: УПРАВЛЕНИЕ ОТЗЫВАМИ ====================
+
+// Получить все отзывы (с фильтрацией, пагинацией)
+app.get('/api/admin/reviews', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    let { page = 1, limit = 20, productId, userId, minRating, maxRating, search, is_approved } = req.query;
+    page = parseInt(page); limit = parseInt(limit);
+    const offset = (page - 1) * limit;
+
+    let whereClauses = [];
+    let params = [];
+
+    if (productId) {
+      whereClauses.push('r.product_id = ?');
+      params.push(productId);
+    }
+    if (userId) {
+      whereClauses.push('r.user_id = ?');
+      params.push(userId);
+    }
+    if (minRating) {
+      whereClauses.push('r.rating >= ?');
+      params.push(minRating);
+    }
+    if (maxRating) {
+      whereClauses.push('r.rating <= ?');
+      params.push(maxRating);
+    }
+    if (search) {
+      whereClauses.push('(p.name LIKE ? OR u.name LIKE ? OR u.email LIKE ? OR r.comment LIKE ?)');
+      const like = `%${search}%`;
+      params.push(like, like, like, like);
+    }
+
+     // Фильтр по одобренным отзывам
+    if (is_approved !== undefined && is_approved !== '') { // проверяем, что is_approved не пустое
+      whereClauses.push('r.is_approved = ?');
+      params.push(parseInt(is_approved));
+    }
+    // ================================================
+
+    const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+    const query = `
+      SELECT r.*, u.name as user_name, u.email as user_email, p.name as product_name
+      FROM reviews r
+      JOIN users u ON r.user_id = u.id
+      JOIN products p ON r.product_id = p.id
+      ${whereSql}
+      ORDER BY r.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+    params.push(limit, offset);
+    const [reviews] = await db.query(query, params);
+
+    // Подсчёт общего количества для пагинации
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM reviews r
+      JOIN users u ON r.user_id = u.id
+      JOIN products p ON r.product_id = p.id
+      ${whereSql}
+    `;
+    const [countResult] = await db.query(countQuery, params.slice(0, -2)); // убираем limit, offset
+    const total = countResult[0].total;
+
+    res.json({
+      reviews,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        totalItems: total
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// Удалить отзыв (админ) с пересчётом среднего рейтинга
+app.delete('/api/admin/reviews/:id', verifyToken, requireAdmin, async (req, res) => {
+  const reviewId = parseInt(req.params.id);
+  if (isNaN(reviewId)) return res.status(400).json({ error: 'Invalid review ID' });
+  try {
+    // Сначала получаем product_id отзыва
+    const [review] = await db.query('SELECT product_id FROM reviews WHERE id = ?', [reviewId]);
+    if (!review.length) return res.status(404).json({ error: 'Review not found' });
+    const productId = review[0].product_id;
+
+    // Удаляем отзыв
+    await db.query('DELETE FROM reviews WHERE id = ?', [reviewId]);
+
+    // Пересчитываем средний рейтинг для товара (только по одобренным отзывам)
+    const [avgResult] = await db.query('SELECT AVG(rating) as avg_rating FROM reviews WHERE product_id = ? AND is_approved = 1', [productId]);
+    const avgRating = avgResult[0].avg_rating ? parseFloat(avgResult[0].avg_rating).toFixed(1) : 0;
+    await db.query('UPDATE products SET rating = ? WHERE id = ?', [avgRating, productId]);
+
+    res.json({ message: 'Review deleted and product rating updated' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete review' });
+  }
+});
+
 // ==================== ОТЗЫВЫ ====================
 
 // Получить отзывы для товара
@@ -537,7 +641,7 @@ app.get('/api/products/:id/reviews', async (req, res) => {
       SELECT r.*, u.name as user_name
       FROM reviews r
       JOIN users u ON r.user_id = u.id
-      WHERE r.product_id = ?
+      WHERE r.product_id = ? AND r.is_approved = 1
       ORDER BY r.created_at DESC
       LIMIT ? OFFSET ?
     `, [productId, limit, offset]);
@@ -603,6 +707,76 @@ app.delete('/api/reviews/:id', verifyToken, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to delete review' });
+  }
+});
+
+// ==================== УПРАВЛЕНИЕ ОТЗЫВАМИ ====================
+
+// Массовое удаление
+app.delete('/api/admin/reviews/bulk', verifyToken, requireAdmin, async (req, res) => {
+  const { ids } = req.body;
+  if (!ids || !ids.length) return res.status(400).json({ error: 'No review IDs provided' });
+  const placeholders = ids.map(() => '?').join(',');
+  try {
+    const [reviews] = await db.query(`SELECT product_id FROM reviews WHERE id IN (${placeholders})`, ids);
+    const productIds = [...new Set(reviews.map(r => r.product_id))];
+    await db.query(`DELETE FROM reviews WHERE id IN (${placeholders})`, ids);
+    for (const pid of productIds) {
+      const [avgResult] = await db.query('SELECT AVG(rating) as avg_rating FROM reviews WHERE product_id = ? AND is_approved = 1', [pid]);
+      const avgRating = avgResult[0].avg_rating ? parseFloat(avgResult[0].avg_rating).toFixed(1) : 0;
+      await db.query('UPDATE products SET rating = ? WHERE id = ?', [avgRating, pid]);
+    }
+    res.json({ message: `${ids.length} reviews deleted` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete reviews' });
+  }
+});
+
+// Редактирование отзыва
+app.put('/api/admin/reviews/:id', verifyToken, requireAdmin, async (req, res) => {
+  const reviewId = parseInt(req.params.id);
+  if (isNaN(reviewId)) return res.status(400).json({ error: 'Invalid review ID' });
+  const { rating, comment, is_approved } = req.body;
+  if (rating !== undefined && (rating < 1 || rating > 5)) return res.status(400).json({ error: 'Rating must be 1-5' });
+  try {
+    const [old] = await db.query('SELECT product_id FROM reviews WHERE id = ?', [reviewId]);
+    if (!old.length) return res.status(404).json({ error: 'Review not found' });
+    const productId = old[0].product_id;
+    const updates = [], values = [];
+    if (rating !== undefined) { updates.push('rating = ?'); values.push(rating); }
+    if (comment !== undefined) { updates.push('comment = ?'); values.push(comment); }
+    if (is_approved !== undefined) { updates.push('is_approved = ?'); values.push(is_approved); }
+    if (!updates.length) return res.status(400).json({ error: 'No fields to update' });
+    values.push(reviewId);
+    await db.query(`UPDATE reviews SET ${updates.join(', ')} WHERE id = ?`, values);
+    const [avgResult] = await db.query('SELECT AVG(rating) as avg_rating FROM reviews WHERE product_id = ? AND is_approved = 1', [productId]);
+    const avgRating = avgResult[0].avg_rating ? parseFloat(avgResult[0].avg_rating).toFixed(1) : 0;
+    await db.query('UPDATE products SET rating = ? WHERE id = ?', [avgRating, productId]);
+    res.json({ message: 'Review updated' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update review' });
+  }
+});
+
+// Переключение одобрения
+app.patch('/api/admin/reviews/:id/toggle-approve', verifyToken, requireAdmin, async (req, res) => {
+  const reviewId = parseInt(req.params.id);
+  if (isNaN(reviewId)) return res.status(400).json({ error: 'Invalid review ID' });
+  try {
+    const [review] = await db.query('SELECT is_approved, product_id FROM reviews WHERE id = ?', [reviewId]);
+    if (!review.length) return res.status(404).json({ error: 'Review not found' });
+    const newStatus = review[0].is_approved === 1 ? 0 : 1;
+    await db.query('UPDATE reviews SET is_approved = ? WHERE id = ?', [newStatus, reviewId]);
+    const productId = review[0].product_id;
+    const [avgResult] = await db.query('SELECT AVG(rating) as avg_rating FROM reviews WHERE product_id = ? AND is_approved = 1', [productId]);
+    const avgRating = avgResult[0].avg_rating ? parseFloat(avgResult[0].avg_rating).toFixed(1) : 0;
+    await db.query('UPDATE products SET rating = ? WHERE id = ?', [avgRating, productId]);
+    res.json({ message: `Review ${newStatus === 1 ? 'approved' : 'hidden'}` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to toggle approval' });
   }
 });
 

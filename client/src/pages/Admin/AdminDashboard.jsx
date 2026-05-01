@@ -18,6 +18,10 @@ const AdminDashboard = () => {
           <h2 className="text-xl font-semibold mb-2">Пользователи</h2>
           <p className="text-gray-600">Управление ролями пользователей</p>
         </Link>
+        <Link to="/admin/reviews" className="block p-6 bg-white rounded-lg shadow hover:shadow-lg transition">
+          <h2 className="text-xl font-semibold mb-2">Отзывы</h2>
+          <p className="text-gray-600">Управление отзывами пользователей</p>
+        </Link>
       </div>
     </div>
   );
