@@ -4,7 +4,7 @@ import { useDispatch } from 'react-redux';
 import { addToCart } from '../store/cartSlice';
 import Button from './UI/Button';
 
-const ProductCard = ({ product }) => {
+const ProductCard =  React.memo(({ product }) => {
   const dispatch = useDispatch();
   // Берём первое изображение: из массива images или из поля image
   const imageUrl = product.images?.[0] || product.image || null;
@@ -110,6 +110,6 @@ const ProductCard = ({ product }) => {
       </div>
     </div>
   );
-};
+});
 
 export default ProductCard;
