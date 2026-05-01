@@ -7,6 +7,7 @@ import { fetchProductById } from '../store/productsSlice';
 import Button from '../components/UI/Button';
 import Breadcrumb from '../components/Breadcrumb';
 import ProductPageSkeleton from '../components/ProductPageSkeleton';
+import Reviews from '../components/Reviews';
 
 const ProductPage = () => {
   const { id } = useParams();
@@ -248,6 +249,7 @@ const ProductPage = () => {
                 {isFavorite ? 'В избранном' : 'В избранное'}
               </Button>
             </div>
+            <Reviews productId={product.id} />
           </div>
         </div>
       </div>

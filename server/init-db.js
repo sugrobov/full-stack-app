@@ -68,6 +68,20 @@ const createOrderItemsTable = `
   )
 `;
 
+const createReviewsTable = `
+  CREATE TABLE IF NOT EXISTS reviews (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    user_id INT NOT NULL,
+    rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    comment TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  )
+`;
+
 const getRandomProductImage = (productId, imageIndex) => {
   const categoryId = Math.floor(productId / 100);
   return `/images/category${categoryId}/product${productId}_image${imageIndex + 1}.jpg`;
@@ -107,7 +121,7 @@ const createTables = () => {
     )
   `;
 
-  // Создаём таблицы
+  // Создаём таблицы последовательно
   db.query(createCategoriesTable, (err) => {
     if (err) throw err;
     console.log('Categories table ready');
@@ -126,7 +140,11 @@ const createTables = () => {
             db.query(createOrderItemsTable, (err) => {
               if (err) throw err;
               console.log('Order items table ready');
-              insertSampleData();
+              db.query(createReviewsTable, (err) => {
+                if (err) throw err;
+                console.log('Reviews table ready');
+                insertSampleData();
+              });
             });
           });
         });

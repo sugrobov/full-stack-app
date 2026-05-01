@@ -523,4 +523,75 @@ app.put('/api/admin/users/:id/role', verifyToken, requireAdmin, async (req, res)
   }
 });
 
+// ==================== ОТЗЫВЫ ====================
+
+// Получить отзывы для товара
+app.get('/api/products/:id/reviews', async (req, res) => {
+  try {
+    const productId = parseInt(req.params.id);
+    if (isNaN(productId)) return res.status(400).json({ error: 'Invalid product ID' });
+    const [reviews] = await db.query(`
+      SELECT r.*, u.name as user_name
+      FROM reviews r
+      JOIN users u ON r.user_id = u.id
+      WHERE r.product_id = ?
+      ORDER BY r.created_at DESC
+    `, [productId]);
+    res.json(reviews);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// Добавить отзыв (только авторизованные)
+app.post('/api/products/:id/reviews', verifyToken, [
+  body('rating').isInt({ min: 1, max: 5 }),
+  body('comment').optional().trim()
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+  const productId = parseInt(req.params.id);
+  if (isNaN(productId)) return res.status(400).json({ error: 'Invalid product ID' });
+  const { rating, comment } = req.body;
+  try {
+    await db.query(
+      'INSERT INTO reviews (product_id, user_id, rating, comment) VALUES (?, ?, ?, ?)',
+      [productId, req.user.userId, rating, comment || null]
+    );
+    // Обновить средний рейтинг товара
+    const [avgResult] = await db.query('SELECT AVG(rating) as avg_rating FROM reviews WHERE product_id = ?', [productId]);
+    const avgRating = parseFloat(avgResult[0].avg_rating).toFixed(1);
+    await db.query('UPDATE products SET rating = ? WHERE id = ?', [avgRating, productId]);
+    res.status(201).json({ message: 'Review added' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to add review' });
+  }
+});
+
+// Удалить отзыв (автор или админ)
+app.delete('/api/reviews/:id', verifyToken, async (req, res) => {
+  const reviewId = parseInt(req.params.id);
+  if (isNaN(reviewId)) return res.status(400).json({ error: 'Invalid review ID' });
+  try {
+    const [review] = await db.query('SELECT user_id FROM reviews WHERE id = ?', [reviewId]);
+    if (!review.length) return res.status(404).json({ error: 'Review not found' });
+    const isAuthor = review[0].user_id === req.user.userId;
+    const isAdmin = req.user.role === 'admin';
+    if (!isAuthor && !isAdmin) {
+      return res.status(403).json({ error: 'Not allowed' });
+    }
+    await db.query('DELETE FROM reviews WHERE id = ?', [reviewId]);
+    // Пересчитать рейтинг после удаления
+    const [avgResult] = await db.query('SELECT AVG(rating) as avg_rating FROM reviews WHERE product_id = (SELECT product_id FROM reviews WHERE id = ?)', [reviewId]);
+    const avgRating = avgResult[0].avg_rating ? parseFloat(avgResult[0].avg_rating).toFixed(1) : 0;
+    await db.query('UPDATE products SET rating = ? WHERE id = (SELECT product_id FROM reviews WHERE id = ?)', [avgRating, reviewId]);
+    res.json({ message: 'Review deleted' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete review' });
+  }
+});
+
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
