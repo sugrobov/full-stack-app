@@ -83,7 +83,9 @@ const CartPage = () => {
                         <img
                           src={firstImage}
                           alt={item.name}
-                          className="w-full h-full object-cover" />
+                          className="w-full h-full object-cover" 
+                          loading="lazy"
+                          />
                       ) : (
                         <div className="text-gray-500 text-sm">Товар #{item.id}</div>
                       )}

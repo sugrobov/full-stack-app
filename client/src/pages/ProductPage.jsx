@@ -110,6 +110,7 @@ const ProductPage = () => {
                     src={currentImage}
                     alt={`${product.name} - изображение ${currentImageIndex + 1}`}
                     className="max-w-full h-auto rounded-lg object-contain max-h-96"
+                    loading="lazy"
                     onError={() => handleImageError(currentImage)}
                   />
                 ) : (
@@ -159,6 +160,7 @@ const ProductPage = () => {
                         src={img}
                         alt={`Миниатюра ${index + 1}`}
                         className="w-full h-full object-cover"
+                        loading="lazy"
                         onError={() => handleImageError(img)}
                       />
                     ) : (
