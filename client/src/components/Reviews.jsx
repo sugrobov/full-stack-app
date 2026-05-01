@@ -12,20 +12,49 @@ const Reviews = ({ productId }) => {
   const [comment, setComment] = useState('');
   const [error, setError] = useState('');
 
+    // ---------- СОСТОЯНИЯ ДЛЯ ПАГИНАЦИИ И СРЕДНЕГО РЕЙТИНГА ----------
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [avgRating, setAvgRating] = useState(null);
+  // --------------------------------------------------------------------
+
   useEffect(() => {
     fetchReviews();
-  }, [productId]);
+    fetchAvgRating();
+  }, [productId, page]);
 
+  // ---------- запрос с параметрами page и limit ----------
   const fetchReviews = async () => {
+    setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/products/${productId}/reviews`);
-      setReviews(res.data);
+const res = await axios.get(`${API_URL}/products/${productId}/reviews?page=${page}&limit=5`);
+      setReviews(res.data.reviews);
+      setTotalPages(res.data.pagination.totalPages);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
+
+  // ---------- получение среднего рейтинга ----------
+  const fetchAvgRating = async () => {
+    try {
+      // Запрос без пагинации, чтобы посчитать среднее
+      const res = await axios.get(`${API_URL}/products/${productId}/reviews?limit=1000`);
+      const allReviews = res.data.reviews;
+      if (allReviews.length === 0) {
+        setAvgRating(null);
+        return;
+      }
+      const sum = allReviews.reduce((acc, r) => acc + r.rating, 0);
+      const avg = (sum / allReviews.length).toFixed(1);
+      setAvgRating(avg);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  // ------------------------------------------------------------------
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -40,7 +69,9 @@ const Reviews = ({ productId }) => {
       });
       setRating(5);
       setComment('');
-      fetchReviews();
+      setPage(1); // сброс страницы при отправке нового отзыва
+      fetchReviews(); // обновление списка отзывов
+      fetchAvgRating(); // обновление среднего рейтинга
     } catch (err) {
       setError(err.response?.data?.error || 'Ошибка отправки отзыва');
     }
@@ -52,20 +83,37 @@ const Reviews = ({ productId }) => {
       await axios.delete(`${API_URL}/reviews/${reviewId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      fetchReviews();
+      fetchReviews(); // обновление списка отзывов
+      fetchAvgRating(); // обновление среднего рейтинга
     } catch (err) {
       console.error(err);
     }
   };
 
-  if (loading) return <div className="text-center py-4">Загрузка отзывов...</div>;
+    if (loading && reviews.length === 0) return <div className="text-center py-4">Загрузка отзывов...</div>;
 
   return (
     <div className="mt-8">
-      <h2 className="text-2xl font-bold mb-4">Отзывы</h2>
-      {reviews.length === 0 && (
-        <p className="text-gray-500 mb-4">Пока нет отзывов. Будьте первым!</p>
+      <h2 className="text-2xl font-bold mb-2">Отзывы</h2>
+
+      {/* ---------- отображение среднего рейтинга ---------- */}
+      {avgRating && (
+        <div className="flex items-center mb-4">
+          <span className="mr-2 font-semibold">Средний рейтинг:</span>
+          <div className="flex">
+            {[...Array(5)].map((_, i) => (
+              <svg key={i} className={`w-5 h-5 ${i < Math.floor(avgRating) ? 'text-yellow-400 fill-current' : 'text-gray-300 fill-current'}`} viewBox="0 0 20 20">
+                <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+              </svg>
+            ))}
+          </div>
+          <span className="ml-2 text-gray-600">{avgRating} / 5</span>
+        </div>
       )}
+      {/* ----------------------------------------------------------- */}
+
+      {reviews.length === 0 && <p className="text-gray-500 mb-4">Пока нет отзывов. Будьте первым!</p>}
+
       <div className="space-y-4 mb-8">
         {reviews.map(review => (
           <div key={review.id} className="border rounded-lg p-4">
@@ -91,6 +139,24 @@ const Reviews = ({ productId }) => {
           </div>
         ))}
       </div>
+
+      {/* ---------- ПАГИНАЦИЯ ---------- */}
+      {totalPages > 1 && (
+        <div className="flex justify-center space-x-2 mb-6">
+          <button
+            disabled={page === 1}
+            onClick={() => setPage(p => p - 1)}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+          >←</button>
+          <span className="px-3 py-1">Стр. {page} из {totalPages}</span>
+          <button
+            disabled={page === totalPages}
+            onClick={() => setPage(p => p + 1)}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+          >→</button>
+        </div>
+      )}
+      {/* ----------------------------------------- */}
 
       {user ? (
         <form onSubmit={handleSubmit} className="border-t pt-6">
@@ -121,6 +187,7 @@ const Reviews = ({ productId }) => {
       )}
     </div>
   );
+
 };
 
 export default Reviews;

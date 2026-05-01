@@ -530,14 +530,26 @@ app.get('/api/products/:id/reviews', async (req, res) => {
   try {
     const productId = parseInt(req.params.id);
     if (isNaN(productId)) return res.status(400).json({ error: 'Invalid product ID' });
+    let { page = 1, limit = 5 } = req.query;
+    page = parseInt(page); limit = parseInt(limit);
+    const offset = (page - 1) * limit;
     const [reviews] = await db.query(`
       SELECT r.*, u.name as user_name
       FROM reviews r
       JOIN users u ON r.user_id = u.id
       WHERE r.product_id = ?
       ORDER BY r.created_at DESC
-    `, [productId]);
-    res.json(reviews);
+      LIMIT ? OFFSET ?
+    `, [productId, limit, offset]);
+    const [[{ total }]] = await db.query('SELECT COUNT(*) as total FROM reviews WHERE product_id = ?', [productId]);
+    res.json({
+      reviews,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        totalItems: total
+      }
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Database error' });
