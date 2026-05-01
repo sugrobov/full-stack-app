@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSearchParams } from 'react-router-dom';
 import { loadUser } from '../store/authSlice';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 const ProfilePage = () => {
   const { user, token } = useSelector(state => state.auth);
@@ -56,6 +57,7 @@ const ProfilePage = () => {
       await axios.put(`${import.meta.env.VITE_API_URL}/users/profile`, { name, email }, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      toast.success('Профиль обновлён');
       dispatch(loadUser());
       setMessage('Профиль обновлён');
     } catch (err) {
@@ -75,6 +77,7 @@ const ProfilePage = () => {
       await axios.put(`${import.meta.env.VITE_API_URL}/users/password`, { currentPassword, newPassword }, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      toast.success('Пароль изменён');
       setCurrentPassword('');
       setNewPassword('');
       setMessage('Пароль изменён');

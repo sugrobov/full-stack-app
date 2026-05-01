@@ -8,6 +8,7 @@ import Button from '../components/UI/Button';
 import Breadcrumb from '../components/Breadcrumb';
 import ProductPageSkeleton from '../components/ProductPageSkeleton';
 import Reviews from '../components/Reviews';
+import toast from 'react-hot-toast';
 
 const ProductPage = () => {
   const { id } = useParams();
@@ -64,10 +65,12 @@ const ProductPage = () => {
       price: product.price,
       images: productImages,
     };
+    toast.success(`${product.name} добавлен в корзину`);
     dispatch(addToCart(cartItem));
   };
 
   const handleToggleFavorite = () => {
+    toast.success(isFavorite ? 'Удалено из избранного' : 'Добавлено в избранное');
     dispatch(toggleFavorite(parseInt(id)));
   };
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -94,6 +95,7 @@ const AdminProducts = () => {
           headers: { Authorization: `Bearer ${token}` }
         });
       }
+      toast.success(editingProduct ? 'Товар обновлён' : 'Товар добавлен');
       setEditingProduct(null);
       setFormData({ name: '', category_id: '', price: '', discount_price: '', rating: '', stock: '', description: '', images: [] });
       fetchProducts();
@@ -122,6 +124,7 @@ const AdminProducts = () => {
         await axios.delete(`${API_URL}/admin/products/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        toast.success('Товар удалён');
         fetchProducts();
       } catch (err) {
         console.error('Ошибка удаления:', err);

@@ -3,12 +3,14 @@ import { useSelector, useDispatch } from 'react-redux';
 import { removeFromCart, clearCart, increaseQuantity, decreaseQuantity } from '../store/cartSlice';
 import { Link } from 'react-router-dom';
 import Button from '../components/UI/Button';
+import toast from 'react-hot-toast';
 
 const CartPage = () => {
   const dispatch = useDispatch();
   const { items, totalAmount, totalQuantity } = useSelector(state => state.cart);
 
   const handleRemoveItem = (id) => {
+    toast.success('Товар удалён из корзины');
     dispatch(removeFromCart(id));
   };
 
@@ -21,6 +23,7 @@ const CartPage = () => {
   };
 
   const handleClearCart = () => {
+    toast.success('Корзина очищена');
     dispatch(clearCart());
   };
 

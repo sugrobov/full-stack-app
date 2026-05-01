@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../store/cartSlice';
 import Button from './UI/Button';
+import toast from 'react-hot-toast';
 
 const ProductCard =  React.memo(({ product }) => {
   const dispatch = useDispatch();
@@ -28,6 +29,7 @@ const ProductCard =  React.memo(({ product }) => {
       totalPrice: product.discount_price || product.price,
     };
     dispatch(addToCart(cartItem));
+    toast.success(`${product.name} добавлен в корзину`);
   };
 
   return (

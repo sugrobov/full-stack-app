@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { clearCart } from '../store/cartSlice';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 const CheckoutPage = () => {
   const { items, totalAmount } = useSelector(state => state.cart);
@@ -42,6 +43,7 @@ const CheckoutPage = () => {
       );
       dispatch(clearCart());
       navigate('/profile?orderSuccess=true');
+      toast.success('Заказ оформлен! Спасибо за покупку');
     } catch (err) {
       setError(err.response?.data?.error || 'Не удалось оформить заказ');
     } finally {
@@ -55,7 +57,7 @@ const CheckoutPage = () => {
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
       <h1 className="text-3xl font-bold mb-8">Оформление заказа</h1>
-      
+
       <div className="bg-white rounded-lg shadow p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4">Ваши товары</h2>
         <div className="space-y-3 mb-4">
