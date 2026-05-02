@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { formatRelativeDate } from '../utils/dateUtils';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -201,7 +202,7 @@ const AdminReviews = () => {
                     {review.is_approved ? 'Одобрен' : 'Скрыт'}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(review.created_at).toLocaleDateString()}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatRelativeDate(review.created_at)}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button onClick={() => handleEdit(review)} className="text-blue-600 hover:text-blue-900 mr-3">Ред.</button>
                   <button onClick={() => handleToggleApprove(review.id, review.is_approved)} className="text-purple-600 hover:text-purple-900 mr-3">

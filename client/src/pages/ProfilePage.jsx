@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router-dom';
 import { loadUser } from '../store/authSlice';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { formatRelativeDate } from '../utils/dateUtils';
 
 const ProfilePage = () => {
   const { user, token } = useSelector(state => state.auth);
@@ -140,7 +141,7 @@ const ProfilePage = () => {
                 <div key={order.id} className="border rounded p-4">
                   <div className="flex justify-between mb-2">
                     <span className="font-medium">Заказ №{order.id}</span>
-                    <span className="text-sm text-gray-500">{new Date(order.created_at).toLocaleDateString()}</span>
+                    <span className="text-sm text-gray-500">{formatRelativeDate(order.created_at)}</span>
                   </div>
                   <div>Сумма: {order.total.toLocaleString()} ₽</div>
                   <div>Статус: {order.status === 'pending' ? 'Оформлен' : order.status}</div>

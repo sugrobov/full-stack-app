@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
+import { formatRelativeDate } from '../utils/dateUtils';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -128,7 +129,7 @@ const res = await axios.get(`${API_URL}/products/${productId}/reviews?page=${pag
                   ))}
                 </div>
                 <p className="text-gray-700 mt-2">{review.comment}</p>
-                <div className="text-xs text-gray-400 mt-2">{new Date(review.created_at).toLocaleDateString()}</div>
+                <div className="text-xs text-gray-400 mt-2">{formatRelativeDate(review.created_at)}</div>
               </div>
               {(user?.id === review.user_id || user?.role === 'admin') && (
                 <button onClick={() => handleDelete(review.id)} className="text-red-500 hover:text-red-700 text-sm">
