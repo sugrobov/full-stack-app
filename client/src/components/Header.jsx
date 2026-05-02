@@ -1,18 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { clearCart } from '../store/cartSlice';
 import { clearFilters } from '../store/productsSlice';
 import { logout } from '../store/authSlice';
 import Button from './UI/Button';
+import ConfirmModal from './UI/ConfirmModal';   
 
 const Header = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useSelector(state => state.auth);
-
   const { totalQuantity } = useSelector(state => state.cart);
   const favorites = useSelector(state => state.favorites.items);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const handleLogout = () => {
     dispatch(clearCart());
@@ -52,10 +53,12 @@ const Header = () => {
           {user ? (
             <div className="flex items-center space-x-4">
               <span className="text-gray-700">Привет, {user.name}</span>
-              <Button variant="secondary" onClick={handleLogout}>
+              <Link to="/profile">
+                <Button variant="secondary">Профиль</Button>
+              </Link>
+              <Button variant="danger" onClick={() => setShowLogoutConfirm(true)}>
                 Выйти
               </Button>
-              <Link to="/profile" className="text-gray-700 hover:text-blue-600">Профиль</Link>
             </div>
           ) : (
             <div className="flex space-x-2">
@@ -69,6 +72,17 @@ const Header = () => {
           )}
         </nav>
       </div>
+
+      <ConfirmModal
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={() => {
+          setShowLogoutConfirm(false);
+          handleLogout();
+        }}
+        title="Подтверждение выхода"
+        message="Вы уверены, что хотите выйти из аккаунта?"
+      />
     </header>
   );
 };
