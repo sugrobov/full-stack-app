@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import axios from 'axios';
 import { formatRelativeDate } from '../utils/dateUtils';
 import ReviewSkeleton from './ReviewSkeleton';
+import Spinner from './UI/Spinner';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -14,11 +15,13 @@ const Reviews = ({ productId }) => {
   const [comment, setComment] = useState('');
   const [error, setError] = useState('');
 
-    // ---------- СОСТОЯНИЯ ДЛЯ ПАГИНАЦИИ И СРЕДНЕГО РЕЙТИНГА ----------
+  // ---------- СОСТОЯНИЯ ДЛЯ ПАГИНАЦИИ И СРЕДНЕГО РЕЙТИНГА ----------
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [avgRating, setAvgRating] = useState(null);
   // --------------------------------------------------------------------
+
+  const [submitting, setSubmitting] = useState(false);  // ---------- состояние Spinner  ----------
 
   useEffect(() => {
     fetchReviews();
@@ -29,7 +32,7 @@ const Reviews = ({ productId }) => {
   const fetchReviews = async () => {
     setLoading(true);
     try {
-const res = await axios.get(`${API_URL}/products/${productId}/reviews?page=${page}&limit=5`);
+      const res = await axios.get(`${API_URL}/products/${productId}/reviews?page=${page}&limit=5`);
       setReviews(res.data.reviews);
       setTotalPages(res.data.pagination.totalPages);
     } catch (err) {
@@ -65,17 +68,20 @@ const res = await axios.get(`${API_URL}/products/${productId}/reviews?page=${pag
       setError('Войдите, чтобы оставить отзыв');
       return;
     }
+    setSubmitting(true);
     try {
       await axios.post(`${API_URL}/products/${productId}/reviews`, { rating, comment }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRating(5);
       setComment('');
-      setPage(1); // сброс страницы при отправке нового отзыва
-      fetchReviews(); // обновление списка отзывов
-      fetchAvgRating(); // обновление среднего рейтинга
+      setPage(1);
+      fetchReviews();
+      fetchAvgRating();
     } catch (err) {
       setError(err.response?.data?.error || 'Ошибка отправки отзыва');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -93,7 +99,7 @@ const res = await axios.get(`${API_URL}/products/${productId}/reviews?page=${pag
   };
   // --- Скелетоны при первой загрузке ---
 
-    if (loading && reviews.length === 0) {
+  if (loading && reviews.length === 0) {
     return (
       <div className="mt-8">
         <h2 className="text-2xl font-bold mb-2">Отзывы</h2>
@@ -178,7 +184,7 @@ const res = await axios.get(`${API_URL}/products/${productId}/reviews?page=${pag
           <div className="mb-3">
             <label className="block text-sm font-medium mb-1">Оценка</label>
             <div className="flex space-x-2">
-              {[1,2,3,4,5].map(star => (
+              {[1, 2, 3, 4, 5].map(star => (
                 <button type="button" key={star} onClick={() => setRating(star)} className="focus:outline-none">
                   <svg className={`w-6 h-6 ${star <= rating ? 'text-yellow-400 fill-current' : 'text-gray-300 fill-current'}`} viewBox="0 0 20 20">
                     <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
@@ -192,7 +198,9 @@ const res = await axios.get(`${API_URL}/products/${productId}/reviews?page=${pag
             <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows="3" className="w-full border rounded px-3 py-2" placeholder="Ваш отзыв..."></textarea>
           </div>
           {error && <div className="text-red-500 mb-3">{error}</div>}
-          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Отправить</button>
+          <button type="submit" disabled={submitting} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center">
+            {submitting ? <Spinner size="w-5 h-5" color="border-white" /> : 'Отправить'}
+          </button>
         </form>
       ) : (
         <div className="bg-gray-100 p-4 rounded text-center">
