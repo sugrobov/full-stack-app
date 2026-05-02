@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 import { formatRelativeDate } from '../utils/dateUtils';
+import ReviewSkeleton from './ReviewSkeleton';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -90,8 +91,20 @@ const res = await axios.get(`${API_URL}/products/${productId}/reviews?page=${pag
       console.error(err);
     }
   };
+  // --- Скелетоны при первой загрузке ---
 
-    if (loading && reviews.length === 0) return <div className="text-center py-4">Загрузка отзывов...</div>;
+    if (loading && reviews.length === 0) {
+    return (
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold mb-2">Отзывы</h2>
+        <div className="space-y-4">
+          {[...Array(3)].map((_, idx) => (
+            <ReviewSkeleton key={idx} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-8">
