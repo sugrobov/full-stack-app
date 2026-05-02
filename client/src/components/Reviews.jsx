@@ -4,6 +4,7 @@ import axios from 'axios';
 import { formatRelativeDate } from '../utils/dateUtils';
 import ReviewSkeleton from './ReviewSkeleton';
 import Spinner from './UI/Spinner';
+import Button from './UI/Button';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -198,9 +199,9 @@ const Reviews = ({ productId }) => {
             <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows="3" className="w-full border rounded px-3 py-2" placeholder="Ваш отзыв..."></textarea>
           </div>
           {error && <div className="text-red-500 mb-3">{error}</div>}
-          <button type="submit" disabled={submitting} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center">
-            {submitting ? <Spinner size="w-5 h-5" color="border-white" /> : 'Отправить'}
-          </button>
+          <Button type="submit" isLoading={submitting} variant="primary">
+            Отправить
+          </Button>
         </form>
       ) : (
         <div className="bg-gray-100 p-4 rounded text-center">

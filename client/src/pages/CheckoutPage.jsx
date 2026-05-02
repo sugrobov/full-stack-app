@@ -5,6 +5,7 @@ import { clearCart } from '../store/cartSlice';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import Spinner from '../components/UI/Spinner';
+import Button from '../components/UI/Button';
 
 const CheckoutPage = () => {
   const { items, totalAmount } = useSelector(state => state.cart);
@@ -97,9 +98,9 @@ const CheckoutPage = () => {
           />
         </div>
         {error && <div className="bg-red-100 text-red-700 p-3 rounded mb-4">{error}</div>}
-        <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center">
-          {loading ? <Spinner size="w-5 h-5" color="border-white" /> : 'Подтвердить заказ'}
-        </button>
+        <Button type="submit" isLoading={loading} variant="primary" className="w-full">
+          Подтвердить заказ
+        </Button>
       </form>
     </div>
   );
