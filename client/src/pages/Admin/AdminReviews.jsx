@@ -4,6 +4,8 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { formatRelativeDate } from '../../utils/dateUtils';
 import TableSkeleton from '../../components/UI/TableSkeleton';
+import ConfirmModal from '../../components/UI/ConfirmModal';
+import Button from '../../components/UI/Button';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -24,6 +26,11 @@ const AdminReviews = () => {
     search: '',
     is_approved: ''
   });
+  // Состояния для модалки удаления
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [reviewToDelete, setReviewToDelete] = useState(null);
+
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   useEffect(() => {
     fetchReviews();
@@ -68,19 +75,9 @@ const AdminReviews = () => {
     }
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
     if (selectedIds.length === 0) return;
-    if (!window.confirm(`Удалить ${selectedIds.length} отзыв(ов)?`)) return;
-    try {
-      await axios.delete(`${API_URL}/admin/reviews/bulk`, {
-        data: { ids: selectedIds },
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setSelectedIds([]);
-      fetchReviews();
-    } catch (err) {
-      console.error('Ошибка массового удаления:', err);
-    }
+    setShowBulkDeleteConfirm(true);
   };
 
   const handleEdit = (review) => {
@@ -121,20 +118,44 @@ const AdminReviews = () => {
     setPage(1);
   };
 
-  const handleDeleteSingle = async (id) => {
-  if (!window.confirm('Удалить отзыв?')) return;
-  try {
-    await axios.delete(`${API_URL}/admin/reviews/${id}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    toast.success('Товар удалён');
-    fetchReviews();
-  } catch (err) {
-    console.error('Ошибка удаления:', err);
-  }
-};
+  // Одиночное удаление через модалку
+  const handleDeleteClick = (id) => {
+    setReviewToDelete(id);
+    setShowDeleteConfirm(true);
+  };
 
-  if (loading) return <TableSkeleton columns={9} rows={5}/>;
+  const handleConfirmDelete = async () => {
+    try {
+      await axios.delete(`${API_URL}/admin/reviews/${reviewToDelete}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Отзыв удалён');
+      fetchReviews();
+    } catch (err) {
+      console.error('Ошибка удаления:', err);
+    } finally {
+      setShowDeleteConfirm(false);
+      setReviewToDelete(null);
+    }
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    try {
+      await axios.delete(`${API_URL}/admin/reviews/bulk`, {
+        data: { ids: selectedIds },
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success(`${selectedIds.length} отзыв(ов) удалено`);
+      setSelectedIds([]);
+      fetchReviews();
+    } catch (err) {
+      console.error('Ошибка массового удаления:', err);
+    } finally {
+      setShowBulkDeleteConfirm(false);
+    }
+  };
+
+  if (loading) return <TableSkeleton columns={9} rows={5} />;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -156,8 +177,8 @@ const AdminReviews = () => {
           </select>
         </div>
         <div className="mt-4 flex gap-4">
-          <button onClick={resetFilters} className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Сбросить фильтры</button>
-          <button onClick={handleBulkDelete} disabled={selectedIds.length === 0} className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50">Удалить выбранные ({selectedIds.length})</button>
+          <Button variant="secondary" onClick={resetFilters}>Сбросить фильтры</Button>
+          <Button variant="danger" onClick={handleBulkDelete} disabled={selectedIds.length === 0}>Удалить выбранные ({selectedIds.length})</Button>
         </div>
       </div>
 
@@ -187,7 +208,7 @@ const AdminReviews = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{review.id}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{review.product_name} (ID:{review.product_id})</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{review.user_name}<br/><span className="text-xs">{review.user_email}</span></td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{review.user_name}<br /><span className="text-xs">{review.user_email}</span></td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex">
                     {[...Array(5)].map((_, i) => (
@@ -205,13 +226,13 @@ const AdminReviews = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatRelativeDate(review.created_at)}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button onClick={() => handleEdit(review)} className="text-blue-600 hover:text-blue-900 mr-3">Ред.</button>
-                  <button onClick={() => handleToggleApprove(review.id, review.is_approved)} className="text-purple-600 hover:text-purple-900 mr-3">
+                  <Button variant="ghost" size="sm" onClick={() => handleEdit(review)}>Ред.</Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleToggleApprove(review.id, review.is_approved)} className="text-purple-600 hover:text-purple-800">
                     {review.is_approved ? 'Скрыть' : 'Показать'}
-                  </button>
-                  <button onClick={() => handleDeleteSingle(review.id)} className="text-red-600 hover:text-red-900">Уд.</button>
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(review.id)} className="text-red-600 hover:text-red-800">Уд.</Button>
                 </td>
-               </tr>
+              </tr>
             ))}
           </tbody>
         </table>
@@ -220,9 +241,9 @@ const AdminReviews = () => {
       {/* Пагинация */}
       {totalPages > 1 && (
         <div className="flex justify-center space-x-2 mt-6">
-          <button disabled={page === 1} onClick={() => setPage(p => p-1)} className="px-3 py-1 border rounded disabled:opacity-50">←</button>
+          <Button variant="secondary" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>←</Button>
           <span className="px-3 py-1">Стр. {page} из {totalPages}</span>
-          <button disabled={page === totalPages} onClick={() => setPage(p => p+1)} className="px-3 py-1 border rounded disabled:opacity-50">→</button>
+          <Button variant="secondary" size="sm" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>→</Button>
         </div>
       )}
 
@@ -233,27 +254,44 @@ const AdminReviews = () => {
             <h2 className="text-xl font-bold mb-4">Редактировать отзыв</h2>
             <div className="mb-3">
               <label className="block text-sm font-medium mb-1">Рейтинг</label>
-              <select value={editForm.rating} onChange={(e) => setEditForm({...editForm, rating: parseInt(e.target.value)})} className="border p-2 rounded w-full">
-                {[1,2,3,4,5].map(r => <option key={r} value={r}>{r} звезды</option>)}
+              <select value={editForm.rating} onChange={(e) => setEditForm({ ...editForm, rating: parseInt(e.target.value) })} className="border p-2 rounded w-full">
+                {[1, 2, 3, 4, 5].map(r => <option key={r} value={r}>{r} звезды</option>)}
               </select>
             </div>
             <div className="mb-3">
               <label className="block text-sm font-medium mb-1">Комментарий</label>
-              <textarea value={editForm.comment} onChange={(e) => setEditForm({...editForm, comment: e.target.value})} rows="3" className="border p-2 rounded w-full"></textarea>
+              <textarea value={editForm.comment} onChange={(e) => setEditForm({ ...editForm, comment: e.target.value })} rows="3" className="border p-2 rounded w-full"></textarea>
             </div>
             <div className="mb-3">
               <label className="flex items-center">
-                <input type="checkbox" checked={editForm.is_approved === 1} onChange={(e) => setEditForm({...editForm, is_approved: e.target.checked ? 1 : 0})} className="mr-2" />
+                <input type="checkbox" checked={editForm.is_approved === 1} onChange={(e) => setEditForm({ ...editForm, is_approved: e.target.checked ? 1 : 0 })} className="mr-2" />
                 Одобрен
               </label>
             </div>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setEditingReview(null)} className="px-4 py-2 border rounded">Отмена</button>
-              <button onClick={handleUpdate} className="px-4 py-2 bg-blue-600 text-white rounded">Сохранить</button>
+              <Button variant="secondary" onClick={() => setEditingReview(null)}>Отмена</Button>
+              <Button variant="primary" onClick={handleUpdate}>Сохранить</Button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Модалка подтверждения удаления */}
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleConfirmDelete}
+        title="Удаление отзыва"
+        message="Вы уверены, что хотите удалить этот отзыв? Это действие необратимо."
+      />
+      {/* Модалка подтверждения массового удаления */}
+      <ConfirmModal
+        isOpen={showBulkDeleteConfirm}
+        onClose={() => setShowBulkDeleteConfirm(false)}
+        onConfirm={handleConfirmBulkDelete}
+        title="Массовое удаление отзывов"
+        message={`Вы уверены, что хотите удалить ${selectedIds.length} отзыв(ов)? Это действие необратимо.`}
+      />
     </div>
   );
 };

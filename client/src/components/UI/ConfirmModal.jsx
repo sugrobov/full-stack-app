@@ -1,4 +1,5 @@
 import React from 'react';
+import Button from './Button';
 
 // Подтверждение выхода из аккаунта
 const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => {
@@ -10,8 +11,8 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => {
         <h2 className="text-xl font-bold mb-4">{title}</h2>
         <p className="text-gray-600 mb-6">{message}</p>
         <div className="flex justify-end space-x-3">
-          <button onClick={onClose} className="px-4 py-2 border rounded hover:bg-gray-100">Отмена</button>
-          <button onClick={onConfirm} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Выйти</button>
+          <Button variant="secondary" onClick={onClose}>Отмена</Button>
+          <Button variant="danger" onClick={onConfirm}>Удалить</Button>
         </div>
       </div>
     </div>

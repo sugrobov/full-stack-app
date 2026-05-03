@@ -3,6 +3,8 @@ import { useSelector } from 'react-redux';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import TableSkeleton from '../../components/UI/TableSkeleton';
+import ConfirmModal from '../../components/UI/ConfirmModal';
+import Button from '../../components/UI/Button';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -13,6 +15,8 @@ const AdminProducts = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     category_id: '',
@@ -24,7 +28,6 @@ const AdminProducts = () => {
     images: []
   });
 
-  // Состояния фильтров
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [minPrice, setMinPrice] = useState('');
@@ -63,12 +66,8 @@ const AdminProducts = () => {
 
   const applyFilters = () => {
     let filtered = [...products];
-    if (search) {
-      filtered = filtered.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
-    }
-    if (selectedCategory) {
-      filtered = filtered.filter(p => p.category_id === parseInt(selectedCategory));
-    }
+    if (search) filtered = filtered.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
+    if (selectedCategory) filtered = filtered.filter(p => p.category_id === parseInt(selectedCategory));
     if (minPrice) {
       const min = parseFloat(minPrice);
       filtered = filtered.filter(p => (p.discount_price || p.price) >= min);
@@ -84,6 +83,13 @@ const AdminProducts = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const resetForm = () => {
+    setFormData({
+      name: '', category_id: '', price: '', discount_price: '', rating: '', stock: '', description: '', images: []
+    });
+    setEditingProduct(null);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -97,8 +103,7 @@ const AdminProducts = () => {
         });
       }
       toast.success(editingProduct ? 'Товар обновлён' : 'Товар добавлен');
-      setEditingProduct(null);
-      setFormData({ name: '', category_id: '', price: '', discount_price: '', rating: '', stock: '', description: '', images: [] });
+      resetForm();
       fetchProducts();
     } catch (err) {
       console.error('Ошибка сохранения товара:', err);
@@ -119,17 +124,23 @@ const AdminProducts = () => {
     });
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Удалить товар?')) {
-      try {
-        await axios.delete(`${API_URL}/admin/products/${id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        toast.success('Товар удалён');
-        fetchProducts();
-      } catch (err) {
-        console.error('Ошибка удаления:', err);
-      }
+  const handleDeleteClick = (id) => {
+    setProductToDelete(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await axios.delete(`${API_URL}/admin/products/${productToDelete}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Товар удалён');
+      fetchProducts();
+    } catch (err) {
+      console.error('Ошибка удаления:', err);
+    } finally {
+      setShowDeleteConfirm(false);
+      setProductToDelete(null);
     }
   };
 
@@ -146,7 +157,7 @@ const AdminProducts = () => {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Управление товарами</h1>
 
-      {/* Форма добавления/редактирования */}
+      {/* Форма */}
       <div className="bg-white rounded-lg shadow p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4">{editingProduct ? 'Редактировать товар' : 'Добавить товар'}</h2>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -163,9 +174,9 @@ const AdminProducts = () => {
           <input type="number" name="stock" placeholder="Количество" value={formData.stock} onChange={handleInputChange} className="border p-2 rounded" required />
           <textarea name="description" placeholder="Описание" value={formData.description} onChange={handleInputChange} className="border p-2 rounded md:col-span-2" rows="3"></textarea>
           <div className="md:col-span-2 flex gap-4">
-            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Сохранить</button>
+            <Button type="submit" variant="primary">Сохранить</Button>
             {editingProduct && (
-              <button type="button" onClick={() => { setEditingProduct(null); setFormData({ name: '', category_id: '', price: '', discount_price: '', rating: '', stock: '', description: '', images: [] }); }} className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">Отмена</button>
+              <Button type="button" variant="secondary" onClick={resetForm}>Отмена</Button>
             )}
           </div>
         </form>
@@ -186,23 +197,23 @@ const AdminProducts = () => {
           <input type="number" placeholder="Цена до (₽)" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className="border p-2 rounded" />
         </div>
         <div className="mt-4">
-          <button onClick={resetFilters} className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Сбросить фильтры</button>
+          <Button variant="secondary" onClick={resetFilters}>Сбросить фильтры</Button>
         </div>
       </div>
 
-      {/* Таблица товаров */}
+      {/* Таблица */}
       <div className="bg-white rounded-lg shadow overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Название</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Категория</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Цена</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Скидка</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Рейтинг</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Остаток</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Название</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Категория</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Цена</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Скидка</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Рейтинг</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Остаток</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Действия</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -216,14 +227,23 @@ const AdminProducts = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.rating || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.stock}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button onClick={() => handleEdit(product)} className="text-blue-600 hover:text-blue-900 mr-4">Ред.</button>
-                  <button onClick={() => handleDelete(product.id)} className="text-red-600 hover:text-red-900">Уд.</button>
+                  <Button variant="ghost" size="sm" onClick={() => handleEdit(product)}>Ред.</Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(product.id)} className="text-red-600">Уд.</Button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* ConfirmModal внутри return */}
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleConfirmDelete}
+        title="Удаление товара"
+        message="Вы уверены, что хотите удалить этот товар? Это действие необратимо."
+      />
     </div>
   );
 };
