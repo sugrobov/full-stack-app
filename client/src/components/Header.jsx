@@ -5,7 +5,7 @@ import { clearCart } from '../store/cartSlice';
 import { clearFilters } from '../store/productsSlice';
 import { logout } from '../store/authSlice';
 import Button from './UI/Button';
-import ConfirmModal from './UI/ConfirmModal';   
+import ConfirmModal from './UI/ConfirmModal';
 
 const Header = () => {
   const dispatch = useDispatch();
@@ -49,13 +49,15 @@ const Header = () => {
               </span>
             )}
           </Link>
-
           {user ? (
             <div className="flex items-center space-x-4">
-              <span className="text-gray-700">Привет, {user.name}</span>
-              <Link to="/profile">
-                <Button variant="secondary">Профиль</Button>
+              <Link to="/profile" className="flex items-center space-x-1 text-gray-700 hover:text-blue-600 transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span>Профиль</span>
               </Link>
+              <span className="text-gray-700">Привет, {user.name}</span>
               <Button variant="danger" onClick={() => setShowLogoutConfirm(true)}>
                 Выйти
               </Button>
@@ -63,10 +65,20 @@ const Header = () => {
           ) : (
             <div className="flex space-x-2">
               <Link to="/login">
-                <Button variant="primary">Войти</Button>
+                <Button variant="primary" className="flex items-center space-x-1">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                  </svg>
+                  <span>Войти</span>
+                </Button>
               </Link>
               <Link to="/register">
-                <Button variant="secondary">Регистрация</Button>
+                <Button variant="secondary" className="flex items-center space-x-1">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                  <span>Регистрация</span>
+                </Button>
               </Link>
             </div>
           )}
