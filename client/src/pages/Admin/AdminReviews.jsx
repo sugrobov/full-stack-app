@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { formatRelativeDate } from '../../utils/dateUtils';
+import TableSkeleton from '../../components/UI/TableSkeleton';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -133,7 +134,7 @@ const AdminReviews = () => {
   }
 };
 
-  if (loading) return <div className="text-center py-8">Загрузка отзывов...</div>;
+  if (loading) return <TableSkeleton columns={9} rows={5}/>;
 
   return (
     <div className="container mx-auto px-4 py-8">

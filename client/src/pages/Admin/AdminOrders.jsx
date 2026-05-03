@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
+import TableSkeleton from '../../components/UI/TableSkeleton';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -87,7 +88,7 @@ const AdminOrders = () => {
     { value: 'cancelled', label: 'Отменён' }
   ];
 
-  if (loading) return <div className="text-center py-8">Загрузка...</div>;
+  if (loading) return <TableSkeleton columns={7} rows={5} />;
 
   return (
     <div className="container mx-auto px-4 py-8">
