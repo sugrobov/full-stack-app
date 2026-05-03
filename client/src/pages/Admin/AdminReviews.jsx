@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { formatRelativeDate } from '../utils/dateUtils';
+import { formatRelativeDate } from '../../utils/dateUtils';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
