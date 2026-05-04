@@ -47,6 +47,7 @@ const Register = () => {
           <label className="block text-gray-700">Пароль (мин. 6 символов)</label>
           <input
             type="password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-3 py-2 border rounded"

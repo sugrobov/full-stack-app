@@ -113,7 +113,7 @@ const ProfilePage = () => {
         <form onSubmit={handleChangePassword} className="space-y-4">
           <div>
             <label className="block text-gray-700">Текущий пароль</label>
-            <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="w-full border rounded px-3 py-2" required />
+            <input type="password" autoComplete="current-password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="w-full border rounded px-3 py-2" required />
           </div>
           <div>
             <label className="block text-gray-700">Новый пароль (мин. 6 символов)</label>
