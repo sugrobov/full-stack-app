@@ -111,13 +111,14 @@ const ProfilePage = () => {
       <div className="bg-white rounded-lg shadow p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4">Сменить пароль</h2>
         <form onSubmit={handleChangePassword} className="space-y-4">
+          <input type="hidden" autoComplete="username" value={user?.email || ''} />
           <div>
             <label className="block text-gray-700">Текущий пароль</label>
             <input type="password" autoComplete="current-password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="w-full border rounded px-3 py-2" required />
           </div>
           <div>
             <label className="block text-gray-700">Новый пароль (мин. 6 символов)</label>
-            <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full border rounded px-3 py-2" required />
+            <input type="password" autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full border rounded px-3 py-2" required />
           </div>
           <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Сменить пароль</button>
         </form>
