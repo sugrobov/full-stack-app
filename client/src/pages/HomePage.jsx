@@ -10,6 +10,22 @@ import ProductSearch from '../components/ProductSearch';
 import ProductCardSkeleton from '../components/ProductCardSkeleton';
 import SortSelect from '../components/SortSelect';
 import ResetFiltersButton from '../components/ResetFiltersButton';
+import { motion } from 'framer-motion';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1, // задержка между появлением карточек
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+};
 
 const HomePage = () => {
   const dispatch = useDispatch();
@@ -105,11 +121,27 @@ const HomePage = () => {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {items.map(product => <ProductCard key={product.id} product={product} />)}
-                </div>
+                <motion.div
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+                  variants={containerVariants}
+                  initial="hidden"
+                  animate="visible"
+                  key={currentPage}
+                >
+                  {items.map(product => (
+                    <motion.div key={product.id} variants={itemVariants}>
+                      <ProductCard product={product} />
+                    </motion.div>
+                  ))}
+                </motion.div>
                 <div className="mt-8 flex justify-center">
-                  <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} totalItems={totalItems} itemsPerPage={12} />
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                    totalItems={totalItems}
+                    itemsPerPage={12}
+                  />
                 </div>
               </>
             )}
