@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useSearchParams } from 'react-router-dom';
 import { fetchProducts, fetchCategories, setCurrentPage, setFiltersFromURL } from '../store/productsSlice';
@@ -11,6 +11,7 @@ import ProductCardSkeleton from '../components/ProductCardSkeleton';
 import SortSelect from '../components/SortSelect';
 import ResetFiltersButton from '../components/ResetFiltersButton';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -31,6 +32,8 @@ const HomePage = () => {
   const dispatch = useDispatch();
   const [searchParams, setSearchParams] = useSearchParams();
   const { items, status, currentPage, totalPages, totalItems, selectedCategory, minPrice, maxPrice, sort } = useSelector(state => state.products);
+
+   const [toastShown, setToastShown] = useState(false); // Новый стейт для отображения тоста
 
   // При монтировании читаем URL и обновляем Redux состояние
   useEffect(() => {
@@ -62,6 +65,18 @@ const HomePage = () => {
     if (sort && sort !== 'default') params.sort = sort;
     setSearchParams(params, { replace: true });
   }, [selectedCategory, minPrice, maxPrice, currentPage, sort, setSearchParams]);
+
+   useEffect(() => {
+    if (status === 'succeeded' && totalItems > 0 && !toastShown) {
+      const discountedCount = items.filter(p => p.discount_price && p.discount_price < p.price).length;
+      if (discountedCount > 0) {
+        toast.success(`🔥 У нас ${discountedCount} товаров со скидкой!`);
+      } else {
+        toast.info('Следите за акциями – скоро появятся скидки!');
+      }
+      setToastShown(true);
+    }
+  }, [status, items, totalItems, toastShown]);
 
   // Прокрутка вверх при изменении параметров (пропускаем первый рендер)
   const isFirstRender = useRef(true);
