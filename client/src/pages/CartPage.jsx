@@ -7,7 +7,16 @@ import toast from 'react-hot-toast';
 
 const CartPage = () => {
   const dispatch = useDispatch();
-  const { items, totalAmount, totalQuantity } = useSelector(state => state.cart);
+  const { items, totalQuantity } = useSelector(state => state.cart);
+
+  const computedTotal = items.reduce((sum, item) => {
+  return sum + (Number(item.totalPrice) || 0);
+}, 0);
+
+  const safeFormat = (value) => {
+    const num = Number(value);
+    return isNaN(num) ? '0' : num.toLocaleString();
+  };
 
   const handleRemoveItem = (id) => {
     toast.success('Товар удалён из корзины');
@@ -86,9 +95,9 @@ const CartPage = () => {
                         <img
                           src={firstImage}
                           alt={item.name}
-                          className="w-full h-full object-cover" 
+                          className="w-full h-full object-cover"
                           loading="lazy"
-                          />
+                        />
                       ) : (
                         <div className="text-gray-500 text-sm">Товар #{item.id}</div>
                       )}
@@ -161,7 +170,7 @@ const CartPage = () => {
             <div className="space-y-3 mb-6">
               <div className="flex justify-between">
                 <span className="text-gray-600">Товары ({totalQuantity})</span>
-                <span className="text-gray-800">{totalAmount.toLocaleString()} ₽</span>
+                <span className="text-gray-800">{computedTotal} ₽</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Доставка</span>
@@ -170,7 +179,7 @@ const CartPage = () => {
               <div className="border-t border-gray-200 pt-3">
                 <div className="flex justify-between font-semibold text-lg">
                   <span>Итого к оплате</span>
-                  <span>{totalAmount.toLocaleString()} ₽</span>
+                  <span>{computedTotal} ₽</span>
                 </div>
               </div>
             </div>

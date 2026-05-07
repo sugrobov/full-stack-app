@@ -4,11 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { clearCart } from '../store/cartSlice';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import Spinner from '../components/UI/Spinner';
 import Button from '../components/UI/Button';
 
 const CheckoutPage = () => {
-  const { items, totalAmount } = useSelector(state => state.cart);
+  const { items, totalQuantity } = useSelector(state => state.cart);
   const { user, token } = useSelector(state => state.auth);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -17,6 +16,18 @@ const CheckoutPage = () => {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Вычисляем итог напрямую из товаров в корзине
+  const computedTotal = items.reduce((sum, item) => {
+    const price = Number(item.discountPrice) || Number(item.price) || 0;
+    const quantity = Number(item.quantity) || 1;
+    return sum + price * quantity;
+  }, 0);
+
+  const safeFormat = (value) => {
+    const num = Number(value);
+    return isNaN(num) ? '0' : num.toLocaleString();
+  };
 
   useEffect(() => {
     if (items.length === 0) {
@@ -34,7 +45,7 @@ const CheckoutPage = () => {
     const orderItems = items.map(item => ({
       productId: item.id,
       quantity: item.quantity,
-      price: item.discountPrice || item.price,
+      price: Number(item.discountPrice) || Number(item.price),
     }));
 
     try {
@@ -53,7 +64,6 @@ const CheckoutPage = () => {
     }
   };
 
-  // Показываем заглушку, пока useEffect обрабатывает редирект
   if (items.length === 0 || !user) return null;
 
   return (
@@ -66,12 +76,12 @@ const CheckoutPage = () => {
           {items.map(item => (
             <div key={item.id} className="flex justify-between border-b pb-2">
               <span>{item.name} x {item.quantity}</span>
-              <span>{((item.discountPrice || item.price) * item.quantity).toLocaleString()} ₽</span>
+              <span>{safeFormat((Number(item.discountPrice) || Number(item.price)) * item.quantity)} ₽</span>
             </div>
           ))}
           <div className="flex justify-between font-bold pt-2">
             <span>Итого:</span>
-            <span>{totalAmount.toLocaleString()} ₽</span>
+            <span>{safeFormat(computedTotal)} ₽</span>
           </div>
         </div>
       </div>
