@@ -412,9 +412,11 @@ app.get('/api/admin/products', verifyToken, requireAdmin, async (req, res) => {
 app.post('/api/admin/products', verifyToken, requireAdmin, async (req, res) => {
   const { name, category_id, price, discount_price, rating, stock, description, images } = req.body;
   try {
+    const discountPrice = discount_price === '' || discount_price === undefined ? null : discount_price;
+    const ratingValue = rating === '' ? null : rating;
     const [result] = await db.query(
       'INSERT INTO products (name, category_id, price, discount_price, rating, stock, description) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [name, category_id, price, discount_price || null, rating || null, stock, description]
+      [name, category_id, price, discountPrice, ratingValue, stock, description]
     );
     const productId = result.insertId;
     if (images && images.length) {
@@ -434,9 +436,11 @@ app.put('/api/admin/products/:id', verifyToken, requireAdmin, async (req, res) =
   const { id } = req.params;
   const { name, category_id, price, discount_price, rating, stock, description } = req.body;
   try {
+    const discountPrice = discount_price === '' || discount_price === undefined ? null : discount_price;
+    const ratingValue = rating === '' ? null : rating;
     await db.query(
       'UPDATE products SET name=?, category_id=?, price=?, discount_price=?, rating=?, stock=?, description=? WHERE id=?',
-      [name, category_id, price, discount_price, rating, stock, description, id]
+      [name, category_id, price, discountPrice, ratingValue, stock, description, id]
     );
     res.json({ message: 'Product updated' });
   } catch (err) {
@@ -561,7 +565,7 @@ app.get('/api/admin/reviews', verifyToken, requireAdmin, async (req, res) => {
       params.push(like, like, like, like);
     }
 
-     // Фильтр по одобренным отзывам
+    // Фильтр по одобренным отзывам
     if (is_approved !== undefined && is_approved !== '') { // проверяем, что is_approved не пустое
       whereClauses.push('r.is_approved = ?');
       params.push(parseInt(is_approved));
