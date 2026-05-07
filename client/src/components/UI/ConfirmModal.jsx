@@ -2,7 +2,7 @@ import React from 'react';
 import Button from './Button';
 
 // Подтверждение выхода из аккаунта
-const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => {
+const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmText = 'Удалить' }) => {
   if (!isOpen) return null;
 
   return (
@@ -12,7 +12,7 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => {
         <p className="text-gray-600 mb-6">{message}</p>
         <div className="flex justify-end space-x-3">
           <Button variant="secondary" onClick={onClose}>Отмена</Button>
-          <Button variant="danger" onClick={onConfirm}>Удалить</Button>
+          <Button variant="danger" onClick={onConfirm}>{confirmText}</Button>
         </div>
       </div>
     </div>
