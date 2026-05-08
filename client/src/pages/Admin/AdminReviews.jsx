@@ -6,6 +6,7 @@ import { formatRelativeDate } from '../../utils/dateUtils';
 import TableSkeleton from '../../components/UI/TableSkeleton';
 import ConfirmModal from '../../components/UI/ConfirmModal';
 import Button from '../../components/UI/Button';
+import BackToAdminButton from '../../components/UI/BackToAdminButton';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -160,7 +161,7 @@ const AdminReviews = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Управление отзывами</h1>
-
+      <BackToAdminButton />
       {/* Фильтры */}
       <div className="bg-white rounded-lg shadow p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4">Фильтры</h2>

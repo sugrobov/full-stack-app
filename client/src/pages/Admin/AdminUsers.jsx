@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
+import BackToAdminButton from '../../components/UI/BackToAdminButton';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -33,7 +34,7 @@ const AdminUsers = () => {
       await axios.put(`${API_URL}/admin/users/${userId}/role`, { role: newRole }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setUsers(users.map(user => 
+      setUsers(users.map(user =>
         user.id === userId ? { ...user, role: newRole } : user
       ));
     } catch (err) {
@@ -48,7 +49,9 @@ const AdminUsers = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Управление пользователями</h1>
+      <BackToAdminButton />
       <div className="bg-white rounded-lg shadow overflow-x-auto">
+
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>

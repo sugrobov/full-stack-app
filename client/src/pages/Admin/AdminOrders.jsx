@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 import TableSkeleton from '../../components/UI/TableSkeleton';
+import BackToAdminButton from '../../components/UI/BackToAdminButton';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -69,7 +71,7 @@ const AdminOrders = () => {
       await axios.put(`${API_URL}/admin/orders/${orderId}/status`, { status: newStatus }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setOrders(orders.map(order => 
+      setOrders(orders.map(order =>
         order.id === orderId ? { ...order, status: newStatus } : order
       ));
     } catch (err) {
@@ -93,7 +95,7 @@ const AdminOrders = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Управление заказами</h1>
-
+      <BackToAdminButton />
       {/* Фильтры */}
       <div className="bg-white rounded-lg shadow p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4">Фильтры</h2>
@@ -130,7 +132,7 @@ const AdminOrders = () => {
             {filteredOrders.map(order => (
               <tr key={order.id}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.id}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.user_name}<br/><span className="text-xs text-gray-500">{order.user_email}</span></td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.user_name}<br /><span className="text-xs text-gray-500">{order.user_email}</span></td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{Number(order.total).toLocaleString()} ₽</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   <select
