@@ -7,6 +7,14 @@ const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
 const { generateToken, verifyToken, requireAdmin } = require('./auth');
 
+// необходимые модули для загрузки изображений
+const multer = require('multer');
+const sharp = require('sharp');
+const { v4: uuidv4 } = require('uuid');
+const { fileTypeFromBuffer } = require('file-type');
+const path = require('path');
+const fs = require('fs').promises;
+
 dotenv.config();
 
 const app = express();
@@ -204,6 +212,106 @@ app.get('/api/categories', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// ==================== ЗАГРУЗКА ИЗОБРАЖЕНИЙ ТОВАРОВ ====================
+
+// Создаём директорию для хранения изображений, если её нет (при старте сервера)
+const uploadDir = path.join(__dirname, 'uploads', 'products');
+fs.mkdir(uploadDir, { recursive: true }).catch(err => console.error('Ошибка создания папки uploads:', err));
+
+// Конфигурация multer: храним файл в памяти (buffer) для предварительной валидации
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5 MB
+  },
+});
+
+
+// Эндпоинт для загрузки изображения конкретного товара (только админ)
+app.post('/api/admin/products/:productId/upload', verifyToken, requireAdmin, upload.single('image'), async (req, res) => {
+  let outputPath = null; // запомним путь, если файл создан
+  try {
+    const productId = parseInt(req.params.productId);
+    if (isNaN(productId)) {
+      return res.status(400).json({ error: 'Неверный ID товара' });
+    }
+
+    // Проверяем, существует ли товар
+    const [productRows] = await db.query('SELECT id FROM products WHERE id = ?', [productId]);
+    if (productRows.length === 0) {
+      return res.status(404).json({ error: 'Товар не найден' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'Файл не загружен' });
+    }
+
+    // 1. Определяем реальный MIME-тип по магическим байтам
+    const detectedType = await fileTypeFromBuffer(req.file.buffer);
+    if (!detectedType || !detectedType.mime.startsWith('image/')) {
+      return res.status(400).json({ error: 'Загруженный файл не является изображением' });
+    }
+
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedMimes.includes(detectedType.mime)) {
+      return res.status(400).json({ error: 'Поддерживаются только JPEG, PNG, WebP' });
+    }
+
+    // 2. Генерация уникального имени и пути
+    const fileName = `${uuidv4()}.webp`;
+    outputPath = path.join(uploadDir, fileName);
+
+    // 3. Обработка через sharp
+    await sharp(req.file.buffer)
+      .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 80 })
+      .toFile(outputPath);
+
+    const imageUrl = `/uploads/products/${fileName}`;
+
+    // 4. Сохраняем запись в БД
+    const [maxSort] = await db.query('SELECT MAX(sort_order) as max_sort FROM product_images WHERE product_id = ?', [productId]);
+    const nextSort = (maxSort[0].max_sort !== null ? maxSort[0].max_sort + 1 : 0);
+
+    await db.query(
+      'INSERT INTO product_images (product_id, image_url, sort_order) VALUES (?, ?, ?)',
+      [productId, imageUrl, nextSort]
+    );
+
+    res.json({ success: true, imageUrl, message: 'Изображение успешно загружено' });
+  } catch (error) {
+    // Если файл был создан, но произошла ошибка (например, с БД) – удаляем его
+    if (outputPath) {
+      try {
+        await fs.unlink(outputPath);
+        console.log(`Удалён файл ${outputPath} из-за ошибки`);
+      } catch (unlinkErr) {
+        console.error('Не удалось удалить файл после ошибки:', unlinkErr);
+      }
+    }
+    console.error('Ошибка загрузки изображения:', error);
+    res.status(500).json({ error: 'Ошибка сервера при загрузке изображения' });
+  }
+});
+
+// Защищённая отдача изображений (без прямого доступа к папке uploads)
+app.get('/uploads/products/:filename', async (req, res) => {
+  const filePath = path.join(uploadDir, req.params.filename);
+  try {
+    await fs.access(filePath);
+    // Отдаём с правильными заголовками безопасности
+    res.sendFile(filePath, {
+      headers: {
+        'Content-Type': 'image/webp',
+        'X-Content-Type-Options': 'nosniff',
+        'Cache-Control': 'public, max-age=86400' // кэш на 1 день
+      }
+    });
+  } catch {
+    res.status(404).json({ error: 'Изображение не найдено' });
   }
 });
 
@@ -453,8 +561,24 @@ app.put('/api/admin/products/:id', verifyToken, requireAdmin, async (req, res) =
 app.delete('/api/admin/products/:id', verifyToken, requireAdmin, async (req, res) => {
   const { id } = req.params;
   try {
+    // Сначала получаем все image_url для этого товара
+    const [images] = await db.query('SELECT image_url FROM product_images WHERE product_id = ?', [id]);
+
+    // Удаляем записи из БД
     await db.query('DELETE FROM product_images WHERE product_id = ?', [id]);
     await db.query('DELETE FROM products WHERE id = ?', [id]);
+
+    // Удаляем физические файлы с диска
+    for (const img of images) {
+      const filename = img.image_url.replace('/uploads/products/', '');
+      const filePath = path.join(uploadDir, filename);
+      try {
+        await fs.unlink(filePath);
+        console.log(`Удалён файл ${filePath}`);
+      } catch (e) {
+        console.error(`Ошибка удаления файла ${filePath}:`, e);
+      }
+    }
     res.json({ message: 'Product deleted' });
   } catch (err) {
     console.error(err);
