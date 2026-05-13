@@ -27,6 +27,9 @@ app.use(express.json());
 
 app.use(compression());
 
+// Статическая раздача загруженных изображений
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Пул с промисами (для всех запросов)
 const db = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
@@ -279,6 +282,12 @@ app.post('/api/admin/products/:productId/upload', verifyToken, requireAdmin, upl
     await db.query(
       'INSERT INTO product_images (product_id, image_url, sort_order) VALUES (?, ?, ?)',
       [productId, imageUrl, nextSort]
+    );
+
+    // Обновляем основное изображение товара
+    await db.query(
+      'UPDATE products SET image = ? WHERE id = ?',
+      [imageUrl, productId]
     );
 
     res.json({ success: true, imageUrl, message: 'Изображение успешно загружено' });
@@ -536,6 +545,30 @@ app.post('/api/admin/products', verifyToken, requireAdmin, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to create product' });
+  }
+});
+
+// Получить один товар (админ, без фильтра по stock) - временно без авторизации для отладки
+app.get('/api/admin/products/:id', async (req, res) => {
+  try {
+    const productId = parseInt(req.params.id);
+    if (isNaN(productId)) return res.status(400).json({ error: 'Invalid product ID' });
+    const query = `
+      SELECT p.*, c.name as category_name
+      FROM products p
+      JOIN categories c ON p.category_id = c.id
+      WHERE p.id = ?
+    `;
+    const [products] = await db.query(query, [productId]);
+    if (!products.length) return res.status(404).json({ error: 'Product not found' });
+    const product = products[0];
+    const [images] = await db.query('SELECT image_url FROM product_images WHERE product_id = ? ORDER BY sort_order', [productId]);
+    product.images = images.map(img => img.image_url);
+    console.log('Admin product fetch:', productId, 'found:', product);
+    res.json(product);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
   }
 });
 

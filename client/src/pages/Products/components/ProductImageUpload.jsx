@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
 
@@ -6,6 +6,10 @@ const ProductImageUpload = ({ productId, onImageUploaded, existingImageUrl }) =>
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState(existingImageUrl || null);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    setPreview(existingImageUrl || null);
+  }, [existingImageUrl]);
 
   const onDrop = useCallback(async (acceptedFiles) => {
     const file = acceptedFiles[0];
@@ -30,6 +34,7 @@ const ProductImageUpload = ({ productId, onImageUploaded, existingImageUrl }) =>
 
     // CSRF защита: если используете cookies
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    const token = localStorage.getItem('token');
 
     try {
       const response = await axios.post(
@@ -39,6 +44,7 @@ const ProductImageUpload = ({ productId, onImageUploaded, existingImageUrl }) =>
           headers: {
             'Content-Type': 'multipart/form-data',
             ...(csrfToken && { 'X-CSRF-Token': csrfToken }),
+            ...(token && { Authorization: `Bearer ${token}` }),
           },
         }
       );

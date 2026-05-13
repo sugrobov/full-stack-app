@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -228,8 +229,13 @@ const AdminProducts = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.rating || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.stock}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <Button variant="ghost" size="sm" onClick={() => handleEdit(product)}>Ред.</Button>
+                  {/* <Button variant="ghost" size="sm" onClick={() => handleEdit(product)}>Ред.</Button> */}
                   <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(product.id)} className="text-red-600">Уд.</Button>
+                </td>
+                <td className="px-4 py-2">
+                  <Link to={`/admin/products/${product.id}/edit`} className="text-blue-600 hover:underline">
+                    Редактировать
+                  </Link>
                 </td>
               </tr>
             ))}

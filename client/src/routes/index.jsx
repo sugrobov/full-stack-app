@@ -14,6 +14,7 @@ import AdminProducts from '../pages/Admin/AdminProducts';
 import AdminOrders from '../pages/Admin/AdminOrders';
 import AdminUsers from '../pages/Admin/AdminUsers';
 import AdminReviews from '../pages/Admin/AdminReviews';
+import AdminProductEdit from '../pages/Admin/AdminProductEdit';
 
 const routes = [
   { path: '/', element: <HomePage /> },
@@ -31,6 +32,7 @@ const routes = [
   { path: '/admin/orders', element: <AdminRoute><AdminOrders /></AdminRoute> },
   { path: '/admin/users', element: <AdminRoute><AdminUsers /></AdminRoute> },
   { path:'/admin/reviews', element: <AdminRoute><AdminReviews /></AdminRoute>},
+  { path:'/admin/products/:id/edit', element : <AdminRoute><AdminProductEdit /></AdminRoute>},
 ];
 
 export default routes;
