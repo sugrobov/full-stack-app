@@ -2,7 +2,7 @@ const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const nodemailer = require('nodemailer');
+// const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
 const { generateToken, verifyToken, requireAdmin } = require('./auth');
@@ -14,18 +14,17 @@ const { v4: uuidv4 } = require('uuid');
 const { fileTypeFromBuffer } = require('file-type');
 const path = require('path');
 const fs = require('fs').promises;
+const compression = require('compression');
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const compression = require('compression');
-
 app.use(cors());
+app.use(compression());
 app.use(express.json());
 
-app.use(compression());
 
 // Статическая раздача загруженных изображений
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -261,6 +260,14 @@ app.post('/api/admin/products/:productId/upload', verifyToken, requireAdmin, upl
     const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedMimes.includes(detectedType.mime)) {
       return res.status(400).json({ error: 'Поддерживаются только JPEG, PNG, WebP' });
+    }
+
+    // Удалить старые изображения (записи и файлы)
+    const [oldImages] = await db.query('SELECT image_url FROM product_images WHERE product_id = ?', [productId]);
+    await db.query('DELETE FROM product_images WHERE product_id = ?', [productId]);
+    for (const img of oldImages) {
+      const oldFilename = img.image_url.replace('/uploads/products/', '');
+      try { await fs.unlink(path.join(uploadDir, oldFilename)); } catch { }
     }
 
     // 2. Генерация уникального имени и пути
@@ -575,7 +582,7 @@ app.get('/api/admin/products/:id', async (req, res) => {
 // Обновить товар
 app.put('/api/admin/products/:id', verifyToken, requireAdmin, async (req, res) => {
   const { id } = req.params;
-  const { name, category_id, price, discount_price, rating, stock, description } = req.body;
+  const { name, category_id, price, discount_price, rating, stock, description, images } = req.body;
   try {
     const discountPrice = discount_price === '' || discount_price === undefined ? null : discount_price;
     const ratingValue = rating === '' ? null : rating;
@@ -583,6 +590,34 @@ app.put('/api/admin/products/:id', verifyToken, requireAdmin, async (req, res) =
       'UPDATE products SET name=?, category_id=?, price=?, discount_price=?, rating=?, stock=?, description=? WHERE id=?',
       [name, category_id, price, discountPrice, ratingValue, stock, description, id]
     );
+
+    // Обработка изображений, если массив передан
+    if (images !== undefined) {
+      // Получаем старые изображения для удаления файлов
+      const [oldImages] = await db.query('SELECT image_url FROM product_images WHERE product_id = ?', [id]);
+      // Удаляем записи из БД
+      await db.query('DELETE FROM product_images WHERE product_id = ?', [id]);
+      // Удаляем файлы с диска
+      for (const img of oldImages) {
+        const filename = img.image_url.replace('/uploads/products/', '');
+        const filePath = path.join(uploadDir, filename);
+        try {
+          await fs.unlink(filePath);
+        } catch (e) {
+          console.error(`Ошибка удаления файла ${filePath}:`, e);
+        }
+      }
+      // Вставляем новые изображения
+      if (images.length > 0) {
+        const imageValues = images.map((url, index) => [id, url, index]);
+        await db.query('INSERT INTO product_images (product_id, image_url, sort_order) VALUES ?', [imageValues]);
+        // Обновляем основное изображение в products
+        await db.query('UPDATE products SET image = ? WHERE id = ?', [images[0], id]);
+      } else {
+        await db.query('UPDATE products SET image = NULL WHERE id = ?', [id]);
+      }
+    }
+
     res.json({ message: 'Product updated' });
   } catch (err) {
     console.error(err);
