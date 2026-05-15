@@ -1,170 +1,107 @@
-# Online Store
+# Online Store (fullstack)
 
-This is a full-featured online store built with React, Redux, and Vite.
+Интернет-магазин с клиентской и серверной частью.  
+Фронтенд — React + Redux Toolkit + Tailwind, бэкенд — Node.js + Express + MySQL.
 
-## Project Description
+## Ключевые возможности
 
-The online store includes the following features:
-- Product catalog browsing with category and price filtering
-- Pagination
-- Adding products to cart
-- Managing product quantities in cart
-- Favorites
-- Product details view with image switching capability
+- Каталог товаров с фильтрацией, сортировкой, поиском и пагинацией
+- Карточка товара со слайдером изображений и отзывами
+- Корзина с сохранением состояния между сессиями (localForage)
+- Избранное
+- Регистрация / авторизация (JWT)
+- Личный кабинет с профилем и историей заказов
+- **Админ‑панель**
+  - Управление товарами (создание, редактирование, удаление)
+  - **Загрузка изображений товаров** (drag & drop, конвертация в WebP, галерея)
+  - Управление заказами, пользователями, отзывами
+- REST API на Express с валидацией, защитой маршрутов и загрузкой файлов
 
-## Installation and Setup
+## Технический стек
 
-### Option 1: Run from root directory (recommended)
+**Клиент:** React 18, Redux Toolkit, React Router 6, Tailwind CSS 4, Vite, Axios, Framer Motion, react-dropzone, react-hot-toast  
+**Сервер:** Node.js, Express, MySQL2 (пул промисов), JWT, bcryptjs, multer, sharp, file-type, uuid  
+**База данных:** MySQL (таблицы products, product_images, categories, users, orders, reviews и др.)
 
-1. Clone the repository:
+## Установка и запуск
+
+### 1. Клонирование и установка
+
 ```bash
 git clone https://github.com/sugrobov/full-stack-app.git
 cd full-stack-app
-```
-
-2. Install all dependencies (client, server, and root):
-```bash
-npm run install-all
-```
-Or install manually:
-```bash
 npm install
-cd client && npm install
-cd ../server && npm install
+cd client && npm install && cd ..
+cd server && npm install && cd ..
 ```
 
-3. Start both client and server simultaneously:
-```bash
-npm start
-```
-Or start them separately:
-```bash
-npm run server # starts backend on port 5000
-npm run client # starts frontend on port 5173
-```
+### 2. Настройка базы данных
 
-4. Open your browser:
-- Frontend: `http://localhost:5173`
-- Backend API: `http://localhost:5000`
+Убедитесь, что MySQL запущен.
 
-### Option 2: Run client only (legacy)
+В папке `server` переименуйте `.env.example` в `.env` и укажите свои параметры подключения.
 
-1. Navigate to the client directory:
-```bash
-cd full-stack-app/client
-```
+Инициализируйте таблицы и тестовые данные (опционально):
 
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Run the application:
-```bash
-npm run dev
-```
-
-4. Open your browser and go to `http://localhost:5173`
-
-## Database Setup
-
-The backend server requires MySQL to be running. Follow these steps to set up the database:
-
-1. **Install MySQL** if you don't have it already:
-- [MySQL Download](https://dev.mysql.com/downloads/mysql/)
-- Or use XAMPP/WAMP which includes MySQL
-
-2. **Start MySQL service** and ensure it's running on port 3306
-
-3. **Configure environment variables**:
-- Copy the example environment file:
-```bash
-cp server/.env.example server/.env
-```
-- Edit `server/.env` with your MySQL credentials
-
-4. **Initialize the database** (optional - tables are created automatically):
 ```bash
 cd server
 npm run init-db
 ```
 
-5. **Default credentials** (if using the .env.example as-is):
-- Host: `localhost`
-- User: `root`
-- Password: (empty)
-- Database: `store_db`
+### 3. Запуск в режиме разработки
 
-**Note**: If you don't need the backend API to function (e.g., just testing the frontend), the server will still start but will show database connection errors. The frontend will work independently.
+Из корня проекта:
 
-## Product Images
-
-The application now uses **client-side SVG placeholders** for product images. No external image downloads or archives are required. 
-
-- Product cards and detail pages display colorful SVG tiles with product names.
-- The placeholder color is derived from the product ID, ensuring consistent and varied visuals.
-- Images are generated entirely on the client side, eliminating network requests and broken image errors.
-
-If you later wish to add real product images:
-1. Place your images in the `client/public/images/` folder following the pattern:  
-`/images/categoryX/productXXX_imageY.jpg` (or `.png`, `.webp`).
-2. Update the `isValidLocalImage` logic in `ProductCard.jsx` and `ProductPage.jsx` to recognize your local paths.
-3. Modify `server/init-db.js` to populate the database with your local image URLs.
-
-## Deployment
-
-### Netlify Deployment
-
-This project is configured for easy deployment to Netlify:
-
-1. Connect your GitHub repository to Netlify
-2. Set the build command to: `npm run build`
-3. Set the publish directory to: `dist`
-4. Deploy the site
-
-The `netlify.toml` configuration file is already included in the project for automatic configuration.
-
-For future backend integration, you can set up environment variables in Netlify to point to your API endpoints.
-
-## Project Structure
-```
-client/
-├── public/
-│   └── images/ # Optional: place real product images here
-├── src/
-│   ├── components/ # React components
-│   ├── pages/ # Application pages
-│   ├── store/ # Redux store and slices
-│   ├── utils/ # Utility functions
-│   ├── App.jsx # Main application component
-│   └── main.jsx # Entry point
-└── vite.config.js # Vite configuration
+```bash
+npm run dev
 ```
 
-## Main Components
+Запускаются одновременно:
 
-- `App.jsx` - Main application component with navigation
-- `HomePage.jsx` - Home page with product catalog
-- `ProductPage.jsx` - Product details page
-- `CartPage.jsx` - Shopping cart page
-- `ProductCard.jsx` - Product card component
-- `Breadcrumb.jsx` - Breadcrumb navigation component
-- `Filters.jsx` - Filter component
+- Клиент: http://localhost:5173
+- Сервер: http://localhost:5000
 
-## Redux Store
+Отдельный запуск:
 
-- `productsSlice.js` - Product data management
-- `cartSlice.js` - Cart management
-- `favoritesSlice.js` - Favorites management
+```bash
+npm run client   # фронтенд
+npm run server   # бэкенд
+```
 
-## Technologies
+## Особенности работы с изображениями
 
-- React 18
-- Redux Toolkit
-- React Router
-- Tailwind CSS
-- Vite
+Загруженные администратором изображения конвертируются в .webp, сохраняются в `server/uploads/products/` и отображаются через кастомный endpoint.
 
-## License
+В админке реализована галерея: можно добавить несколько изображений, удалить любое.
+
+Все публичные страницы (каталог, карточка товара, корзина, поиск) поддерживают как сидированные `/images/`, так и загруженные `/uploads/` пути.
+
+## Деплой клиента (Netlify)
+
+Файл `netlify.toml` уже настроен. Подключите репозиторий, укажите:
+
+- Build command: `npm run build`
+- Publish directory: `dist`
+
+## Структура проекта
+
+```
+├── client/          # React-приложение
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── store/   # Redux slices
+│   │   └── utils/
+│   └── vite.config.js
+├── server/          # Express API
+│   ├── server.js
+│   ├── auth.js
+│   ├── init-db.js
+│   ├── uploads/products/  # загруженные изображения
+│   └── .env.example
+└── .gitignore
+```
+
+## Лицензия
 
 MIT
