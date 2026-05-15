@@ -5,7 +5,7 @@ import { addToCart } from '../store/cartSlice';
 import Button from './UI/Button';
 import toast from 'react-hot-toast';
 
-const ProductCard =  React.memo(({ product }) => {
+const ProductCard = React.memo(({ product }) => {
   const dispatch = useDispatch();
   // Берём первое изображение: из массива images или из поля image
   const imageUrl = product.images?.[0] || product.image || null;
@@ -13,7 +13,7 @@ const ProductCard =  React.memo(({ product }) => {
   const [imgError, setImgError] = useState(false);
 
   // Проверяем валидность URL (должен начинаться с /images/)
-  const isValidImage = imageUrl && imageUrl.startsWith('/images/');
+  const isValidImage = imageUrl && (imageUrl.startsWith('/images/') || imageUrl.startsWith('/uploads/'));
 
   const handleAddToCart = (e) => {
     e.preventDefault();

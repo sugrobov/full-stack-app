@@ -104,6 +104,7 @@ const ProductSearch = () => {
             results.map((product, idx) => {
               const imageUrl = product.images?.[0] || product.image;
               const hasError = imageErrors[product.id];
+              const isValid = imageUrl && (imageUrl.startsWith('/images/') || imageUrl.startsWith('/uploads/'));
               return (
                 <Link
                   key={product.id}
@@ -114,7 +115,7 @@ const ProductSearch = () => {
                   }`}
                 >
                   <div className="w-12 h-12 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center">
-                    {imageUrl && !hasError ? (
+                    {isValid && !hasError ? (
                       <img
                         src={imageUrl}
                         alt={product.name}

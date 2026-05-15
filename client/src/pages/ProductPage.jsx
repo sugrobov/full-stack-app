@@ -54,7 +54,7 @@ const ProductPage = () => {
 
   const productImages = product.images || (product.image ? [product.image] : []);
   const isDiscounted = !!product.discount_price;
-  
+
   const currentImage = productImages[currentImageIndex]; // определяем currentImage
   const hue = (product.id * 37 + currentImageIndex * 17) % 360; // <-- вычисляем цвет для SVG
 
@@ -84,7 +84,7 @@ const ProductPage = () => {
 
   // функция для проверки валидности локального изображения
   const isValidLocalImage = (url) => {
-    return url && typeof url === 'string' && url.startsWith('/images/');
+    return url && typeof url === 'string' && (url.startsWith('/images/') || url.startsWith('/uploads/'));
   };
 
   return (

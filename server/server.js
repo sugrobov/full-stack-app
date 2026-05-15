@@ -27,7 +27,7 @@ app.use(express.json());
 
 
 // Статическая раздача загруженных изображений
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Пул с промисами (для всех запросов)
 const db = mysql.createPool({
@@ -262,13 +262,13 @@ app.post('/api/admin/products/:productId/upload', verifyToken, requireAdmin, upl
       return res.status(400).json({ error: 'Поддерживаются только JPEG, PNG, WebP' });
     }
 
-    // Удалить старые изображения (записи и файлы)
-    const [oldImages] = await db.query('SELECT image_url FROM product_images WHERE product_id = ?', [productId]);
-    await db.query('DELETE FROM product_images WHERE product_id = ?', [productId]);
-    for (const img of oldImages) {
-      const oldFilename = img.image_url.replace('/uploads/products/', '');
-      try { await fs.unlink(path.join(uploadDir, oldFilename)); } catch { }
-    }
+    // Удалить старые изображения (записи и файлы) - НЕ НУЖЕН
+    // const [oldImages] = await db.query('SELECT image_url FROM product_images WHERE product_id = ?', [productId]);
+    // await db.query('DELETE FROM product_images WHERE product_id = ?', [productId]);
+    // for (const img of oldImages) {
+    //   const oldFilename = img.image_url.replace('/uploads/products/', '');
+    //   try { await fs.unlink(path.join(uploadDir, oldFilename)); } catch { }
+    // }
 
     // 2. Генерация уникального имени и пути
     const fileName = `${uuidv4()}.webp`;
@@ -593,29 +593,31 @@ app.put('/api/admin/products/:id', verifyToken, requireAdmin, async (req, res) =
 
     // Обработка изображений, если массив передан
     if (images !== undefined) {
-      // Получаем старые изображения для удаления файлов
+      // Получаем текущие изображения из БД
       const [oldImages] = await db.query('SELECT image_url FROM product_images WHERE product_id = ?', [id]);
-      // Удаляем записи из БД
-      await db.query('DELETE FROM product_images WHERE product_id = ?', [id]);
-      // Удаляем файлы с диска
-      for (const img of oldImages) {
-        const filename = img.image_url.replace('/uploads/products/', '');
-        const filePath = path.join(uploadDir, filename);
-        try {
-          await fs.unlink(filePath);
-        } catch (e) {
-          console.error(`Ошибка удаления файла ${filePath}:`, e);
+      const oldUrls = oldImages.map(img => img.image_url);
+      const newUrlsSet = new Set(images);
+
+      // Удаляем записи и файлы, которых нет в новом списке
+      const toDelete = oldUrls.filter(url => !newUrlsSet.has(url));
+      if (toDelete.length > 0) {
+        await db.query('DELETE FROM product_images WHERE product_id = ? AND image_url IN (?)', [id, toDelete]);
+        for (const url of toDelete) {
+          const filename = url.replace('/uploads/products/', '');
+          try { await fs.unlink(path.join(uploadDir, filename)); } catch { }
         }
       }
-      // Вставляем новые изображения
-      if (images.length > 0) {
-        const imageValues = images.map((url, index) => [id, url, index]);
-        await db.query('INSERT INTO product_images (product_id, image_url, sort_order) VALUES ?', [imageValues]);
-        // Обновляем основное изображение в products
-        await db.query('UPDATE products SET image = ? WHERE id = ?', [images[0], id]);
-      } else {
-        await db.query('UPDATE products SET image = NULL WHERE id = ?', [id]);
+
+      // Вставляем новые URL, которые отсутствуют в старом списке
+      for (const [index, url] of images.entries()) {
+        if (!oldUrls.includes(url)) {
+          await db.query('INSERT INTO product_images (product_id, image_url, sort_order) VALUES (?, ?, ?)', [id, url, index]);
+        }
       }
+
+      // Обновляем основное изображение
+      const mainImage = images.length > 0 ? images[0] : null;
+      await db.query('UPDATE products SET image = ? WHERE id = ?', [mainImage, id]);
     }
 
     res.json({ message: 'Product updated' });
@@ -977,6 +979,40 @@ app.patch('/api/admin/reviews/:id/toggle-approve', verifyToken, requireAdmin, as
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to toggle approval' });
+  }
+});
+
+// Удалить конкретное изображение товара (по URL)
+app.delete('/api/admin/products/:productId/images', verifyToken, requireAdmin, async (req, res) => {
+  const productId = parseInt(req.params.productId);
+  const { imageUrl } = req.body; // ожидаем { imageUrl: '/uploads/products/...' }
+  if (!imageUrl) return res.status(400).json({ error: 'imageUrl is required' });
+
+  try {
+    // Удаляем запись из БД
+    const [result] = await db.query('DELETE FROM product_images WHERE product_id = ? AND image_url = ?', [productId, imageUrl]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Image not found' });
+    }
+
+    // Удаляем файл с диска
+    const filename = imageUrl.replace('/uploads/products/', '');
+    const filePath = path.join(uploadDir, filename);
+    try {
+      await fs.unlink(filePath);
+    } catch (e) {
+      console.error('Ошибка удаления файла:', e);
+    }
+
+    // Обновляем поле image в products (ставим первое оставшееся или NULL)
+    const [images] = await db.query('SELECT image_url FROM product_images WHERE product_id = ? ORDER BY sort_order LIMIT 1', [productId]);
+    const newMainImage = images.length > 0 ? images[0].image_url : null;
+    await db.query('UPDATE products SET image = ? WHERE id = ?', [newMainImage, productId]);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete image' });
   }
 });
 

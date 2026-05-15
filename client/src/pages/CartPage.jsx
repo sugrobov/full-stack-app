@@ -88,10 +88,11 @@ const CartPage = () => {
             <div className="divide-y divide-gray-200">
               {items.map(item => {
                 const firstImage = item.images?.[0] || item.image;
+                const isValid = firstImage && (firstImage.startsWith('/images/') || firstImage.startsWith('/uploads/'));
                 return (
                   <div key={item.id} className="p-4 flex">
                     <div className="flex-shrink-0 w-24 h-24 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
-                      {firstImage ? (
+                      {isValid ? (
                         <img
                           src={firstImage}
                           alt={item.name}

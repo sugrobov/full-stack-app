@@ -19,7 +19,7 @@ const AdminProductEdit = () => {
   const [discount_price, setDiscountPrice] = useState('');
   const [stock, setStock] = useState('');
   const [description, setDescription] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const [images, setImages] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -47,8 +47,8 @@ const AdminProductEdit = () => {
         } else if (p.image) {
           firstImage = p.image;
         }
-        console.log('First image:', firstImage);
-        setImageUrl(firstImage);
+        // console.log('First image:', firstImage);
+        setImages(p.images || []);
 
         // получаем категории с проверкой на массив
         const catRes = await axios.get('/api/categories');
@@ -63,9 +63,9 @@ const AdminProductEdit = () => {
     fetchData();
   }, [id]);
 
-  const handleImageUploaded = (newUrl) => {
-    setImageUrl(newUrl);
-  };
+  /*   const handleImageUploaded = (newUrl) => {
+      setImageUrl(newUrl);
+    }; */
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -73,11 +73,12 @@ const AdminProductEdit = () => {
     try {
       const token = localStorage.getItem('token');
       await axios.put(`/api/admin/products/${id}`, {
-        name, category_id, price, discount_price, stock, description
+        name, category_id, price, discount_price, stock, description, images
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       alert('Товар сохранён');
+      console.log('Submitting images:', images);
       navigate('/admin/products');
     } catch (err) {
       console.error(err);
@@ -98,8 +99,8 @@ const AdminProductEdit = () => {
           <label className="block font-medium mb-2">Изображение товара</label>
           <ProductImageUpload
             productId={id}
-            existingImageUrl={imageUrl}
-            onImageUploaded={handleImageUploaded}
+            images={images}
+            onImagesChanged={setImages}
           />
         </div>
 

@@ -2,14 +2,30 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
 
-const ProductImageUpload = ({ productId, onImageUploaded, existingImageUrl }) => {
+const ProductImageUpload = ({ productId, images = [], onImagesChanged }) => {
   const [uploading, setUploading] = useState(false);
-  const [preview, setPreview] = useState(existingImageUrl || null);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    setPreview(existingImageUrl || null);
-  }, [existingImageUrl]);
+  // useEffect(() => {
+  //   setPreview(existingImageUrl || null);
+  // }, [existingImageUrl]);
+
+  // Удаление изображения
+  const handleDelete = async (urlToDelete) => {
+    if (!urlToDelete) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`/api/admin/products/${productId}/images`, {
+        data: { imageUrl: urlToDelete },
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // после удаления обновляем список изображений
+      const updated = images.filter(url => url !== urlToDelete);
+      onImagesChanged(updated);
+    } catch (err) {
+      setError('Ошибка удаления изображения');
+    }
+  };
 
   const onDrop = useCallback(async (acceptedFiles) => {
     const file = acceptedFiles[0];
@@ -32,8 +48,7 @@ const ProductImageUpload = ({ productId, onImageUploaded, existingImageUrl }) =>
     const formData = new FormData();
     formData.append('image', file);
 
-    // CSRF защита: если используете cookies
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
     const token = localStorage.getItem('token');
 
     try {
@@ -42,21 +57,22 @@ const ProductImageUpload = ({ productId, onImageUploaded, existingImageUrl }) =>
         formData,
         {
           headers: {
-            'Content-Type': 'multipart/form-data',
-            ...(csrfToken && { 'X-CSRF-Token': csrfToken }),
+            // 'Content-Type': 'multipart/form-data',
+            // ...(csrfToken && { 'X-CSRF-Token': csrfToken }),
             ...(token && { Authorization: `Bearer ${token}` }),
           },
         }
       );
-      const { imageUrl } = response.data;
-      setPreview(imageUrl);
-      if (onImageUploaded) onImageUploaded(imageUrl);
+      const newUrl = response.data.imageUrl;
+      // добавляем новый url в список изображений
+      onImagesChanged([...images, newUrl]);
+
     } catch (err) {
       setError(err.response?.data?.error || 'Ошибка загрузки');
     } finally {
       setUploading(false);
     }
-  }, [productId, onImageUploaded]);
+  }, [productId, images, onImagesChanged]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -71,6 +87,42 @@ const ProductImageUpload = ({ productId, onImageUploaded, existingImageUrl }) =>
 
   return (
     <div className="product-image-upload">
+      {/* галерея изображений */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+        {images.map(url => (
+          <div key={url} style={{ position: 'relative', width: '80px', height: '80px' }}>
+            <img
+              src={url}
+              alt=""
+              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px' }}
+            />
+            <button
+              type="button"
+              onClick={() => handleDelete(url)}
+              style={{
+                position: 'absolute',
+                top: -6,
+                right: -6,
+                background: 'red',
+                color: 'white',
+                border: 'none',
+                borderRadius: '50%',
+                width: '20px',
+                height: '20px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '12px',
+                lineHeight: '1',
+              }}
+              title="Удалить изображение"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+      </div>
       <div
         {...getRootProps()}
         style={{
@@ -83,14 +135,7 @@ const ProductImageUpload = ({ productId, onImageUploaded, existingImageUrl }) =>
         }}
       >
         <input {...getInputProps()} />
-        {preview ? (
-          <div>
-            <img src={preview} alt="Product" style={{ maxWidth: '200px', maxHeight: '200px', marginBottom: '10px' }} />
-            <p>Перетащите новое изображение или нажмите для замены</p>
-          </div>
-        ) : (
-          <p>{isDragActive ? 'Отпустите файл' : 'Перетащите изображение или кликните для выбора'}</p>
-        )}
+        <p>{isDragActive ? 'Отпустите файл' : 'Перетащите изображение или кликните для добавления'}</p>
       </div>
       {uploading && <p>Загрузка...</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}
