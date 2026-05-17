@@ -1,174 +1,135 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { useSearchParams } from 'react-router-dom';
-import { fetchProducts, fetchCategories, setCurrentPage, setFiltersFromURL } from '../store/productsSlice';
-import ProductCard from '../components/ProductCard';
-import Breadcrumb from '../components/Breadcrumb';
-import Filters from '../components/Filters';
-import Pagination from '../components/Pagination';
-import ProductSearch from '../components/ProductSearch';
-import ProductCardSkeleton from '../components/ProductCardSkeleton';
-import SortSelect from '../components/SortSelect';
-import ResetFiltersButton from '../components/ResetFiltersButton';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import toast from 'react-hot-toast';
+import Button from '../components/UI/Button';
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1, // задержка между появлением карточек
-    },
-  },
-};
+// Статичные данные (позже можно вынести в отдельный файл или подгружать с API)
+const newsItems = [
+  { id: 1, date: '2025-05-10', title: 'Новая коллекция летней одежды', preview: 'Легкие ткани, яркие цвета – встречайте лето стильно!' },
+  { id: 2, date: '2025-05-05', title: 'Скидка 20% на электронику', preview: 'Только до конца недели. Успейте купить смартфоны и ноутбуки со скидкой.' },
+  { id: 3, date: '2025-04-28', title: 'Бесплатная доставка от 3000₽', preview: 'При заказе от 3000 рублей доставка по городу бесплатно.' },
+];
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
-};
+const promotions = [
+  { id: 1, title: '🔥 Весенняя распродажа', description: 'Скидки до 50% на все товары из коллекции "Весна-Лето"', discount: 'до 50%', link: '/shop' },
+  { id: 2, title: '🎁 Подарок при заказе', description: 'При покупке от 5000₽ получите фирменный брелок в подарок', discount: 'подарок', link: '/shop' },
+  { id: 3, title: '🚚 Бесплатная доставка', description: 'Для всех заказов на сумму свыше 3000₽', discount: 'бесплатно', link: '/shop' },
+];
+
+const advantages = [
+  { icon: '🚀', title: 'Быстрая доставка', text: 'По всей стране за 1-3 дня' },
+  { icon: '🔄', title: 'Лёгкий возврат', text: 'Верните товар в течение 30 дней' },
+  { icon: '🔒', title: 'Безопасная оплата', text: 'SSL-шифрование и защита данных' },
+  { icon: '👍', title: 'Оригинальные товары', text: 'Только проверенные бренды' },
+];
 
 const HomePage = () => {
-  const dispatch = useDispatch();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { items, status, currentPage, totalPages, totalItems, selectedCategory, minPrice, maxPrice, sort } = useSelector(state => state.products);
-
-   const [toastShown, setToastShown] = useState(false); // Новый стейт для отображения тоста
-
-  // При монтировании читаем URL и обновляем Redux состояние
-  useEffect(() => {
-    const category = searchParams.get('category') || '';
-    const minPriceParam = searchParams.get('minPrice') || '';
-    const maxPriceParam = searchParams.get('maxPrice') || '';
-    const page = searchParams.get('page') || '1';
-    const sortParam = searchParams.get('sort') || 'default';
-    dispatch(setFiltersFromURL({ category, minPrice: minPriceParam, maxPrice: maxPriceParam, page, sort: sortParam }));
-  }, []);
-
-  // Загрузка категорий
-  useEffect(() => {
-    dispatch(fetchCategories());
-  }, [dispatch]);
-
-  // Загрузка товаров при изменении фильтров
-  useEffect(() => {
-    dispatch(fetchProducts());
-  }, [dispatch, currentPage, selectedCategory, minPrice, maxPrice, sort]);
-
-  // Синхронизация URL с Redux
-  useEffect(() => {
-    const params = {};
-    if (selectedCategory) params.category = selectedCategory;
-    if (minPrice) params.minPrice = minPrice;
-    if (maxPrice) params.maxPrice = maxPrice;
-    if (currentPage > 1) params.page = currentPage;
-    if (sort && sort !== 'default') params.sort = sort;
-    setSearchParams(params, { replace: true });
-  }, [selectedCategory, minPrice, maxPrice, currentPage, sort, setSearchParams]);
-
-   useEffect(() => {
-    if (status === 'succeeded' && totalItems > 0 && !toastShown) {
-      const discountedCount = items.filter(p => p.discount_price && p.discount_price < p.price).length;
-      if (discountedCount > 0) {
-        toast.success(`🔥 У нас ${discountedCount} товаров со скидкой!`);
-      } else {
-        toast.info('Следите за акциями – скоро появятся скидки!');
-      }
-      setToastShown(true);
-    }
-  }, [status, items, totalItems, toastShown]);
-
-  // Прокрутка вверх при изменении параметров (пропускаем первый рендер)
-  const isFirstRender = useRef(true);
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    window.scrollTo({ top: 0, behavior: 'auto' });
-  }, [currentPage, selectedCategory, minPrice, maxPrice, sort]);
-
-  const handlePageChange = (page) => {
-    dispatch(setCurrentPage(page));
-  };
-
-  // Показываем скелетоны только при первой загрузке (когда нет товаров и статус loading)
-  const showSkeletons = items.length === 0 && status === 'loading';
-  // Показываем ошибку, если она есть и нет товаров
-  if (status === 'failed' && items.length === 0) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center py-12">
-          <div className="text-red-500 text-lg mb-4">Ошибка загрузки товаров</div>
-          <button onClick={() => dispatch(fetchProducts())} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Повторить попытку</button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-6"><Breadcrumb /></div>
-      <h1 className="text-3xl font-bold text-gray-800 mb-2">Каталог товаров</h1>
-      <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
-        <p className="text-gray-600">Найдено товаров: {totalItems}</p>
-        <SortSelect />
-        <ResetFiltersButton />
-      </div>
-      <ProductSearch />
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        <div className="lg:col-span-1"><Filters /></div>
-        <div className="lg:col-span-3">
-          <div className="relative">
-            {showSkeletons ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[...Array(6)].map((_, idx) => <ProductCardSkeleton key={idx} />)}
-              </div>
-            ) : items.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-lg shadow">
-                <div className="text-gray-400 mb-4">
-                  <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium text-gray-800 mb-2">Товары не найдены</h3>
-                <p className="text-gray-600">Попробуйте изменить параметры фильтрации</p>
-              </div>
-            ) : (
-              <>
-                <motion.div
-                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate="visible"
-                  key={currentPage}
-                >
-                  {items.map(product => (
-                    <motion.div key={product.id} variants={itemVariants}>
-                      <ProductCard product={product} />
-                    </motion.div>
-                  ))}
-                </motion.div>
-                <div className="mt-8 flex justify-center">
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={handlePageChange}
-                    totalItems={totalItems}
-                    itemsPerPage={12}
-                  />
-                </div>
-              </>
-            )}
-            {/* Оверлей загрузки – появляется поверх существующих карточек */}
-            {status === 'loading' && items.length > 0 && (
-              <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
-              </div>
-            )}
+    <div className="bg-gray-50">
+      {/* Hero секция */}
+      <section className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-20">
+        <div className="container mx-auto px-4 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">Добро пожаловать в наш магазин!</h1>
+          <p className="text-xl md:text-2xl mb-8 opacity-90">Лучшие товары по лучшим ценам</p>
+          <Link to="/shop">
+            <Button variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600">
+              Перейти в магазин
+            </Button>
+          </Link>
+        </div>
+      </section>
+
+      {/* О компании */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-3xl font-bold text-gray-800 mb-6">О компании</h2>
+          <p className="text-gray-600 leading-relaxed">
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. 
+            Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. 
+            Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+          </p>
+        </div>
+      </section>
+
+      {/* Преимущества */}
+      <section className="bg-white py-16">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">Почему выбирают нас</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {advantages.map((adv, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.1 }}
+                viewport={{ once: true }}
+                className="text-center"
+              >
+                <div className="text-4xl mb-4">{adv.icon}</div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{adv.title}</h3>
+                <p className="text-gray-600">{adv.text}</p>
+              </motion.div>
+            ))}
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* Акции (компактно) */}
+      <section className="container mx-auto px-4 py-16">
+        <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">Акции и предложения</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {promotions.map((item) => (
+            <div key={item.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition">
+              <div className="p-6">
+                <div className="text-2xl mb-2">{item.title}</div>
+                <p className="text-gray-600 mb-4">{item.description}</p>
+                <div className="flex justify-between items-center">
+                  <span className="bg-red-100 text-red-800 text-sm font-semibold px-3 py-1 rounded-full">
+                    {item.discount}
+                  </span>
+                  <Link to={item.link}>
+                    <Button variant="primary" size="sm">Узнать</Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Новости */}
+      <section className="bg-white py-16">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">Новости</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {newsItems.map((news) => (
+              <div key={news.id} className="border rounded-lg p-6 hover:shadow-md transition">
+                <div className="text-sm text-gray-500 mb-2">{new Date(news.date).toLocaleDateString('ru-RU')}</div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-3">{news.title}</h3>
+                <p className="text-gray-600 mb-4">{news.preview}</p>
+                <button className="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center">
+                  Подробнее 
+                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Подписка */}
+      <section className="bg-gray-100 py-16">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Будьте в курсе новостей</h2>
+          <p className="text-gray-600 mb-6">Подпишитесь на рассылку и получайте первыми информацию о скидках и новинках</p>
+          <form className="max-w-md mx-auto flex flex-col sm:flex-row gap-4" onSubmit={(e) => { e.preventDefault(); alert('Функция подписки в разработке'); }}>
+            <input type="email" placeholder="Ваш email" className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+            <Button type="submit" variant="primary">Подписаться</Button>
+          </form>
+        </div>
+      </section>
     </div>
   );
 };

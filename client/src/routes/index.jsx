@@ -1,4 +1,5 @@
 import HomePage from '../pages/HomePage';
+import ShopPage from '../pages/ShopPage';
 import ProductPage from '../pages/ProductPage';
 import CartPage from '../pages/CartPage';
 import ContactPage from '../pages/ContactPage';
@@ -18,6 +19,7 @@ import AdminProductEdit from '../pages/Admin/AdminProductEdit';
 
 const routes = [
   { path: '/', element: <HomePage /> },
+  { path: '/shop', element: <ShopPage /> },
   { path: '/product/:id', element: <ProductPage /> },
   { path: '/cart', element: <CartPage /> },
   { path: '/contact', element: <ContactPage /> },
@@ -31,8 +33,8 @@ const routes = [
   { path: '/admin/products', element: <AdminRoute><AdminProducts /></AdminRoute> },
   { path: '/admin/orders', element: <AdminRoute><AdminOrders /></AdminRoute> },
   { path: '/admin/users', element: <AdminRoute><AdminUsers /></AdminRoute> },
-  { path:'/admin/reviews', element: <AdminRoute><AdminReviews /></AdminRoute>},
-  { path:'/admin/products/:id/edit', element : <AdminRoute><AdminProductEdit /></AdminRoute>},
+  { path: '/admin/reviews', element: <AdminRoute><AdminReviews /></AdminRoute> },
+  { path: '/admin/products/:id/edit', element: <AdminRoute><AdminProductEdit /></AdminRoute> },
 ];
 
 export default routes;
