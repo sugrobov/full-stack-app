@@ -1,19 +1,19 @@
-import { useEffect } from 'react';
+// import { useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+// import { useDispatch } from 'react-redux';
 import Header from './components/Header';
-import { fetchProducts } from './store/productsSlice';
+// import { fetchProducts } from './store/productsSlice';
 import routes from './routes';
 import { AnimatePresence } from 'framer-motion';
 import PageTransition from './components/PageTransition';
 
 function App() {
-  const dispatch = useDispatch();
+  // const dispatch = useDispatch();
   const location = useLocation();
 
-  useEffect(() => {
-    dispatch(fetchProducts());
-  }, [dispatch]);
+  // useEffect(() => {
+  //   dispatch(fetchProducts());
+  // }, [dispatch]);
 
   return (
 
