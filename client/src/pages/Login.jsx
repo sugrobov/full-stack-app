@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { login } from '../store/authSlice';
 import { Link, useNavigate } from 'react-router-dom';
@@ -8,7 +8,11 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { isLoading, error } = useSelector(state => state.auth);
+  const { user, isLoading, error } = useSelector(state => state.auth);
+
+  useEffect(() => { // редирект на главную страницу, если пользователь уже авторизован
+    if (user) navigate('/');
+  }, [user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { register } from '../store/authSlice';
 import { Link, useNavigate } from 'react-router-dom';
@@ -9,7 +9,12 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { isLoading, error } = useSelector(state => state.auth);
+  const { user, isLoading, error } = useSelector(state => state.auth);
+
+  useEffect(() => {
+    if (user) navigate('/');
+
+  }, [user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
