@@ -9,3 +9,5 @@ dist/
 package-lock.json
 client/public/images/ 
 client/public/images/** 
+project_snapshot.txt
+code-for-review.txt
