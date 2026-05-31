@@ -1,0 +1,8 @@
+const { testDb } = require('../test-setup');
+
+describe('Database connection', () => {
+  it('should connect to test database', async () => {
+    const [result] = await testDb.query('SELECT 1 as val');
+    expect(result[0].val).toBe(1);
+  });
+});

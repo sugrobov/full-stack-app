@@ -16,7 +16,11 @@ const path = require('path');
 const fs = require('fs').promises;
 const compression = require('compression');
 
-dotenv.config();
+if (process.env.NODE_ENV === 'test') {
+  dotenv.config({ path: path.join(__dirname, '.env.test') });
+} else {
+  dotenv.config();
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -45,7 +49,9 @@ db.query('SELECT 1')
   .then(() => console.log('Connected to MySQL database'))
   .catch(err => {
     console.error('Error connecting to MySQL:', err);
-    process.exit(1);
+    if (process.env.NODE_ENV !== 'test') {
+      process.exit(1);
+    }
   });
 
 // Вспомогательная функция получения изображений для массива товаров (промис-версия)
@@ -1016,4 +1022,8 @@ app.delete('/api/admin/products/:productId/images', verifyToken, requireAdmin, a
   }
 });
 
-app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+}
+
+module.exports = app;
