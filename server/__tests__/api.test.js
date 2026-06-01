@@ -4,6 +4,7 @@ jest.mock('file-type', () => ({ fileTypeFromBuffer: jest.fn() }));
 
 const request = require('supertest');
 const app = require('../server');
+const { db } = require('../server');
 const { testDb, resetDatabase } = require('./test-setup');
 
 beforeAll(async () => {
@@ -12,6 +13,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await testDb.end();
+  await db.end(); // Закрываем основной пул
 });
 
 describe('Auth API', () => {
