@@ -122,6 +122,7 @@ async function migrate() {
       user_id INT NOT NULL,
       rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
       comment TEXT,
+      is_approved TINYINT(1) DEFAULT 1,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
