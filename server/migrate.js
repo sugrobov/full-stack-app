@@ -44,7 +44,7 @@ async function migrate() {
   // 2. Products
   await db.query(`
     CREATE TABLE IF NOT EXISTS products (
-      id INT PRIMARY KEY,
+      id INT AUTO_INCREMENT PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
       category_id INT,
       price DECIMAL(10, 2) NOT NULL,

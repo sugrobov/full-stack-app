@@ -3,6 +3,7 @@ jest.mock('uuid', () => ({ v4: () => 'mocked-uuid' }));
 jest.mock('file-type', () => ({ fileTypeFromBuffer: jest.fn() }));
 
 const request = require('supertest');
+const bcrypt = require('bcryptjs');
 const app = require('../server');
 const { db } = require('../server');
 const { testDb, resetDatabase } = require('./test-setup');
@@ -191,18 +192,23 @@ describe('Orders API', () => {
   };
 
   beforeAll(async () => {
-    // Очищаем таблицу users, чтобы гарантированно зарегистрировать нового пользователя
+    // Очищаем связанные таблицы для чистоты
+    await testDb.query('DELETE FROM order_items');
+    await testDb.query('DELETE FROM orders');
     await testDb.query('DELETE FROM users');
+    await testDb.query('DELETE FROM products');
+    await testDb.query('DELETE FROM categories');
+
     userToken = await registerAndGetToken(validUser);
     if (!userToken) {
       throw new Error('Failed to get token in Orders test setup');
     }
 
-    // Вставляем тестовые категорию и продукты для корректности внешних ключей
+    // Вставляем тестовые категорию и продукты
     await testDb.query("INSERT INTO categories (name) VALUES ('Test Category')");
-    await testDb.query(`INSERT INTO products (id, name, category_id, price, stock) VALUES 
-      (1, 'Test Product 1', 1, 10.99, 10),
-      (2, 'Test Product 2', 1, 15.00, 10)
+    await testDb.query(`INSERT INTO products (name, category_id, price, stock) VALUES 
+      ('Test Product 1', 1, 10.99, 10),
+      ('Test Product 2', 1, 15.00, 10)
     `);
   });
 
@@ -263,6 +269,89 @@ describe('Orders API', () => {
         .get('/api/users/orders');
 
       expect(res.status).toBe(401);
+    });
+  });
+});
+
+describe('Admin API', () => {
+  let adminToken;
+  const adminCredentials = { email: 'admin@example.com', password: 'admin123' };
+
+  beforeAll(async () => {
+    // Полная очистка users, чтобы гарантировать свежую регистрацию
+    await testDb.query('DELETE FROM users');
+    const hashedPassword = await bcrypt.hash(adminCredentials.password, 10);
+    await testDb.query(
+      'INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)',
+      ['Admin', adminCredentials.email, hashedPassword, 'admin']
+    );
+
+    const loginRes = await request(app)
+      .post('/api/auth/login')
+      .send(adminCredentials);
+    adminToken = loginRes.body.token;
+  });
+
+  describe('GET /api/admin/products', () => {
+    it('should return 200 and array for admin', async () => {
+      const res = await request(app)
+        .get('/api/admin/products')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+    });
+
+    it('should return 403 for regular user', async () => {
+      // Создаём обычного пользователя
+      const userToken = await registerAndGetToken(validUser);
+      const res = await request(app)
+        .get('/api/admin/products')
+        .set('Authorization', `Bearer ${userToken}`);
+
+      expect(res.status).toBe(403);
+    });
+
+    it('should return 401 without token', async () => {
+      const res = await request(app)
+        .get('/api/admin/products');
+
+      expect(res.status).toBe(401);
+    });
+  });
+
+  describe('POST /api/admin/products', () => {
+    const newProduct = {
+      name: 'Admin Created Product',
+      category_id: 1,
+      price: 29.99,
+      discount_price: 24.99,
+      rating: 4.5,
+      stock: 50,
+      description: 'A test product created by admin',
+    };
+
+    it('should create a product as admin', async () => {
+      const res = await request(app)
+        .post('/api/admin/products')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(newProduct);
+
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty('id');
+      expect(res.body.name).toBe(newProduct.name);
+    });
+
+    it('should return 403 for regular user', async () => {
+      // Используем другой email, так как test@example.com уже существует после предыдущих тестов
+      const anotherUser = { name: 'User2', email: 'user2@example.com', password: 'password123' };
+      const userToken = await registerAndGetToken(anotherUser);
+      const res = await request(app)
+        .post('/api/admin/products')
+        .set('Authorization', `Bearer ${userToken}`)
+        .send(newProduct);
+
+      expect(res.status).toBe(403);
     });
   });
 });
