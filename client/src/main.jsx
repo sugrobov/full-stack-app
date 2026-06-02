@@ -10,21 +10,29 @@ import './utils/axiosConfig.js'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import './index.css'
 
+// Если запущено в Cypress, отключаем PersistGate, чтобы не восстанавливать состояние
+const isCypress = typeof window !== 'undefined' && window.Cypress;
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <BrowserRouter future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        }}>
+      {isCypress ? (
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <ErrorBoundary>
             <App />
             <Toaster position="bottom-right" toastOptions={{ duration: 3000 }} />
           </ErrorBoundary>
-
         </BrowserRouter>
-      </PersistGate>
+      ) : (
+        <PersistGate loading={null} persistor={persistor}>
+          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <ErrorBoundary>
+              <App />
+              <Toaster position="bottom-right" toastOptions={{ duration: 3000 }} />
+            </ErrorBoundary>
+          </BrowserRouter>
+        </PersistGate>
+      )}
     </Provider>
-  </StrictMode>,
+  </StrictMode>
 )

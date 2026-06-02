@@ -25,7 +25,8 @@
     "react-router-dom": "^6.8.0"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "cypress": "^15.16.0"
   },
   "keywords": [],
   "author": "",

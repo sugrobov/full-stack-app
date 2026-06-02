@@ -3,7 +3,11 @@ const dotenv = require('dotenv');
 const path = require('path');
 
 // Загружаем .env.test
-dotenv.config({ path: path.join(__dirname, '.env.test') });
+if (process.env.NODE_ENV === 'test') {
+  dotenv.config({ path: path.join(__dirname, '.env.test') });
+} else {
+  dotenv.config();
+}
 
 async function migrate() {
   console.log('🚀 Начинаю миграцию...');
