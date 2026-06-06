@@ -1,14 +1,12 @@
 describe('Auth E2E', () => {
   beforeEach(() => {
-    // Полная очистка и загрузка главной страницы перед каждым тестом
-    cy.visit('/', {
-      onBeforeLoad(win) {
-        win.localStorage.clear();
-        win.sessionStorage.clear();
-        if (win.indexedDB) {
-          win.indexedDB.deleteDatabase('shoppingCart');
-        }
-      },
+    // Полная очистка перед каждым тестом
+    cy.window().then((win) => {
+      win.localStorage.clear();
+      win.sessionStorage.clear();
+      if (win.indexedDB) {
+        win.indexedDB.deleteDatabase('shoppingCart');
+      }
     });
 
     cy.intercept('GET', '/api/auth/me', {
@@ -33,19 +31,29 @@ describe('Auth E2E', () => {
   it('should login with existing user', () => {
     const email = `login-${Date.now()}@example.com`;
 
+    // Создаём пользователя через API и дожидаемся ответа
     cy.request({
       method: 'POST',
       url: 'http://localhost:5000/api/auth/register',
       body: { name: 'Login User', email, password: 'password123' },
-      failOnStatusCode: false,
+    }).then((response) => {
+      expect(response.status).to.eq(201);
     });
 
+    // Переходим на страницу логина
     cy.visit('/login');
     cy.url().should('include', '/login');
+
+    // Заполняем форму
     cy.get('input[type="email"]').should('be.visible').type(email);
     cy.get('input[type="password"]').should('be.visible').type('password123');
-    cy.contains('button', 'Войти').click();
+    // Используем form button, чтобы не зацепить кнопку "Войти" в Header
+    cy.get('form').contains('button', 'Войти').click();
+
+    // Ждём ответа от сервера
     cy.wait('@login').its('response.statusCode').should('eq', 200);
+
+    // Проверяем редирект на главную
     cy.url().should('eq', Cypress.config().baseUrl + '/');
   });
 });

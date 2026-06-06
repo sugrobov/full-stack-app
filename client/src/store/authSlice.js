@@ -5,24 +5,16 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 export const register = createAsyncThunk('auth/register', async ({ name, email, password }) => {
   const response = await axios.post(`${API_URL}/auth/register`, { name, email, password });
-  if (response.data.token) {
-    localStorage.setItem('token', response.data.token);
-    localStorage.setItem('user', JSON.stringify(response.data.user));
-  }
   return response.data;
 });
 
 export const login = createAsyncThunk('auth/login', async ({ email, password }) => {
   const response = await axios.post(`${API_URL}/auth/login`, { email, password });
-  if (response.data.token) {
-    localStorage.setItem('token', response.data.token);
-    localStorage.setItem('user', JSON.stringify(response.data.user));
-  }
   return response.data;
 });
 
 export const loadUser = createAsyncThunk('auth/loadUser', async (_, { getState }) => {
-  const token = localStorage.getItem('token');
+  const { token } = getState().auth;
   if (!token) throw new Error('No token');
   const response = await axios.get(`${API_URL}/auth/me`, {
     headers: { Authorization: `Bearer ${token}` }
@@ -33,15 +25,13 @@ export const loadUser = createAsyncThunk('auth/loadUser', async (_, { getState }
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
-    user: JSON.parse(localStorage.getItem('user')) || null,
-    token: localStorage.getItem('token') || null,
+    user: null,
+    token: null,
     isLoading: false,
     error: null,
   },
   reducers: {
     logout: (state) => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
       state.user = null;
       state.token = null;
     },
@@ -86,8 +76,6 @@ const authSlice = createSlice({
       })
       .addCase(loadUser.rejected, (state) => {
         state.isLoading = false;
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
         state.user = null;
         state.token = null;
       });

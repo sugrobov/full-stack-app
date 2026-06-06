@@ -1,23 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import authReducer, { logout, clearError } from '../authSlice';
 import { register, login, loadUser } from '../authSlice';
 
-// Мок localStorage (используем настоящий jsdom localStorage, который доступен в vitest с environment: jsdom)
-const localStorageMock = {
-  getItem: vi.spyOn(Storage.prototype, 'getItem'),
-  setItem: vi.spyOn(Storage.prototype, 'setItem'),
-  removeItem: vi.spyOn(Storage.prototype, 'removeItem'),
-  clear: vi.spyOn(Storage.prototype, 'clear'),
-};
-
 beforeEach(() => {
-  vi.clearAllMocks();
   localStorage.clear();
 });
 
 describe('authSlice', () => {
   describe('initial state', () => {
-    it('should return null user and token when localStorage is empty', () => {
+    it('should return null user and token', () => {
       const state = authReducer(undefined, { type: '@@INIT' });
       expect(state.user).toBeNull();
       expect(state.token).toBeNull();
@@ -27,7 +17,7 @@ describe('authSlice', () => {
   });
 
   describe('logout reducer', () => {
-    it('should clear user, token and remove from localStorage', () => {
+    it('should clear user and token', () => {
       const previousState = {
         user: { id: 1, name: 'Test' },
         token: 'some-token',
@@ -37,8 +27,6 @@ describe('authSlice', () => {
       const state = authReducer(previousState, logout());
       expect(state.user).toBeNull();
       expect(state.token).toBeNull();
-      expect(localStorage.removeItem).toHaveBeenCalledWith('token');
-      expect(localStorage.removeItem).toHaveBeenCalledWith('user');
     });
   });
 
@@ -72,7 +60,6 @@ describe('authSlice', () => {
       expect(state.isLoading).toBe(false);
       expect(state.user).toEqual(responseData.user);
       expect(state.token).toBe(responseData.token);
-      // localStorage.save происходит в thunk'е, а не в редьюсере – здесь не проверяем
     });
 
     it('should set error on rejected', () => {
@@ -124,7 +111,7 @@ describe('authSlice', () => {
       expect(state.user).toEqual(user);
     });
 
-    it('should clear auth data and localStorage on rejected', () => {
+    it('should clear auth data on rejected', () => {
       const previousState = {
         user: { id: 1, name: 'Existing' },
         token: 'old-token',
@@ -135,8 +122,6 @@ describe('authSlice', () => {
       expect(state.isLoading).toBe(false);
       expect(state.user).toBeNull();
       expect(state.token).toBeNull();
-      expect(localStorage.removeItem).toHaveBeenCalledWith('token');
-      expect(localStorage.removeItem).toHaveBeenCalledWith('user');
     });
   });
 });
