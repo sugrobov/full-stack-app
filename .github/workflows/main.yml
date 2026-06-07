@@ -66,8 +66,14 @@ jobs:
         working-directory: client
 
       # --- E2E шаги ---
+      - name: Install root dependencies (Cypress)
+        run: npm ci
+
+      - name: Create client .env for E2E
+        run: echo "VITE_API_URL=/api" > client/.env
+
       - name: Start server in test mode
-        run: nohup npm run start:test --prefix server &
+        run: nohup npm run start:test --prefix server > /tmp/server.log 2>&1 &
         env:
           NODE_ENV: test
           DB_HOST: 127.0.0.1
@@ -78,10 +84,53 @@ jobs:
           START_SERVER: true
 
       - name: Start client dev server
-        run: nohup npm run dev --prefix client &
+        run: nohup npm run dev --prefix client > /tmp/client.log 2>&1 &
 
       - name: Wait for servers to be ready
-        run: npx wait-on http://127.0.0.1:5000/api/products http://127.0.0.1:5173
+        run: |
+          echo "Waiting for server (port 5000)..."
+          for i in $(seq 1 30); do
+            HTTP_CODE=$(curl -s -o /tmp/server-response.json -w "%{http_code}" http://127.0.0.1:5000/api/products)
+            echo "Attempt $i: server returned $HTTP_CODE"
+            if echo "$HTTP_CODE" | grep -qE '^[23]'; then
+              echo "Server is ready!"
+              cat /tmp/server-response.json
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              echo "Server failed to start. Logs:"
+              cat /tmp/server.log
+              exit 1
+            fi
+            sleep 2
+          done
+
+          echo "Waiting for client (port 5173)..."
+          for i in $(seq 1 30); do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5173)
+            echo "Attempt $i: client returned $HTTP_CODE"
+            if echo "$HTTP_CODE" | grep -qE '^[23]'; then
+              echo "Client is ready!"
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              echo "Client failed to start. Logs:"
+              cat /tmp/client.log
+              exit 1
+            fi
+            sleep 2
+          done
+
+      - name: Verify API through Vite proxy
+        run: |
+          echo "Testing API through Vite proxy..."
+          curl -s http://127.0.0.1:5173/api/products | head -c 200
+          echo ""
+          echo "Proxy test complete."
 
       - name: Run Cypress E2E tests
         run: npx cypress run
+        working-directory: .
+        env:
+          CYPRESS_baseUrl: http://127.0.0.1:5173
+          CYPRESS_defaultCommandTimeout: 10000
