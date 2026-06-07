@@ -73,24 +73,32 @@ jobs:
         run: echo "VITE_API_URL=/api" > client/.env
 
       - name: Start server in test mode
-        run: nohup npm run start:test --prefix server > /tmp/server.log 2>&1 &
-        env:
-          NODE_ENV: test
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_USER: root
-          DB_PASSWORD: ''
-          DB_NAME: store_db_test
-          START_SERVER: true
+        run: |
+          nohup env NODE_ENV=test DB_HOST=127.0.0.1 DB_PORT=3306 DB_USER=root DB_PASSWORD='' DB_NAME=store_db_test START_SERVER=true npm run start:test --prefix server > /tmp/server.log 2>&1 &
+          sleep 2
+          echo "Server PID: $!"
+          # Проверим, жив ли процесс
+          ps aux | grep -E "node.*server" | grep -v grep || echo "Server process not found"
 
       - name: Start client dev server
-        run: nohup npm run dev --prefix client > /tmp/client.log 2>&1 &
+        run: |
+          nohup npm run dev --prefix client > /tmp/client.log 2>&1 &
+          sleep 2
+          echo "Client PID: $!"
+          ps aux | grep -E "node.*vite" | grep -v grep || echo "Client process not found"
 
       - name: Wait for servers to be ready
         run: |
+          echo "=== Server log contents ==="
+          cat /tmp/server.log 2>/dev/null || echo "No server log yet"
+          echo ""
+          echo "=== Client log contents ==="
+          cat /tmp/client.log 2>/dev/null || echo "No client log yet"
+          echo ""
+
           echo "Waiting for server (port 5000)..."
           for i in $(seq 1 30); do
-            HTTP_CODE=$(curl -s -o /tmp/server-response.json -w "%{http_code}" http://127.0.0.1:5000/api/products)
+            HTTP_CODE=$(curl -s -o /tmp/server-response.json -w "%{http_code}" http://127.0.0.1:5000/api/products 2>/dev/null || echo "000")
             echo "Attempt $i: server returned $HTTP_CODE"
             if echo "$HTTP_CODE" | grep -qE '^[23]'; then
               echo "Server is ready!"
@@ -98,8 +106,12 @@ jobs:
               break
             fi
             if [ "$i" -eq 30 ]; then
-              echo "Server failed to start. Logs:"
+              echo "Server failed to start. Full logs:"
+              echo "=== Server log ==="
               cat /tmp/server.log
+              echo ""
+              echo "=== Running processes ==="
+              ps aux | grep node | grep -v grep
               exit 1
             fi
             sleep 2
@@ -107,15 +119,19 @@ jobs:
 
           echo "Waiting for client (port 5173)..."
           for i in $(seq 1 30); do
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5173)
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5173 2>/dev/null || echo "000")
             echo "Attempt $i: client returned $HTTP_CODE"
             if echo "$HTTP_CODE" | grep -qE '^[23]'; then
               echo "Client is ready!"
               break
             fi
             if [ "$i" -eq 30 ]; then
-              echo "Client failed to start. Logs:"
+              echo "Client failed to start. Full logs:"
+              echo "=== Client log ==="
               cat /tmp/client.log
+              echo ""
+              echo "=== Running processes ==="
+              ps aux | grep node | grep -v grep
               exit 1
             fi
             sleep 2
