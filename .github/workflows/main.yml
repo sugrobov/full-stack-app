@@ -80,7 +80,7 @@ jobs:
         run: nohup npm run dev --prefix client &
 
       - name: Wait for servers to be ready
-        npx wait-on http://127.0.0.1:5000/api/products http://127.0.0.1:5173
-
+        run: npx wait-on http://127.0.0.1:5000/api/products http://127.0.0.1:5173
+        
       - name: Run Cypress E2E tests
         run: npx cypress run
