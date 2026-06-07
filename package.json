@@ -26,7 +26,8 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
-    "cypress": "^15.16.0"
+    "cypress": "^15.16.0",
+    "wait-on": "^9.0.10"
   },
   "keywords": [],
   "author": "",

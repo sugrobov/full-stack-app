@@ -9,6 +9,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # убираем warning Node20
 
     services:
       mysql:
@@ -62,3 +64,23 @@ jobs:
       - name: Run client unit tests
         run: npm run test
         working-directory: client
+
+      # --- E2E шаги ---
+      - name: Start server in test mode
+        run: nohup npm run start:test --prefix server &
+        env:
+          NODE_ENV: test
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASSWORD: ''
+          DB_NAME: store_db_test
+
+      - name: Start client dev server
+        run: nohup npm run dev --prefix client &
+
+      - name: Wait for servers to be ready
+        run: npx wait-on http://localhost:5000/api/products http://127.0.0.1:5173
+
+      - name: Run Cypress E2E tests
+        run: npx cypress run
