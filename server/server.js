@@ -1022,7 +1022,7 @@ app.delete('/api/admin/products/:productId/images', verifyToken, requireAdmin, a
   }
 });
 
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== 'test' || process.env.CI) {
   app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
 }
 
