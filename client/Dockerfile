@@ -1,0 +1,24 @@
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+
+# Сборка проекта
+RUN npm run build
+
+# Этап production: используем Nginx для раздачи статики
+FROM nginx:alpine
+
+# Копируем собранные файлы из builder
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Копируем конфиг Nginx (создадим далее)
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
