@@ -11,8 +11,10 @@ services:
       - mysql_data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 20s
+      interval: 10s
+      timeout: 5s
       retries: 10
+      start_period: 60s 
 
   server:
     build: ./server
