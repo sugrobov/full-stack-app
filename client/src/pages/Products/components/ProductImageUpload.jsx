@@ -2,6 +2,8 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const ProductImageUpload = ({ productId, images = [], onImagesChanged }) => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -15,7 +17,7 @@ const ProductImageUpload = ({ productId, images = [], onImagesChanged }) => {
     if (!urlToDelete) return;
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`/api/admin/products/${productId}/images`, {
+      await axios.delete(`${API_URL}/admin/products/${productId}/images`, {
         data: { imageUrl: urlToDelete },
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -53,7 +55,7 @@ const ProductImageUpload = ({ productId, images = [], onImagesChanged }) => {
 
     try {
       const response = await axios.post(
-        `/api/admin/products/${productId}/upload`,
+        `${API_URL}/admin/products/${productId}/upload`,
         formData,
         {
           headers: {

@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import ProductImageUpload from '../Products/components/ProductImageUpload'; // компонент загрузки изображения
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const AdminProductEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -27,7 +29,7 @@ const AdminProductEdit = () => {
         const token = localStorage.getItem('token');
         console.log('Fetching product', id, 'token:', token ? 'present' : 'missing');
         // получаем товар
-        const productRes = await axios.get(`/api/admin/products/${id}`, {
+        const productRes = await axios.get(`${API_URL}/admin/products/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         console.log('Product response:', productRes.data);
@@ -51,7 +53,7 @@ const AdminProductEdit = () => {
         setImages(p.images || []);
 
         // получаем категории с проверкой на массив
-        const catRes = await axios.get('/api/categories');
+        const catRes = await axios.get(`${API_URL}/categories`);
         setCategories(Array.isArray(catRes.data) ? catRes.data : []);
       } catch (err) {
         console.error('Error fetching product:', err.response ? err.response.status : err.message);
@@ -72,7 +74,7 @@ const AdminProductEdit = () => {
     setSaving(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`/api/admin/products/${id}`, {
+      await axios.put(`${API_URL}/admin/products/${id}`, {
         name, category_id, price, discount_price, stock, description, images
       }, {
         headers: { Authorization: `Bearer ${token}` }
