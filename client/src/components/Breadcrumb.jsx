@@ -49,6 +49,12 @@ const Breadcrumb = ({ productName }) => {
       name: 'Обратная связь',
       path: '/contact'
     });
+  } else if (location.pathname.startsWith('/news')) {
+    // News pages
+    breadcrumbs.push({
+      name: 'Новости',
+      path: '/news'
+    });
   }
 
   return (

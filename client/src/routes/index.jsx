@@ -9,6 +9,8 @@ import Register from '../pages/Register';
 import ProfilePage from '../pages/ProfilePage';
 import CheckoutPage from '../pages/CheckoutPage';
 import FavoritesPage from '../pages/FavoritesPage';
+import NewsPage from '../pages/NewsPage';
+import NewsDetailPage from '../pages/NewsDetailPage';
 import AdminRoute from '../components/AdminRoute';
 import AdminDashboard from '../pages/Admin/AdminDashboard';
 import AdminProducts from '../pages/Admin/AdminProducts';
@@ -29,6 +31,8 @@ const routes = [
   { path: '/profile', element: <ProfilePage /> },
   { path: '/checkout', element: <CheckoutPage /> },
   { path: '/favorites', element: <FavoritesPage /> },
+  { path: '/news', element: <NewsPage /> },
+  { path: '/news/:id', element: <NewsDetailPage /> },
   { path: '/admin', element: <AdminRoute><AdminDashboard /></AdminRoute> },
   { path: '/admin/products', element: <AdminRoute><AdminProducts /></AdminRoute> },
   { path: '/admin/orders', element: <AdminRoute><AdminOrders /></AdminRoute> },
