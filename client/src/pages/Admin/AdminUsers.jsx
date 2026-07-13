@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 import BackToAdminButton from '../../components/UI/BackToAdminButton';
+import Pagination from '../../components/Pagination';
 
 const API_URL = import.meta.env.VITE_API_URL;
+const ITEMS_PER_PAGE = 10;
 
 const AdminUsers = () => {
   const { token } = useSelector(state => state.auth);
@@ -11,21 +13,35 @@ const AdminUsers = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
 
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ page: 1, limit: ITEMS_PER_PAGE, totalPages: 1, totalItems: 0 });
+
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [page]);
 
   const fetchUsers = async () => {
     try {
+      setLoading(true);
       const res = await axios.get(`${API_URL}/admin/users`, {
+        params: { page, limit: ITEMS_PER_PAGE },
         headers: { Authorization: `Bearer ${token}` }
       });
-      setUsers(Array.isArray(res.data) ? res.data : []);
+      const data = res.data;
+      setUsers(Array.isArray(data.users) ? data.users : []);
+      if (data.pagination) {
+        setPagination(data.pagination);
+      }
     } catch (err) {
       console.error('Ошибка загрузки пользователей:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
   };
 
   const updateRole = async (userId, newRole) => {
@@ -88,6 +104,17 @@ const AdminUsers = () => {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Пагинация */}
+      <div className="mt-6">
+        <Pagination
+          currentPage={pagination.page}
+          totalPages={pagination.totalPages}
+          onPageChange={handlePageChange}
+          totalItems={pagination.totalItems}
+          itemsPerPage={pagination.limit}
+        />
       </div>
     </div>
   );

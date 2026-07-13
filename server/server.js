@@ -875,11 +875,22 @@ app.put('/api/admin/orders/:id/status', verifyToken, requireAdmin, async (req, r
   }
 });
 
-// Получить всех пользователей
+// Получить всех пользователей с пагинацией
 app.get('/api/admin/users', verifyToken, requireAdmin, async (req, res) => {
   try {
-    const [users] = await db.query('SELECT id, name, email, role, created_at FROM users ORDER BY id');
-    res.json(users);
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));
+    const offset = (page - 1) * limit;
+
+    const [countResult] = await db.query('SELECT COUNT(*) AS total FROM users');
+    const totalItems = countResult[0].total;
+    const totalPages = Math.ceil(totalItems / limit);
+
+    const [users] = await db.query(
+      'SELECT id, name, email, role, created_at FROM users ORDER BY id LIMIT ? OFFSET ?',
+      [limit, offset]
+    );
+    res.json({ users, pagination: { page, limit, totalPages, totalItems } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Database error' });
