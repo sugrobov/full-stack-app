@@ -39,25 +39,59 @@ app.use('/uploads', (req, res, next) => {
 }, express.static(path.join(__dirname, 'uploads')));
 
 // Пул с промисами (для всех запросов)
-const db = mysql.createPool({
+const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'store_db',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
-}).promise();
+  queueLimit: 0,
+  acquireTimeout: 10000,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000
+});
 
-// Проверка подключения
-db.query('SELECT 1')
-  .then(() => console.log('Connected to MySQL database'))
-  .catch(err => {
-    console.error('Error connecting to MySQL:', err);
-    if (process.env.NODE_ENV !== 'test') {
-      process.exit(1);
+// Обработчик ошибок пула — логирование и автоматическое восстановление
+pool.on('connection', (connection) => {
+  console.log('New MySQL connection established (ID: ' + connection.threadId + ')');
+  connection.on('error', (err) => {
+    console.error('MySQL connection error (ID: ' + connection.threadId + '):', err.message);
+    if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNRESET') {
+      console.log('Connection lost — pool will create a new one automatically');
     }
   });
+});
+
+pool.on('error', (err) => {
+  console.error('MySQL pool error:', err.message);
+});
+
+const db = pool.promise();
+
+// Проверка подключения
+async function checkDbConnection(retries = 5, delay = 3000) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await db.query('SELECT 1');
+      console.log('Connected to MySQL database');
+      return;
+    } catch (err) {
+      console.error(`Error connecting to MySQL (attempt ${i + 1}/${retries}):`, err.message);
+      if (i < retries - 1) {
+        console.log(`Retrying in ${delay / 1000}s...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        console.error('All connection attempts failed. Exiting.');
+        if (process.env.NODE_ENV !== 'test') {
+          process.exit(1);
+        }
+      }
+    }
+  }
+}
+
+checkDbConnection();
 
 // Настройка Nodemailer (с фолбэком на ethereal, если EMAIL_USER не задан)
 let transporter = null;
