@@ -47,6 +47,21 @@ app.use(cors({
 app.use(compression());
 app.use(express.json());
 
+// Глобальные заголовки безопасности
+// CSRF-защита: SPA использует JWT в Authorization: Bearer header для всех
+// state-changing запросов. Браузеры не отправляют кастомные заголовки
+// автоматически при межсайтовых запросах, что делает CSRF атаки
+// невозможными для этого типа аутентификации.
+app.use((req, res, next) => {
+  res.set({
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'X-XSS-Protection': '0',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+  });
+  next();
+});
+
 // Rate limiting
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 минут
