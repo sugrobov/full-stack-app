@@ -1304,6 +1304,30 @@ app.delete('/api/admin/products/:productId/images', verifyToken, requireAdmin, a
   }
 });
 
+// 404 — неизвестный маршрут API
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ error: `Route ${req.method} ${req.originalUrl} not found` });
+});
+
+// Глобальный обработчик ошибок Express (4 параметра)
+app.use((err, req, res, next) => {
+  const statusCode = err.statusCode || err.status || 500;
+  const message = err.message || 'Internal server error';
+
+  // Логируем ошибки сервера
+  if (statusCode >= 500) {
+    console.error(`[ERROR] ${req.method} ${req.originalUrl}:`, err);
+    if (process.env.NODE_ENV === 'development') {
+      console.error(err.stack);
+    }
+  }
+
+  res.status(statusCode).json({
+    error: message,
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
+});
+
 if (process.env.NODE_ENV !== 'test' || process.env.START_SERVER === 'true') {
   app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
 }
