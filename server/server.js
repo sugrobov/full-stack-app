@@ -2,7 +2,7 @@ const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
 const dotenv = require('dotenv');
-// const nodemailer = require('nodemailer');
+const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
 const { generateToken, verifyToken, requireAdmin } = require('./auth');
@@ -53,6 +53,40 @@ db.query('SELECT 1')
       process.exit(1);
     }
   });
+
+// Настройка Nodemailer (с фолбэком на ethereal, если EMAIL_USER не задан)
+let transporter = null;
+async function initTransporter() {
+  if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+    console.log('Email transporter configured with Gmail');
+  } else {
+    // Создаём тестовый аккаунт ethereal.email для разработки
+    try {
+      const testAccount = await nodemailer.createTestAccount();
+      transporter = nodemailer.createTransport({
+        host: 'smtp.ethereal.email',
+        port: 587,
+        secure: false,
+        auth: {
+          user: testAccount.user,
+          pass: testAccount.pass,
+        },
+      });
+      console.log('Email transporter configured with Ethereal (dev mode)');
+      console.log('  Preview URL will be available after sending');
+    } catch (err) {
+      console.warn('Failed to create Ethereal account, emails will be simulated:', err.message);
+    }
+  }
+}
+initTransporter();
 
 // Вспомогательная функция получения изображений для массива товаров (промис-версия)
 async function getImagesForProducts(productIds) {
@@ -503,13 +537,38 @@ app.post('/api/orders', verifyToken, [
   }
 });
 
-app.post('/api/contact', (req, res) => {
+app.post('/api/contact', async (req, res) => {
   const { subject, message } = req.body;
   if (!subject || subject.length < 3 || !message || message.length < 10) {
     return res.status(400).json({ error: 'Invalid data' });
   }
-  // имитация отправки почты (nodemailer настройте по желанию)
-  res.json({ success: true, message: 'Message sent successfully (simulated)' });
+  try {
+    if (transporter) {
+      const info = await transporter.sendMail({
+        from: process.env.EMAIL_FROM || '"Contact Form" <noreply@example.com>',
+        to: process.env.CONTACT_EMAIL || 'contact@example.com',
+        subject: `[Contact Form] ${subject}`,
+        text: message,
+        html: `<p>${message.replace(/\n/g, '<br>')}</p>`,
+      });
+      console.log('Contact email sent:', info.messageId);
+      // Если используем Ethereal, показываем preview URL
+      const previewUrl = nodemailer.getTestMessageUrl(info);
+      const response = { success: true, message: 'Message sent successfully' };
+      if (previewUrl) {
+        response.previewUrl = previewUrl;
+        console.log('Preview URL:', previewUrl);
+      }
+      res.json(response);
+    } else {
+      // Фолбэк: симуляция, если транспортер не настроен
+      console.log('Contact form submission (simulated):', { subject, message });
+      res.json({ success: true, message: 'Message sent successfully (simulated)' });
+    }
+  } catch (err) {
+    console.error('Failed to send contact email:', err);
+    res.status(500).json({ error: 'Failed to send message' });
+  }
 });
 
 app.post('/api/products/by-ids', async (req, res) => {

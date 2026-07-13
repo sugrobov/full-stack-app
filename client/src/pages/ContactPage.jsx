@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import Button from '../components/UI/Button';
 import Input from '../components/UI/Input';
 import Breadcrumb from '../components/Breadcrumb';
 import { Link } from 'react-router-dom';
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 const ContactPage = () => {
   const [formData, setFormData] = useState({
@@ -45,7 +48,7 @@ const ContactPage = () => {
     setIsCaptchaVerified(false);
   };
   
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!isCaptchaVerified) {
@@ -68,8 +71,12 @@ const ContactPage = () => {
     setIsSubmitting(true);
     setSubmitError('');
     
-    // Simulate form submission
-    setTimeout(() => {
+    try {
+      await axios.post(`${API_URL}/contact`, {
+        subject: formData.subject,
+        message: formData.message,
+      });
+      
       setIsSubmitting(false);
       setSubmitSuccess(true);
       
@@ -86,7 +93,10 @@ const ContactPage = () => {
       setTimeout(() => {
         setSubmitSuccess(false);
       }, 5000);
-    }, 1500);
+    } catch (err) {
+      setIsSubmitting(false);
+      setSubmitError(err.response?.data?.error || 'Ошибка отправки сообщения. Попробуйте позже.');
+    }
   };
   
   const handleReset = () => {
