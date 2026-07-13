@@ -4,8 +4,10 @@ import { useSelector } from 'react-redux';
 import axios from 'axios';
 import TableSkeleton from '../../components/UI/TableSkeleton';
 import BackToAdminButton from '../../components/UI/BackToAdminButton';
+import Pagination from '../../components/Pagination';
 
 const API_URL = import.meta.env.VITE_API_URL;
+const ITEMS_PER_PAGE = 10;
 
 const AdminOrders = () => {
   const { token } = useSelector(state => state.auth);
@@ -20,9 +22,13 @@ const AdminOrders = () => {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ page: 1, limit: ITEMS_PER_PAGE, totalPages: 1, totalItems: 0 });
+
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     applyFilters();
@@ -30,15 +36,25 @@ const AdminOrders = () => {
 
   const fetchOrders = async () => {
     try {
+      setLoading(true);
       const res = await axios.get(`${API_URL}/admin/orders`, {
+        params: { page, limit: ITEMS_PER_PAGE },
         headers: { Authorization: `Bearer ${token}` }
       });
-      setOrders(Array.isArray(res.data) ? res.data : []);
+      const data = res.data;
+      setOrders(Array.isArray(data.orders) ? data.orders : []);
+      if (data.pagination) {
+        setPagination(data.pagination);
+      }
     } catch (err) {
       console.error('Ошибка загрузки заказов:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
   };
 
   const applyFilters = () => {
@@ -164,6 +180,17 @@ const AdminOrders = () => {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Пагинация */}
+      <div className="mt-6">
+        <Pagination
+          currentPage={pagination.page}
+          totalPages={pagination.totalPages}
+          onPageChange={handlePageChange}
+          totalItems={pagination.totalItems}
+          itemsPerPage={pagination.limit}
+        />
       </div>
     </div>
   );

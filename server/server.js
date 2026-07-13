@@ -795,15 +795,24 @@ app.delete('/api/admin/products/:id', verifyToken, requireAdmin, async (req, res
   }
 });
 
-// Получить все заказы (с данными пользователя)
+// Получить все заказы (с данными пользователя) с пагинацией
 app.get('/api/admin/orders', verifyToken, requireAdmin, async (req, res) => {
   try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));
+    const offset = (page - 1) * limit;
+
+    const [countResult] = await db.query('SELECT COUNT(*) AS total FROM orders');
+    const totalItems = countResult[0].total;
+    const totalPages = Math.ceil(totalItems / limit);
+
     const [orders] = await db.query(`
       SELECT o.*, u.name as user_name, u.email as user_email
       FROM orders o
       JOIN users u ON o.user_id = u.id
       ORDER BY o.created_at DESC
-    `);
+      LIMIT ? OFFSET ?
+    `, [limit, offset]);
     for (let order of orders) {
       const [items] = await db.query(`
         SELECT oi.*, p.name
@@ -813,7 +822,7 @@ app.get('/api/admin/orders', verifyToken, requireAdmin, async (req, res) => {
       `, [order.id]);
       order.items = items;
     }
-    res.json(orders);
+    res.json({ orders, pagination: { page, limit, totalPages, totalItems } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Database error' });
