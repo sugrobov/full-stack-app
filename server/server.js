@@ -641,18 +641,30 @@ app.post('/api/products/by-ids', async (req, res) => {
 
 // ==================== АДМИН-ПАНЕЛЬ (только для админов) ====================
 
-// Получить все товары (без фильтра stock)
+// Получить все товары (без фильтра stock) с пагинацией
 app.get('/api/admin/products', verifyToken, requireAdmin, async (req, res) => {
   try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));
+    const offset = (page - 1) * limit;
+
+    const [countResult] = await db.query('SELECT COUNT(*) AS total FROM products');
+    const totalItems = countResult[0].total;
+    const totalPages = Math.ceil(totalItems / limit);
+
     const [products] = await db.query(`
       SELECT p.*, c.name AS category_name
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       ORDER BY p.id
-    `);
+      LIMIT ? OFFSET ?
+    `, [limit, offset]);
     const imagesMap = await getImagesForProducts(products.map(p => p.id));
     const result = products.map(p => ({ ...p, images: imagesMap[p.id] || [] }));
-    res.json(result);
+    res.json({
+      products: result,
+      pagination: { page, limit, totalPages, totalItems }
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Database error' });

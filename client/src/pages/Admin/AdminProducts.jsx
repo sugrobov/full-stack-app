@@ -7,8 +7,10 @@ import TableSkeleton from '../../components/UI/TableSkeleton';
 import ConfirmModal from '../../components/UI/ConfirmModal';
 import Button from '../../components/UI/Button';
 import BackToAdminButton from '../../components/UI/BackToAdminButton';
+import Pagination from '../../components/Pagination';
 
 const API_URL = import.meta.env.VITE_API_URL;
+const ITEMS_PER_PAGE = 10;
 
 const AdminProducts = () => {
   const { token } = useSelector(state => state.auth);
@@ -35,10 +37,14 @@ const AdminProducts = () => {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
 
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ page: 1, limit: ITEMS_PER_PAGE, totalPages: 1, totalItems: 0 });
+
   useEffect(() => {
     fetchProducts();
     fetchCategories();
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     applyFilters();
@@ -46,15 +52,25 @@ const AdminProducts = () => {
 
   const fetchProducts = async () => {
     try {
+      setLoading(true);
       const res = await axios.get(`${API_URL}/admin/products`, {
+        params: { page, limit: ITEMS_PER_PAGE },
         headers: { Authorization: `Bearer ${token}` }
       });
-      setProducts(Array.isArray(res.data) ? res.data : []);
+      const data = res.data;
+      setProducts(Array.isArray(data.products) ? data.products : []);
+      if (data.pagination) {
+        setPagination(data.pagination);
+      }
     } catch (err) {
       console.error('Ошибка загрузки товаров:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
   };
 
   const fetchCategories = async () => {
@@ -244,6 +260,17 @@ const AdminProducts = () => {
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* Пагинация */}
+      <div className="mt-6">
+        <Pagination
+          currentPage={pagination.page}
+          totalPages={pagination.totalPages}
+          onPageChange={handlePageChange}
+          totalItems={pagination.totalItems}
+          itemsPerPage={pagination.limit}
+        />
       </div>
 
       {/* ConfirmModal внутри return */}
