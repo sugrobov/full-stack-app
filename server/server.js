@@ -644,7 +644,12 @@ app.post('/api/products/by-ids', async (req, res) => {
 // Получить все товары (без фильтра stock)
 app.get('/api/admin/products', verifyToken, requireAdmin, async (req, res) => {
   try {
-    const [products] = await db.query('SELECT * FROM products ORDER BY id');
+    const [products] = await db.query(`
+      SELECT p.*, c.name AS category_name
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      ORDER BY p.id
+    `);
     const imagesMap = await getImagesForProducts(products.map(p => p.id));
     const result = products.map(p => ({ ...p, images: imagesMap[p.id] || [] }));
     res.json(result);

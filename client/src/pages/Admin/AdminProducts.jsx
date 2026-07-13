@@ -219,26 +219,29 @@ const AdminProducts = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredProducts.map(product => (
-              <tr key={product.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.id}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.category_id}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.price} ₽</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.discount_price || '-'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.rating || '-'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.stock}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  {/* <Button variant="ghost" size="sm" onClick={() => handleEdit(product)}>Ред.</Button> */}
-                  <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(product.id)} className="text-red-600">Уд.</Button>
-                </td>
-                <td className="px-4 py-2">
-                  <Link to={`/admin/products/${product.id}/edit`} className="text-blue-600 hover:underline">
-                    Редактировать
-                  </Link>
-                </td>
-              </tr>
-            ))}
+            {filteredProducts.map(product => {
+              const categoryName = product.category_name || categories.find(c => c.id === product.category_id)?.name || product.category_id;
+              return (
+                <tr key={product.id}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.id}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{categoryName}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.price} ₽</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.discount_price || '-'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.rating || '-'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.stock}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    {/* <Button variant="ghost" size="sm" onClick={() => handleEdit(product)}>Ред.</Button> */}
+                    <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(product.id)} className="text-red-600">Уд.</Button>
+                  </td>
+                  <td className="px-4 py-2">
+                    <Link to={`/admin/products/${product.id}/edit`} className="text-blue-600 hover:underline">
+                      Редактировать
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
