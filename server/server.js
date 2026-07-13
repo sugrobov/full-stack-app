@@ -25,7 +25,24 @@ if (process.env.NODE_ENV === 'test') {
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+const allowedOrigins = [
+  'http://localhost:5173',
+  process.env.CLIENT_URL
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Разрешить запросы без origin (серверные, curl, Postman и т.д.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.some(o => origin.startsWith(o))) {
+      callback(null, true);
+    } else {
+      console.warn('CORS blocked origin:', origin);
+      callback(null, false);
+    }
+  },
+  credentials: true
+}));
 app.use(compression());
 app.use(express.json());
 
