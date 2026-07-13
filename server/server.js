@@ -93,6 +93,29 @@ async function initTransporter() {
 }
 initTransporter();
 
+// Вспомогательная функция отправки email-уведомлений
+async function sendNotificationEmail({ to, subject, html }) {
+  if (!transporter) {
+    console.log(`Email notification (simulated): to=${to}, subject=${subject}`);
+    return;
+  }
+  try {
+    const info = await transporter.sendMail({
+      from: process.env.EMAIL_FROM || '"Online Store" <noreply@example.com>',
+      to,
+      subject,
+      html,
+    });
+    console.log(`Email sent: ${info.messageId} to=${to} subject="${subject}"`);
+    const previewUrl = nodemailer.getTestMessageUrl(info);
+    if (previewUrl) {
+      console.log(`  Preview URL: ${previewUrl}`);
+    }
+  } catch (err) {
+    console.error(`Failed to send email to=${to} subject="${subject}":`, err.message);
+  }
+}
+
 // Вспомогательная функция получения изображений для массива товаров (промис-версия)
 async function getImagesForProducts(productIds) {
   if (!productIds.length) return {};
@@ -376,6 +399,27 @@ app.post('/api/auth/register', [
     const hashedPassword = await bcrypt.hash(password, 10);
     const [result] = await db.query('INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)', [name, email, hashedPassword]);
     const token = generateToken(result.insertId, email, 'user');
+
+    // Email-уведомление о регистрации
+    sendNotificationEmail({
+      to: email,
+      subject: 'Добро пожаловать в Интернет Магазин!',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">Добро пожаловать, ${name}!</h2>
+          <p>Вы успешно зарегистрировались в нашем интернет-магазине.</p>
+          <p>Теперь вы можете:</p>
+          <ul>
+            <li>Просматривать и заказывать товары</li>
+            <li>Добавлять товары в избранное</li>
+            <li>Оставлять отзывы</li>
+            <li>Отслеживать историю заказов</li>
+          </ul>
+          <p style="color: #6b7280; font-size: 12px;">Если вы не регистрировались, просто проигнорируйте это письмо.</p>
+        </div>
+      `,
+    });
+
     res.status(201).json({ token, user: { id: result.insertId, name, email, role: 'user' } });
   } catch (err) {
     console.error(err);
@@ -514,6 +558,32 @@ app.post('/api/orders', verifyToken, [
       );
     }
     await connection.commit();
+
+    // Email-уведомление о заказе
+    const itemsHtml = items.map(item =>
+      `<tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${item.name || `Товар #${item.productId}`}</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity}</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${Number(item.price).toLocaleString()} ₽</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${(item.price * item.quantity).toLocaleString()} ₽</td></tr>`
+    ).join('');
+
+    sendNotificationEmail({
+      to: req.user.email,
+      subject: `Заказ №${orderId} оформлен`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">Спасибо за заказ!</h2>
+          <p>Ваш заказ №${orderId} успешно оформлен.</p>
+          <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+            <thead><tr style="background: #f3f4f6;"><th style="padding: 8px; text-align: left;">Товар</th><th style="padding: 8px; text-align: center;">Кол-во</th><th style="padding: 8px; text-align: right;">Цена</th><th style="padding: 8px; text-align: right;">Сумма</th></tr></thead>
+            <tbody>${itemsHtml}</tbody>
+            <tfoot><tr><td colspan="3" style="padding: 8px; text-align: right; font-weight: bold;">Итого:</td><td style="padding: 8px; text-align: right; font-weight: bold;">${total.toLocaleString()} ₽</td></tr></tfoot>
+          </table>
+          <p><strong>Адрес доставки:</strong> ${address}</p>
+          ${phone ? `<p><strong>Телефон:</strong> ${phone}</p>` : ''}
+          <p><strong>Статус:</strong> Ожидает обработки</p>
+          <p style="color: #6b7280; font-size: 12px;">Вы можете отслеживать статус заказа в личном кабинете.</p>
+        </div>
+      `,
+    });
+
     res.status(201).json({ orderId, message: 'Order created' });
   } catch (err) {
     await connection.rollback();
@@ -743,6 +813,35 @@ app.put('/api/admin/orders/:id/status', verifyToken, requireAdmin, async (req, r
   }
   try {
     await db.query('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
+
+    // Email-уведомление о смене статуса заказа
+    const [orderRows] = await db.query(
+      'SELECT o.*, u.name as user_name, u.email as user_email FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id = ?',
+      [id]
+    );
+    if (orderRows.length > 0) {
+      const order = orderRows[0];
+      const statusLabels = {
+        pending: 'Ожидает обработки',
+        paid: 'Оплачен',
+        shipped: 'Отправлен',
+        delivered: 'Доставлен',
+        cancelled: 'Отменён',
+      };
+      sendNotificationEmail({
+        to: order.user_email,
+        subject: `Статус заказа №${id} изменён`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #2563eb;">Статус заказа обновлён</h2>
+            <p>Здравствуйте, ${order.user_name}!</p>
+            <p>Статус вашего заказа №${id} изменён на: <strong>${statusLabels[status] || status}</strong></p>
+            <p style="color: #6b7280; font-size: 12px;">Вы можете отслеживать статус заказа в личном кабинете.</p>
+          </div>
+        `,
+      });
+    }
+
     res.json({ message: 'Order status updated' });
   } catch (err) {
     console.error(err);
