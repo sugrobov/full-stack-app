@@ -1,6 +1,7 @@
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs');
@@ -45,6 +46,39 @@ app.use(cors({
 }));
 app.use(compression());
 app.use(express.json());
+
+// Rate limiting
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 минут
+  max: 200, // максимум 200 запросов с одного IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please try again later.' }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 минут
+  max: 10, // максимум 10 попыток входа/регистрации
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many login attempts. Please try again later.' }
+});
+
+const contactLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 час
+  max: 5, // максимум 5 отправок формы
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many messages. Please try again later.' }
+});
+
+// Применяем общий лимит ко всем API-запросам
+app.use('/api', generalLimiter);
+
+// Строгие лимиты для чувствительных эндпоинтов
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/contact', contactLimiter);
 
 // Статическая раздача загруженных изображений с заголовками безопасности
 app.use('/uploads', (req, res, next) => {
