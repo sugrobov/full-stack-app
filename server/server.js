@@ -561,8 +561,8 @@ app.post('/api/admin/products', verifyToken, requireAdmin, async (req, res) => {
   }
 });
 
-// Получить один товар (админ, без фильтра по stock) - временно без авторизации для отладки
-app.get('/api/admin/products/:id', async (req, res) => {
+// Получить один товар (админ, без фильтра по stock)
+app.get('/api/admin/products/:id', verifyToken, requireAdmin, async (req, res) => {
   try {
     const productId = parseInt(req.params.id);
     if (isNaN(productId)) return res.status(400).json({ error: 'Invalid product ID' });
