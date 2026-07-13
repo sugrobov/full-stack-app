@@ -29,9 +29,14 @@ app.use(cors());
 app.use(compression());
 app.use(express.json());
 
-
-// Статическая раздача загруженных изображений
-// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Статическая раздача загруженных изображений с заголовками безопасности
+app.use('/uploads', (req, res, next) => {
+  res.set({
+    'X-Content-Type-Options': 'nosniff',
+    'Cache-Control': 'public, max-age=86400',
+  });
+  next();
+}, express.static(path.join(__dirname, 'uploads')));
 
 // Пул с промисами (для всех запросов)
 const db = mysql.createPool({
@@ -350,24 +355,6 @@ app.post('/api/admin/products/:productId/upload', verifyToken, requireAdmin, upl
     }
     console.error('Ошибка загрузки изображения:', error);
     res.status(500).json({ error: 'Ошибка сервера при загрузке изображения' });
-  }
-});
-
-// Защищённая отдача изображений (без прямого доступа к папке uploads)
-app.get('/uploads/products/:filename', async (req, res) => {
-  const filePath = path.join(uploadDir, req.params.filename);
-  try {
-    await fs.access(filePath);
-    // Отдаём с правильными заголовками безопасности
-    res.sendFile(filePath, {
-      headers: {
-        'Content-Type': 'image/webp',
-        'X-Content-Type-Options': 'nosniff',
-        'Cache-Control': 'public, max-age=86400' // кэш на 1 день
-      }
-    });
-  } catch {
-    res.status(404).json({ error: 'Изображение не найдено' });
   }
 });
 
