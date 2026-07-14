@@ -1,6 +1,17 @@
 // Мокаем ESM-модули, чтобы избежать ошибок парсинга
 jest.mock('uuid', () => ({ v4: () => 'mocked-uuid' }));
 jest.mock('file-type', () => ({ fileTypeFromBuffer: jest.fn() }));
+jest.mock('nodemailer', () => {
+  const original = jest.requireActual('nodemailer');
+  return {
+    ...original,
+    createTransport: jest.fn().mockReturnValue({
+      sendMail: jest.fn().mockResolvedValue({ messageId: 'mocked-id' }),
+      verify: jest.fn().mockResolvedValue(true),
+    }),
+    getTestMessageUrl: jest.fn().mockReturnValue(null),
+  };
+});
 
 const request = require('supertest');
 const bcrypt = require('bcryptjs');
@@ -318,7 +329,8 @@ describe('Admin API', () => {
         .get('/api/admin/products')
         .set('Authorization', `Bearer ${adminToken}`);
       expect(res.status).toBe(200);
-      expect(Array.isArray(res.body)).toBe(true);
+      expect(res.body).toHaveProperty('products');
+      expect(Array.isArray(res.body.products)).toBe(true);
     });
 
     it('should return 403 for regular user', async () => {
