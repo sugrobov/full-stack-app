@@ -897,14 +897,40 @@ app.delete('/api/admin/products/:id', verifyToken, requireAdmin, async (req, res
   }
 });
 
-// Получить все заказы (с данными пользователя) с пагинацией
+// Получить все заказы (с данными пользователя) с пагинацией и фильтрацией
 app.get('/api/admin/orders', verifyToken, requireAdmin, async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));
     const offset = (page - 1) * limit;
 
-    const [countResult] = await db.query('SELECT COUNT(*) AS total FROM orders');
+    const { date_from, date_to, status, email } = req.query;
+
+    // Build WHERE clauses dynamically
+    const whereClauses = [];
+    const params = [];
+
+    if (status) {
+      whereClauses.push('o.status = ?');
+      params.push(status);
+    }
+    if (email) {
+      whereClauses.push('u.email LIKE ?');
+      params.push(`%${email}%`);
+    }
+    if (date_from) {
+      whereClauses.push('o.created_at >= ?');
+      params.push(date_from);
+    }
+    if (date_to) {
+      // Include the entire end day by adding 1 day
+      whereClauses.push('o.created_at < DATE_ADD(?, INTERVAL 1 DAY)');
+      params.push(date_to);
+    }
+
+    const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+    const [countResult] = await db.query(`SELECT COUNT(*) AS total FROM orders o JOIN users u ON o.user_id = u.id ${whereSql}`, params);
     const totalItems = countResult[0].total;
     const totalPages = Math.ceil(totalItems / limit);
 
@@ -912,9 +938,10 @@ app.get('/api/admin/orders', verifyToken, requireAdmin, async (req, res) => {
       SELECT o.*, u.name as user_name, u.email as user_email
       FROM orders o
       JOIN users u ON o.user_id = u.id
+      ${whereSql}
       ORDER BY o.created_at DESC
       LIMIT ? OFFSET ?
-    `, [limit, offset]);
+    `, [...params, limit, offset]);
     for (let order of orders) {
       const [items] = await db.query(`
         SELECT oi.*, p.name

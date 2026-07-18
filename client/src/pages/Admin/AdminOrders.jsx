@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 import TableSkeleton from '../../components/UI/TableSkeleton';
@@ -12,7 +11,6 @@ const ITEMS_PER_PAGE = 10;
 const AdminOrders = () => {
   const { token } = useSelector(state => state.auth);
   const [orders, setOrders] = useState([]);
-  const [filteredOrders, setFilteredOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
 
@@ -26,19 +24,17 @@ const AdminOrders = () => {
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ page: 1, limit: ITEMS_PER_PAGE, totalPages: 1, totalItems: 0 });
 
-  useEffect(() => {
-    fetchOrders();
-  }, [page]);
-
-  useEffect(() => {
-    applyFilters();
-  }, [orders, statusFilter, emailSearch, dateFrom, dateTo]);
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
+      const params = { page, limit: ITEMS_PER_PAGE };
+      if (statusFilter) params.status = statusFilter;
+      if (emailSearch) params.email = emailSearch;
+      if (dateFrom) params.date_from = dateFrom;
+      if (dateTo) params.date_to = dateTo;
+
       const res = await axios.get(`${API_URL}/admin/orders`, {
-        params: { page, limit: ITEMS_PER_PAGE },
+        params,
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = res.data;
@@ -51,27 +47,14 @@ const AdminOrders = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, statusFilter, emailSearch, dateFrom, dateTo, token]);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
   const handlePageChange = (newPage) => {
     setPage(newPage);
-  };
-
-  const applyFilters = () => {
-    let filtered = [...orders];
-    if (statusFilter) {
-      filtered = filtered.filter(order => order.status === statusFilter);
-    }
-    if (emailSearch) {
-      filtered = filtered.filter(order => order.user_email.toLowerCase().includes(emailSearch.toLowerCase()));
-    }
-    if (dateFrom) {
-      filtered = filtered.filter(order => new Date(order.created_at) >= new Date(dateFrom));
-    }
-    if (dateTo) {
-      filtered = filtered.filter(order => new Date(order.created_at) <= new Date(dateTo));
-    }
-    setFilteredOrders(filtered);
   };
 
   const resetFilters = () => {
@@ -79,6 +62,7 @@ const AdminOrders = () => {
     setEmailSearch('');
     setDateFrom('');
     setDateTo('');
+    setPage(1);
   };
 
   const updateStatus = async (orderId, newStatus) => {
@@ -116,14 +100,14 @@ const AdminOrders = () => {
       <div className="bg-white rounded-lg shadow p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4">Фильтры</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border p-2 rounded">
+          <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} className="border p-2 rounded">
             {statusOptions.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
-          <input type="text" placeholder="Email пользователя" value={emailSearch} onChange={(e) => setEmailSearch(e.target.value)} className="border p-2 rounded" />
-          <input type="date" placeholder="Дата от" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="border p-2 rounded" />
-          <input type="date" placeholder="Дата до" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="border p-2 rounded" />
+          <input type="text" placeholder="Email пользователя" value={emailSearch} onChange={(e) => { setEmailSearch(e.target.value); setPage(1); }} className="border p-2 rounded" />
+          <input type="date" placeholder="Дата от" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }} className="border p-2 rounded" />
+          <input type="date" placeholder="Дата до" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }} className="border p-2 rounded" />
         </div>
         <div className="mt-4">
           <button onClick={resetFilters} className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Сбросить фильтры</button>
@@ -145,7 +129,7 @@ const AdminOrders = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredOrders.map(order => (
+            {orders.map(order => (
               <tr key={order.id}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.id}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.user_name}<br /><span className="text-xs text-gray-500">{order.user_email}</span></td>
