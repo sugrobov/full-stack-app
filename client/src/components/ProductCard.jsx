@@ -1,19 +1,27 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '../store/cartSlice';
+import { toggleFavorite } from '../store/favoritesSlice';
 import Button from './UI/Button';
 import toast from 'react-hot-toast';
 
 const ProductCard = React.memo(({ product }) => {
   const dispatch = useDispatch();
-  // Берём первое изображение: из массива images или из поля image
+  const favoriteIds = useSelector(state => state.favorites.items);
+  const isFavorite = favoriteIds.includes(product.id);
+
   const imageUrl = product.images?.[0] || product.image || null;
   const isDiscounted = !!product.discount_price;
   const [imgError, setImgError] = useState(false);
 
-  // Проверяем валидность URL (должен начинаться с /images/)
   const isValidImage = imageUrl && (imageUrl.startsWith('/images/') || imageUrl.startsWith('/uploads/'));
+
+  const handleToggleFavorite = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dispatch(toggleFavorite(product.id));
+  };
 
   const handleAddToCart = (e) => {
     e.preventDefault();
@@ -33,7 +41,31 @@ const ProductCard = React.memo(({ product }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full relative">
+      {/* Кнопка избранного */}
+      <Button
+        variant="icon"
+        onClick={handleToggleFavorite}
+        className={`absolute top-2 right-2 z-10 p-1 rounded-full bg-white/80 hover:bg-white shadow-sm transition-colors ${
+          isFavorite ? 'text-red-500' : 'text-gray-400'
+        }`}
+        aria-label={isFavorite ? 'Удалить из избранного' : 'Добавить в избранное'}
+      >
+        <svg
+          className="w-6 h-6"
+          viewBox="0 0 24 24"
+          fill={isFavorite ? 'currentColor' : 'none'}
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+          />
+        </svg>
+      </Button>
+
       <Link to={`/product/${product.id}`} className="flex-grow flex flex-col">
         <div className="relative h-56 overflow-hidden bg-gray-100 flex items-center justify-center">
           {isValidImage && !imgError ? (

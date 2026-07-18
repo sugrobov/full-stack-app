@@ -11,6 +11,7 @@ import CheckoutPage from '../pages/CheckoutPage';
 import FavoritesPage from '../pages/FavoritesPage';
 import NewsPage from '../pages/NewsPage';
 import NewsDetailPage from '../pages/NewsDetailPage';
+import NotFoundPage from '../pages/NotFoundPage';
 import AdminRoute from '../components/AdminRoute';
 import AdminDashboard from '../pages/Admin/AdminDashboard';
 import AdminProducts from '../pages/Admin/AdminProducts';
@@ -39,6 +40,8 @@ const routes = [
   { path: '/admin/users', element: <AdminRoute><AdminUsers /></AdminRoute> },
   { path: '/admin/reviews', element: <AdminRoute><AdminReviews /></AdminRoute> },
   { path: '/admin/products/:id/edit', element: <AdminRoute><AdminProductEdit /></AdminRoute> },
+  // Catch-all route for 404 — must be last
+  { path: '*', element: <NotFoundPage /> },
 ];
 
 export default routes;
