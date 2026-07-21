@@ -534,6 +534,91 @@ describe('Admin API', () => {
     });
   });
 
+  describe('POST /api/admin/products/:productId/upload', () => {
+    const { fileTypeFromBuffer } = require('file-type');
+
+    // Минимальный PNG буфер (1x1 пиксель)
+    const minimalPng = Buffer.from([
+      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
+      0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, // IHDR chunk
+      0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+      0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53,
+      0xDE, 0x00, 0x00, 0x00, 0x0C, 0x49, 0x44, 0x41, // IDAT chunk
+      0x54, 0x08, 0xD7, 0x63, 0x60, 0x60, 0x00, 0x00,
+      0x00, 0x04, 0x00, 0x01, 0x27, 0x34, 0x27, 0x00,
+      0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, // IEND chunk
+      0x42, 0x60, 0x82
+    ]);
+
+    beforeEach(() => {
+      fileTypeFromBuffer.mockResolvedValue({ mime: 'image/png', ext: 'png' });
+    });
+
+    afterEach(() => {
+      fileTypeFromBuffer.mockReset();
+    });
+
+    it('should upload an image and return success', async () => {
+      const res = await request(app)
+        .post(`/api/admin/products/${adminProductId}/upload`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('image', minimalPng, 'test.png');
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('success', true);
+      expect(res.body).toHaveProperty('imageUrl');
+      expect(res.body.imageUrl).toMatch(/^\/uploads\/products\/mocked-uuid\.webp$/);
+      expect(res.body).toHaveProperty('message', 'Изображение успешно загружено');
+    });
+
+    it('should return 400 if no file is attached', async () => {
+      const res = await request(app)
+        .post(`/api/admin/products/${adminProductId}/upload`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('error', 'Файл не загружен');
+    });
+
+    it('should return 404 for non-existent product', async () => {
+      const res = await request(app)
+        .post('/api/admin/products/99999/upload')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('image', minimalPng, 'test.png');
+
+      expect(res.status).toBe(404);
+      expect(res.body).toHaveProperty('error', 'Товар не найден');
+    });
+
+    it('should return 400 for invalid product ID', async () => {
+      const res = await request(app)
+        .post('/api/admin/products/abc/upload')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('image', minimalPng, 'test.png');
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('error', 'Неверный ID товара');
+    });
+
+    it('should return 401 without token', async () => {
+      const res = await request(app)
+        .post(`/api/admin/products/${adminProductId}/upload`)
+        .attach('image', minimalPng, 'test.png');
+
+      expect(res.status).toBe(401);
+    });
+
+    it('should return 403 for regular user', async () => {
+      const userToken = await registerAndGetToken({ name: 'UploadUser', email: 'upload@example.com', password: 'password123' });
+      const res = await request(app)
+        .post(`/api/admin/products/${adminProductId}/upload`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .attach('image', minimalPng, 'test.png');
+
+      expect(res.status).toBe(403);
+    });
+  });
+
   describe('Reviews management', () => {
     let reviewId;
 
