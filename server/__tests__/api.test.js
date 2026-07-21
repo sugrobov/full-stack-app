@@ -270,11 +270,12 @@ describe('Orders API', () => {
     }
 
     // Вставляем тестовые категорию и продукты
-    await testDb.query("INSERT INTO categories (name) VALUES ('Test Category')");
-    await testDb.query(`INSERT INTO products (name, category_id, price, stock) VALUES 
-      ('Test Product 1', 1, 10.99, 10),
-      ('Test Product 2', 1, 15.00, 10)
-    `);
+    const [catResult] = await testDb.query("INSERT INTO categories (name) VALUES ('Test Category')");
+    const categoryId = catResult.insertId;
+    await testDb.query(`INSERT INTO products (name, category_id, price, stock) VALUES
+      ('Test Product 1', ?, 10.99, 10),
+      ('Test Product 2', ?, 15.00, 10)
+    `, [categoryId, categoryId]);
   });
 
   describe('POST /api/orders', () => {
