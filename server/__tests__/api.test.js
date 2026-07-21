@@ -247,14 +247,7 @@ describe('GET /api/products/search', () => {
 
 describe('Orders API', () => {
   let userToken;
-  const sampleOrder = {
-    address: '123 Test Street',
-    phone: '+1234567890',
-    items: [
-      { productId: 1, quantity: 2, price: 10.99 },
-      { productId: 2, quantity: 1, price: 15.00 }
-    ]
-  };
+  let sampleOrder;
 
   beforeAll(async () => {
     // Очищаем связанные таблицы для чистоты
@@ -276,6 +269,20 @@ describe('Orders API', () => {
       ('Test Product 1', ?, 10.99, 10),
       ('Test Product 2', ?, 15.00, 10)
     `, [categoryId, categoryId]);
+
+    // Получаем реальные ID товаров для sampleOrder
+    const [products] = await testDb.query(
+      "SELECT id FROM products WHERE category_id = ? ORDER BY id LIMIT 2",
+      [categoryId]
+    );
+    sampleOrder = {
+      address: '123 Test Street',
+      phone: '+1234567890',
+      items: [
+        { productId: products[0].id, quantity: 2, price: 10.99 },
+        { productId: products[1].id, quantity: 1, price: 15.00 }
+      ]
+    };
   });
 
   describe('POST /api/orders', () => {
