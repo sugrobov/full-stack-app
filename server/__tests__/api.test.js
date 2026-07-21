@@ -193,10 +193,15 @@ describe('GET /api/products', () => {
 
 describe('GET /api/products/search', () => {
   beforeAll(async () => {
-    // Убедимся, что есть товары для поиска
-    await testDb.query("INSERT IGNORE INTO categories (id, name) VALUES (100, 'Search Category')");
+    // Убедимся, что есть товары для поиска (используем ON DUPLICATE KEY, чтобы не сломать другие тесты)
     await testDb.query(
-      "INSERT IGNORE INTO products (id, name, category_id, price, stock) VALUES (100, 'Searchable Product', 100, 29.99, 10)"
+      "INSERT INTO categories (name) VALUES ('Search Category') ON DUPLICATE KEY UPDATE name=name"
+    );
+    const [catRows] = await testDb.query("SELECT id FROM categories WHERE name='Search Category' LIMIT 1");
+    const catId = catRows[0].id;
+    await testDb.query(
+      "INSERT INTO products (name, category_id, price, stock) VALUES ('Searchable Product', ?, 29.99, 10) ON DUPLICATE KEY UPDATE name=name",
+      [catId]
     );
   });
 
