@@ -564,6 +564,8 @@ describe('Admin API', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .attach('image', minimalPng, 'test.png');
 
+      console.log('Upload response status:', res.status);
+      console.log('Upload response body:', JSON.stringify(res.body));
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty('success', true);
       expect(res.body).toHaveProperty('imageUrl');
