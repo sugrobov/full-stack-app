@@ -1,11 +1,6 @@
 // Мокаем ESM-модули, чтобы избежать ошибок парсинга
 jest.mock('uuid', () => ({ v4: () => 'mocked-uuid' }));
-jest.mock('file-type', () => {
-  const real = jest.requireActual('file-type');
-  return {
-    fileTypeFromBuffer: jest.fn().mockImplementation((buf) => real.fileTypeFromBuffer(buf)),
-  };
-});
+jest.mock('file-type', () => ({ fileTypeFromBuffer: jest.fn() }));
 jest.mock('nodemailer', () => {
   const original = jest.requireActual('nodemailer');
   return {
