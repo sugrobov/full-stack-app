@@ -191,6 +191,55 @@ describe('GET /api/products', () => {
   });
 });
 
+describe('GET /api/products/search', () => {
+  beforeAll(async () => {
+    // Убедимся, что есть товары для поиска
+    await testDb.query("INSERT IGNORE INTO categories (id, name) VALUES (100, 'Search Category')");
+    await testDb.query(
+      "INSERT IGNORE INTO products (id, name, category_id, price, stock) VALUES (100, 'Searchable Product', 100, 29.99, 10)"
+    );
+  });
+
+  it('should return matching products by name', async () => {
+    const res = await request(app).get('/api/products/search?q=Searchable');
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('products');
+    expect(Array.isArray(res.body.products)).toBe(true);
+    expect(res.body.products.length).toBeGreaterThan(0);
+    expect(res.body.products[0].name).toMatch(/Searchable/i);
+  });
+
+  it('should return empty array when no match', async () => {
+    const res = await request(app).get('/api/products/search?q=ZZZZNONEXISTENT');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ products: [] });
+  });
+
+  it('should return empty array when q is empty', async () => {
+    const res = await request(app).get('/api/products/search?q=');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ products: [] });
+  });
+
+  it('should return empty array when q is only whitespace', async () => {
+    const res = await request(app).get('/api/products/search?q=   ');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ products: [] });
+  });
+
+  it('should respect limit parameter', async () => {
+    const res = await request(app).get('/api/products/search?q=Product&limit=1');
+    expect(res.status).toBe(200);
+    expect(res.body.products.length).toBeLessThanOrEqual(1);
+  });
+
+  it('should return 200 when no query param is provided', async () => {
+    const res = await request(app).get('/api/products/search');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ products: [] });
+  });
+});
+
 describe('Orders API', () => {
   let userToken;
   const sampleOrder = {
