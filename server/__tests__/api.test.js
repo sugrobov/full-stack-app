@@ -245,6 +245,63 @@ describe('GET /api/products/search', () => {
   });
 });
 
+describe('GET /api/products/:id', () => {
+  let existingProductId;
+
+  beforeAll(async () => {
+    // Создаём товар для теста получения по ID
+    await testDb.query("INSERT IGNORE INTO categories (name) VALUES ('Product Detail Category')");
+    const [catRows] = await testDb.query("SELECT id FROM categories WHERE name='Product Detail Category' LIMIT 1");
+    const catId = catRows[0].id;
+    const [result] = await testDb.query(
+      "INSERT INTO products (name, category_id, price, stock, description) VALUES ('Detail Product', ?, 49.99, 5, 'A product for detail testing') ON DUPLICATE KEY UPDATE name=name",
+      [catId]
+    );
+    existingProductId = result.insertId || (await testDb.query("SELECT id FROM products WHERE name='Detail Product' LIMIT 1"))[0][0].id;
+  });
+
+  it('should return 200 and product data for existing product', async () => {
+    const res = await request(app).get(`/api/products/${existingProductId}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('id', existingProductId);
+    expect(res.body).toHaveProperty('name', 'Detail Product');
+    expect(res.body).toHaveProperty('price', '49.99');
+    expect(res.body).toHaveProperty('stock', 5);
+    expect(res.body).toHaveProperty('description');
+    expect(res.body).toHaveProperty('category_name');
+    expect(res.body).toHaveProperty('images');
+    expect(Array.isArray(res.body.images)).toBe(true);
+  });
+
+  it('should return 404 for non-existent product', async () => {
+    const res = await request(app).get('/api/products/99999');
+    expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty('error', 'Product not found');
+  });
+
+  it('should return 404 for out-of-stock product', async () => {
+    // Создаём товар с stock = 0
+    const [catRows] = await testDb.query("SELECT id FROM categories WHERE name='Product Detail Category' LIMIT 1");
+    const catId = catRows[0].id;
+    await testDb.query(
+      "INSERT INTO products (name, category_id, price, stock) VALUES ('Out of Stock Product', ?, 10.00, 0)",
+      [catId]
+    );
+    const [rows] = await testDb.query("SELECT id FROM products WHERE name='Out of Stock Product' LIMIT 1");
+    const outOfStockId = rows[0].id;
+
+    const res = await request(app).get(`/api/products/${outOfStockId}`);
+    expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty('error', 'Product not found');
+  });
+
+  it('should return 400 for invalid product ID', async () => {
+    const res = await request(app).get('/api/products/abc');
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty('error', 'Invalid product ID');
+  });
+});
+
 describe('Orders API', () => {
   let userToken;
   let sampleOrder;
