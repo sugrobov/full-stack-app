@@ -302,6 +302,42 @@ describe('GET /api/products/:id', () => {
   });
 });
 
+describe('GET /api/categories', () => {
+  beforeAll(async () => {
+    // Убедимся, что есть хотя бы одна категория
+    await testDb.query(
+      "INSERT INTO categories (name) VALUES ('Test Cat A') ON DUPLICATE KEY UPDATE name=name"
+    );
+    await testDb.query(
+      "INSERT INTO categories (name) VALUES ('Test Cat B') ON DUPLICATE KEY UPDATE name=name"
+    );
+  });
+
+  it('should return 200 and an array of categories', async () => {
+    const res = await request(app).get('/api/categories');
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should return categories sorted by name', async () => {
+    const res = await request(app).get('/api/categories');
+    expect(res.status).toBe(200);
+    for (let i = 1; i < res.body.length; i++) {
+      expect(res.body[i - 1].name.localeCompare(res.body[i].name)).toBeLessThanOrEqual(0);
+    }
+  });
+
+  it('should return categories with id and name fields', async () => {
+    const res = await request(app).get('/api/categories');
+    expect(res.status).toBe(200);
+    res.body.forEach(cat => {
+      expect(cat).toHaveProperty('id');
+      expect(cat).toHaveProperty('name');
+    });
+  });
+});
+
 describe('Orders API', () => {
   let userToken;
   let sampleOrder;
