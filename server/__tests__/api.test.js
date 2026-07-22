@@ -503,6 +503,50 @@ describe('Admin API', () => {
     });
   });
 
+  describe('GET /api/admin/products/:id', () => {
+    it('should return 200 and product data for admin', async () => {
+      const res = await request(app)
+        .get(`/api/admin/products/${adminProductId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('id', adminProductId);
+      expect(res.body).toHaveProperty('name', 'Admin Product');
+      expect(res.body).toHaveProperty('price', 29.99);
+      expect(res.body).toHaveProperty('stock', 100);
+      expect(res.body).toHaveProperty('category_id', adminCategoryId);
+    });
+
+    it('should return 404 for non-existent product', async () => {
+      const res = await request(app)
+        .get('/api/admin/products/99999')
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(res.status).toBe(404);
+      expect(res.body).toHaveProperty('error', 'Товар не найден');
+    });
+
+    it('should return 400 for invalid product ID', async () => {
+      const res = await request(app)
+        .get('/api/admin/products/abc')
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('error', 'Неверный ID товара');
+    });
+
+    it('should return 403 for regular user', async () => {
+      const userToken = await registerAndGetToken({ name: 'AdminGetUser', email: 'adminget@example.com', password: 'password123' });
+      const res = await request(app)
+        .get(`/api/admin/products/${adminProductId}`)
+        .set('Authorization', `Bearer ${userToken}`);
+      expect(res.status).toBe(403);
+    });
+
+    it('should return 401 without token', async () => {
+      const res = await request(app)
+        .get(`/api/admin/products/${adminProductId}`);
+      expect(res.status).toBe(401);
+    });
+  });
+
   describe('POST /api/admin/products', () => {
     const newProduct = {
       name: 'Admin Created Product',
