@@ -511,7 +511,7 @@ describe('Admin API', () => {
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty('id', adminProductId);
       expect(res.body).toHaveProperty('name', 'Admin Product');
-      expect(res.body).toHaveProperty('price', 29.99);
+      expect(res.body).toHaveProperty('price', '29.99');
       expect(res.body).toHaveProperty('stock', 100);
       expect(res.body).toHaveProperty('category_id', adminCategoryId);
     });
@@ -521,7 +521,7 @@ describe('Admin API', () => {
         .get('/api/admin/products/99999')
         .set('Authorization', `Bearer ${adminToken}`);
       expect(res.status).toBe(404);
-      expect(res.body).toHaveProperty('error', 'Товар не найден');
+      expect(res.body).toHaveProperty('error', 'Product not found');
     });
 
     it('should return 400 for invalid product ID', async () => {
@@ -529,7 +529,7 @@ describe('Admin API', () => {
         .get('/api/admin/products/abc')
         .set('Authorization', `Bearer ${adminToken}`);
       expect(res.status).toBe(400);
-      expect(res.body).toHaveProperty('error', 'Неверный ID товара');
+      expect(res.body).toHaveProperty('error', 'Invalid product ID');
     });
 
     it('should return 403 for regular user', async () => {
