@@ -586,7 +586,7 @@ describe('Admin API', () => {
       const res = await request(app)
         .post('/api/admin/products/99999/upload')
         .set('Authorization', `Bearer ${adminToken}`)
-        .attach('image', minimalPng, 'test.png');
+        .attach('image', testImageBuffer, 'test.png');
 
       expect(res.status).toBe(404);
       expect(res.body).toHaveProperty('error', 'Товар не найден');
