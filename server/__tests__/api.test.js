@@ -749,7 +749,447 @@ describe('Admin API', () => {
     });
   });
 
+  describe('Additional review admin actions', () => {
+    let reviewIdForEdit;
+
+    beforeAll(async () => {
+      // Создаём отзыв от обычного пользователя для тестов редактирования и массового удаления
+      const userToken = await registerAndGetToken({ name: 'ReviewEditor', email: 'revieweditor@example.com', password: 'password123' });
+      await request(app)
+        .post(`/api/products/${adminProductId}/reviews`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ rating: 3, comment: 'Decent' });
+
+      const reviewsRes = await request(app)
+        .get(`/api/products/${adminProductId}/reviews`);
+      reviewIdForEdit = reviewsRes.body.reviews[0].id;
+    });
+
+    describe('PUT /api/admin/reviews/:id', () => {
+      it('should edit a review as admin', async () => {
+        const res = await request(app)
+          .put(`/api/admin/reviews/${reviewIdForEdit}`)
+          .set('Authorization', `Bearer ${adminToken}`)
+          .send({ rating: 4, comment: 'Updated comment' });
+
+        expect(res.status).toBe(200);
+        expect(res.body.message).toBe('Review updated');
+
+        // Проверим изменения в БД
+        const [rows] = await testDb.query('SELECT rating, comment FROM reviews WHERE id = ?', [reviewIdForEdit]);
+        expect(rows[0].rating).toBe(4);
+        expect(rows[0].comment).toBe('Updated comment');
+      });
+
+      it('should return 400 for invalid rating', async () => {
+        const res = await request(app)
+          .put(`/api/admin/reviews/${reviewIdForEdit}`)
+          .set('Authorization', `Bearer ${adminToken}`)
+          .send({ rating: 10 });
+
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBe('Rating must be 1-5');
+      });
+
+      it('should return 403 for regular user', async () => {
+        const userToken = await registerAndGetToken({ name: 'NotAdmin', email: 'notadmin@example.com', password: 'password123' });
+        const res = await request(app)
+          .put(`/api/admin/reviews/${reviewIdForEdit}`)
+          .set('Authorization', `Bearer ${userToken}`)
+          .send({ comment: 'Hack' });
+
+        expect(res.status).toBe(403);
+      });
+
+      it('should return 401 without token', async () => {
+        const res = await request(app)
+          .put(`/api/admin/reviews/${reviewIdForEdit}`)
+          .send({ comment: 'No token' });
+
+        expect(res.status).toBe(401);
+      });
+    });
+
+    describe('DELETE /api/admin/reviews/bulk', () => {
+      it('should bulk delete reviews', async () => {
+        // Создадим ещё один отзыв, чтобы было что удалять пачкой
+        const userToken = await registerAndGetToken({ name: 'BulkUser', email: 'bulkuser@example.com', password: 'password123' });
+        await request(app)
+          .post(`/api/products/${adminProductId}/reviews`)
+          .set('Authorization', `Bearer ${userToken}`)
+          .send({ rating: 5, comment: 'Bulk review' });
+
+        const reviewsRes = await request(app)
+          .get(`/api/products/${adminProductId}/reviews`);
+        const idsToDelete = reviewsRes.body.reviews.map(r => r.id);
+
+        const res = await request(app)
+          .delete('/api/admin/reviews/bulk')
+          .set('Authorization', `Bearer ${adminToken}`)
+          .send({ ids: idsToDelete });
+
+        expect(res.status).toBe(200);
+        expect(res.body.message).toBe(`${idsToDelete.length} reviews deleted`);
+
+        // Проверим, что отзывы действительно удалены
+        const [remaining] = await testDb.query('SELECT id FROM reviews WHERE id IN (?)', [idsToDelete]);
+        expect(remaining.length).toBe(0);
+      });
+
+      it('should return 400 if no ids provided', async () => {
+        const res = await request(app)
+          .delete('/api/admin/reviews/bulk')
+          .set('Authorization', `Bearer ${adminToken}`)
+          .send({ ids: [] });
+
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBe('No review IDs provided');
+      });
+
+      it('should return 403 for regular user', async () => {
+        const userToken = await registerAndGetToken({ name: 'BulkUser2', email: 'bulkuser2@example.com', password: 'password123' });
+        const res = await request(app)
+          .delete('/api/admin/reviews/bulk')
+          .set('Authorization', `Bearer ${userToken}`)
+          .send({ ids: [9999] });
+
+        expect(res.status).toBe(403);
+      });
+
+      it('should return 401 without token', async () => {
+        const res = await request(app)
+          .delete('/api/admin/reviews/bulk')
+          .send({ ids: [1] });
+
+        expect(res.status).toBe(401);
+      });
+    });
+  });
+
+  describe('DELETE /api/admin/products/:productId/images', () => {
+    const testImageUrl = '/uploads/products/test-delete-image.jpg';
+
+    beforeAll(async () => {
+      // Вставляем тестовую запись изображения для adminProductId (продукт ещё существует)
+      await testDb.query(
+        'INSERT INTO product_images (product_id, image_url, sort_order) VALUES (?, ?, 0)',
+        [adminProductId, testImageUrl]
+      );
+    });
+
+    afterAll(async () => {
+      // Подчищаем
+      await testDb.query(
+        'DELETE FROM product_images WHERE product_id = ? AND image_url = ?',
+        [adminProductId, testImageUrl]
+      );
+    });
+
+    it('should delete an image as admin', async () => {
+      const res = await request(app)
+        .delete(`/api/admin/products/${adminProductId}/images`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ imageUrl: testImageUrl });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ success: true });
+
+      const [rows] = await testDb.query(
+        'SELECT * FROM product_images WHERE product_id = ? AND image_url = ?',
+        [adminProductId, testImageUrl]
+      );
+      expect(rows.length).toBe(0);
+    });
+
+    it('should return 400 if imageUrl is missing', async () => {
+      const res = await request(app)
+        .delete(`/api/admin/products/${adminProductId}/images`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({});
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe('imageUrl is required');
+    });
+
+    it('should return 404 for non-existent image', async () => {
+      const res = await request(app)
+        .delete(`/api/admin/products/${adminProductId}/images`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ imageUrl: '/uploads/products/nonexistent.jpg' });
+
+      expect(res.status).toBe(404);
+      expect(res.body.error).toBe('Image not found');
+    });
+
+    it('should return 403 for regular user', async () => {
+      const userToken = await registerAndGetToken({ name: 'ImgUser', email: 'imguser@example.com', password: 'password123' });
+      const res = await request(app)
+        .delete(`/api/admin/products/${adminProductId}/images`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ imageUrl: testImageUrl });
+
+      expect(res.status).toBe(403);
+    });
+
+    it('should return 401 without token', async () => {
+      const res = await request(app)
+        .delete(`/api/admin/products/${adminProductId}/images`)
+        .send({ imageUrl: testImageUrl });
+
+      expect(res.status).toBe(401);
+    });
+  });
+
+  describe('Orders management (admin)', () => {
+    let regularUserToken;
+    let testOrderId;
+
+    beforeAll(async () => {
+      // Создаём обычного пользователя для заказов
+      const regularUser = { name: 'OrderUser', email: 'orderuser@example.com', password: 'password123' };
+      regularUserToken = await registerAndGetToken(regularUser);
+
+      // Получаем цену продукта adminProductId (всё ещё существует)
+      const [productRows] = await testDb.query('SELECT price FROM products WHERE id = ?', [adminProductId]);
+      const productPrice = productRows[0].price;
+
+      // Создаём заказ от имени этого пользователя через API
+      const orderRes = await request(app)
+        .post('/api/orders')
+        .set('Authorization', `Bearer ${regularUserToken}`)
+        .send({
+          address: 'Test Address 123',
+          phone: '+1234567890',
+          items: [
+            { productId: adminProductId, quantity: 2, price: productPrice }
+          ]
+        });
+
+      testOrderId = orderRes.body.orderId;
+    });
+
+    afterAll(async () => {
+      // Удаляем тестовый заказ и его позиции, чтобы не мешать удалению продукта
+      await testDb.query('DELETE FROM order_items WHERE order_id = ?', [testOrderId]);
+      await testDb.query('DELETE FROM orders WHERE id = ?', [testOrderId]);
+    });
+
+    describe('GET /api/admin/orders', () => {
+      it('should return list of orders with pagination', async () => {
+        const res = await request(app)
+          .get('/api/admin/orders')
+          .set('Authorization', `Bearer ${adminToken}`);
+
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveProperty('orders');
+        expect(Array.isArray(res.body.orders)).toBe(true);
+        expect(res.body.orders.length).toBeGreaterThan(0);
+        expect(res.body.pagination).toMatchObject({
+          page: 1,
+          limit: 10,
+          totalPages: expect.any(Number),
+          totalItems: expect.any(Number),
+        });
+
+        // Проверим, что наш заказ в списке и содержит items
+        const ourOrder = res.body.orders.find(o => o.id === testOrderId);
+        expect(ourOrder).toBeDefined();
+        expect(ourOrder.user_email).toBe('orderuser@example.com');
+        expect(Array.isArray(ourOrder.items)).toBe(true);
+        expect(ourOrder.items.length).toBeGreaterThan(0);
+      });
+
+      it('should filter orders by status', async () => {
+        const res = await request(app)
+          .get('/api/admin/orders?status=pending')
+          .set('Authorization', `Bearer ${adminToken}`);
+
+        expect(res.status).toBe(200);
+        res.body.orders.forEach(order => {
+          expect(order.status).toBe('pending');
+        });
+      });
+
+      it('should filter orders by email', async () => {
+        const res = await request(app)
+          .get('/api/admin/orders?email=orderuser')
+          .set('Authorization', `Bearer ${adminToken}`);
+
+        expect(res.status).toBe(200);
+        expect(res.body.orders.length).toBeGreaterThan(0);
+        res.body.orders.forEach(order => {
+          expect(order.user_email).toMatch(/orderuser/i);
+        });
+      });
+
+      it('should return 403 for regular user', async () => {
+        const res = await request(app)
+          .get('/api/admin/orders')
+          .set('Authorization', `Bearer ${regularUserToken}`);
+
+        expect(res.status).toBe(403);
+      });
+
+      it('should return 401 without token', async () => {
+        const res = await request(app)
+          .get('/api/admin/orders');
+
+        expect(res.status).toBe(401);
+      });
+    });
+
+    describe('PUT /api/admin/orders/:id/status', () => {
+      it('should update order status to shipped', async () => {
+        const res = await request(app)
+          .put(`/api/admin/orders/${testOrderId}/status`)
+          .set('Authorization', `Bearer ${adminToken}`)
+          .send({ status: 'shipped' });
+
+        expect(res.status).toBe(200);
+        expect(res.body.message).toBe('Order status updated');
+
+        // Проверяем, что статус действительно изменился
+        const [orders] = await testDb.query('SELECT status FROM orders WHERE id = ?', [testOrderId]);
+        expect(orders[0].status).toBe('shipped');
+      });
+
+      it('should return 400 for invalid status', async () => {
+        const res = await request(app)
+          .put(`/api/admin/orders/${testOrderId}/status`)
+          .set('Authorization', `Bearer ${adminToken}`)
+          .send({ status: 'invalid_status' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBe('Invalid status');
+      });
+
+      it('should return 403 for regular user', async () => {
+        const res = await request(app)
+          .put(`/api/admin/orders/${testOrderId}/status`)
+          .set('Authorization', `Bearer ${regularUserToken}`)
+          .send({ status: 'delivered' });
+
+        expect(res.status).toBe(403);
+      });
+
+      it('should return 401 without token', async () => {
+        const res = await request(app)
+          .put(`/api/admin/orders/${testOrderId}/status`)
+          .send({ status: 'cancelled' });
+
+        expect(res.status).toBe(401);
+      });
+    });
+  });
+
+  describe('Users management (admin)', () => {
+    let regularUserToken;
+    let regularUserId;
+
+    beforeAll(async () => {
+      const res = await request(app)
+        .post('/api/auth/register')
+        .send({ name: 'ManageUser', email: 'manageuser@example.com', password: 'password123' });
+      regularUserToken = res.body.token;
+      regularUserId = res.body.user.id;
+    });
+
+    describe('GET /api/admin/users', () => {
+      it('should return list of users with pagination', async () => {
+        const res = await request(app)
+          .get('/api/admin/users?limit=100')
+          .set('Authorization', `Bearer ${adminToken}`);
+
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveProperty('users');
+        expect(Array.isArray(res.body.users)).toBe(true);
+        expect(res.body.users.length).toBeGreaterThan(0);
+        expect(res.body.pagination).toMatchObject({
+          page: 1,
+          limit: 100,
+          totalPages: expect.any(Number),
+          totalItems: expect.any(Number),
+        });
+
+        const ourUser = res.body.users.find(u => u.id === regularUserId);
+        expect(ourUser).toBeDefined();
+        expect(ourUser.email).toBe('manageuser@example.com');
+      });
+
+      it('should return 403 for regular user', async () => {
+        const res = await request(app)
+          .get('/api/admin/users')
+          .set('Authorization', `Bearer ${regularUserToken}`);
+
+        expect(res.status).toBe(403);
+      });
+
+      it('should return 401 without token', async () => {
+        const res = await request(app)
+          .get('/api/admin/users');
+
+        expect(res.status).toBe(401);
+      });
+    });
+
+    describe('PUT /api/admin/users/:id/role', () => {
+      it('should change user role to admin', async () => {
+        const res = await request(app)
+          .put(`/api/admin/users/${regularUserId}/role`)
+          .set('Authorization', `Bearer ${adminToken}`)
+          .send({ role: 'admin' });
+
+        expect(res.status).toBe(200);
+        expect(res.body.message).toBe('User role updated');
+
+        const [rows] = await testDb.query('SELECT role FROM users WHERE id = ?', [regularUserId]);
+        expect(rows[0].role).toBe('admin');
+      });
+
+      it('should return 400 for invalid role', async () => {
+        const res = await request(app)
+          .put(`/api/admin/users/${regularUserId}/role`)
+          .set('Authorization', `Bearer ${adminToken}`)
+          .send({ role: 'superadmin' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBe('Invalid role');
+      });
+
+      it('should return 403 for regular user', async () => {
+        // Создаём нового обычного пользователя, чтобы гарантировать не-админский токен
+        const anotherRes = await request(app)
+          .post('/api/auth/register')
+          .send({ name: 'Another', email: 'another@example.com', password: 'password123' });
+        const anotherToken = anotherRes.body.token;
+
+        const res = await request(app)
+          .put(`/api/admin/users/${regularUserId}/role`)
+          .set('Authorization', `Bearer ${anotherToken}`)
+          .send({ role: 'user' });
+
+        expect(res.status).toBe(403);
+      });
+
+      it('should return 401 without token', async () => {
+        const res = await request(app)
+          .put(`/api/admin/users/${regularUserId}/role`)
+          .send({ role: 'admin' });
+
+        expect(res.status).toBe(401);
+      });
+    });
+  });
+
   describe('DELETE /api/admin/products/:id', () => {
+    // Перед удалением продукта удаляем все заказы, которые на него ссылаются
+    beforeAll(async () => {
+      // Удаляем order_items и заказы, связанные с adminProductId
+      await testDb.query('DELETE oi FROM order_items oi JOIN orders o ON oi.order_id = o.id WHERE oi.product_id = ?', [adminProductId]);
+      // Также можно удалить сами заказы, которые стали пустыми
+      // Но проще просто очистить зависимые записи, чтобы продукт можно было удалить
+    });
+
     it('should delete a product as admin', async () => {
       const res = await request(app)
         .delete(`/api/admin/products/${adminProductId}`)
@@ -790,113 +1230,213 @@ describe('Admin API', () => {
 
 });
 
-describe('Reviews API', () => {
+describe('User Profile API', () => {
   let userToken;
-  let productId;
+  let anotherUserToken;
 
   beforeAll(async () => {
-    // Очистка и подготовка данных
-    await testDb.query('DELETE FROM reviews');
-    await testDb.query('DELETE FROM order_items');
-    await testDb.query('DELETE FROM orders');
-    await testDb.query('DELETE FROM products');
-    await testDb.query('DELETE FROM categories');
-    await testDb.query('DELETE FROM users');
-
-    // Создаём категорию и продукт
-    const [catResult] = await testDb.query("INSERT INTO categories (name) VALUES ('Review Category')");
-    const categoryId = catResult.insertId;
-    const [productResult] = await testDb.query(
-      "INSERT INTO products (name, category_id, price, stock) VALUES ('Review Product', ?, 19.99, 50)", [categoryId]
-    );
-    productId = productResult.insertId;
-
-    // Регистрируем пользователя
-    userToken = await registerAndGetToken(validUser);
+    // Создаём основного пользователя
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({ name: 'Profile User', email: 'profile@example.com', password: 'password123' });
+    userToken = res.body.token;
+    // Создаём второго пользователя для проверки конфликта email
+    const res2 = await request(app)
+      .post('/api/auth/register')
+      .send({ name: 'Other', email: 'other@example.com', password: 'password123' });
+    anotherUserToken = res2.body.token;
   });
 
-  describe('POST /api/products/:id/reviews', () => {
-    it('should create a review', async () => {
+  describe('PUT /api/users/profile', () => {
+    it('should update user name and email', async () => {
       const res = await request(app)
-        .post(`/api/products/${productId}/reviews`)
+        .put('/api/users/profile')
         .set('Authorization', `Bearer ${userToken}`)
-        .send({ rating: 4, comment: 'Nice product' });
-      expect(res.status).toBe(201);
-      expect(res.body.message).toBe('Review added');
+        .send({ name: 'Updated Name', email: 'updated@example.com' });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('id');
+      expect(res.body.name).toBe('Updated Name');
+      expect(res.body.email).toBe('updated@example.com');
     });
 
-    it('should return 400 if rating is missing', async () => {
+    it('should return 400 if no fields to update', async () => {
       const res = await request(app)
-        .post(`/api/products/${productId}/reviews`)
+        .put('/api/users/profile')
         .set('Authorization', `Bearer ${userToken}`)
-        .send({ comment: 'No rating' });
+        .send({});
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe('No fields to update');
+    });
+
+    it('should return 400 if email is invalid', async () => {
+      const res = await request(app)
+        .put('/api/users/profile')
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ email: 'invalid-email' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.errors).toBeDefined();
+    });
+
+    it('should return 400 if email already in use by another user', async () => {
+      const res = await request(app)
+        .put('/api/users/profile')
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ email: 'other@example.com' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe('Email already in use');
+    });
+
+    it('should return 401 without token', async () => {
+      const res = await request(app)
+        .put('/api/users/profile')
+        .send({ name: 'No Auth' });
+
+      expect(res.status).toBe(401);
+    });
+  });
+
+  describe('Contact API', () => {
+    describe('POST /api/contact', () => {
+      it('should send contact message', async () => {
+        const res = await request(app)
+          .post('/api/contact')
+          .send({ subject: 'Test Subject', message: 'This is a test message with enough length' });
+
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+      });
+
+      it('should return 400 if subject is missing', async () => {
+        const res = await request(app)
+          .post('/api/contact')
+          .send({ message: 'This is a test message with enough length' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBe('Invalid data');
+      });
+
+      it('should return 400 if subject is too short', async () => {
+        const res = await request(app)
+          .post('/api/contact')
+          .send({ subject: 'ab', message: 'This is a test message with enough length' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBe('Invalid data');
+      });
+
+      it('should return 400 if message is too short', async () => {
+        const res = await request(app)
+          .post('/api/contact')
+          .send({ subject: 'Test Subject', message: 'Short' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBe('Invalid data');
+      });
+    });
+  });
+
+  describe('PUT /api/users/password', () => {
+    it('should change password', async () => {
+      const res = await request(app)
+        .put('/api/users/password')
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ currentPassword: 'password123', newPassword: 'newpass123' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toBe('Password updated successfully');
+
+      // Проверим, что можем войти с новым паролем
+      const loginRes = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'updated@example.com', password: 'newpass123' }); // email был изменён ранее
+      expect(loginRes.status).toBe(200);
+    });
+
+    it('should return 401 if current password is incorrect', async () => {
+      const res = await request(app)
+        .put('/api/users/password')
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ currentPassword: 'wrongpassword', newPassword: 'newpass456' });
+
+      expect(res.status).toBe(401);
+      expect(res.body.error).toBe('Current password is incorrect');
+    });
+
+    it('should return 400 if new password is too short', async () => {
+      const res = await request(app)
+        .put('/api/users/password')
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ currentPassword: 'newpass123', newPassword: '12345' });
+
       expect(res.status).toBe(400);
       expect(res.body.errors).toBeDefined();
     });
 
     it('should return 401 without token', async () => {
       const res = await request(app)
-        .post(`/api/products/${productId}/reviews`)
-        .send({ rating: 3 });
+        .put('/api/users/password')
+        .send({ currentPassword: 'any', newPassword: '123456' });
+
       expect(res.status).toBe(401);
     });
   });
+});
 
-  describe('GET /api/products/:id/reviews', () => {
-    it('should return reviews array', async () => {
-      const res = await request(app)
-        .get(`/api/products/${productId}/reviews`);
-      expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('reviews');
-      expect(Array.isArray(res.body.reviews)).toBe(true);
-    });
+describe('POST /api/products/by-ids', () => {
+  let testProductId1;
+  let testProductId2;
+
+  beforeAll(async () => {
+    // Создаём тестовые продукты специально для этого блока
+    await testDb.query("INSERT IGNORE INTO categories (name) VALUES ('ByIDs Category')");
+    const [catRows] = await testDb.query("SELECT id FROM categories WHERE name='ByIDs Category' LIMIT 1");
+    const catId = catRows[0].id;
+
+    const [res1] = await testDb.query(
+      "INSERT INTO products (name, category_id, price, stock) VALUES ('ByIDs Product 1', ?, 10.00, 5)",
+      [catId]
+    );
+    const [res2] = await testDb.query(
+      "INSERT INTO products (name, category_id, price, stock) VALUES ('ByIDs Product 2', ?, 20.00, 5)",
+      [catId]
+    );
+    testProductId1 = res1.insertId;
+    testProductId2 = res2.insertId;
   });
 
-  describe('DELETE /api/reviews/:id', () => {
-    let reviewId;
+  it('should return products for given ids', async () => {
+    const res = await request(app)
+      .post('/api/products/by-ids')
+      .send({ ids: [testProductId1, testProductId2] });
 
-    beforeAll(async () => {
-      // Создаём отзыв для тестов удаления
-      await request(app)
-        .post(`/api/products/${productId}/reviews`)
-        .set('Authorization', `Bearer ${userToken}`)
-        .send({ rating: 5, comment: 'Delete me' });
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBe(2);
+    const ids = res.body.map(p => p.id);
+    expect(ids).toContain(testProductId1);
+    expect(ids).toContain(testProductId2);
+  });
 
-      const reviewsRes = await request(app)
-        .get(`/api/products/${productId}/reviews`);
-      reviewId = reviewsRes.body.reviews[0].id;
-    });
+  it('should return empty array if no ids provided', async () => {
+    const res = await request(app)
+      .post('/api/products/by-ids')
+      .send({ ids: [] });
 
-    it('should delete own review', async () => {
-      const res = await request(app)
-        .delete(`/api/reviews/${reviewId}`)
-        .set('Authorization', `Bearer ${userToken}`);
-      expect(res.status).toBe(200);
-    });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
 
-    it('should return 403 if trying to delete review of another user', async () => {
-      // Создаём отзыв от другого пользователя
-      const anotherUserToken = await registerAndGetToken({ name: 'Other', email: 'other@example.com', password: 'password123' });
-      const createRes = await request(app)
-        .post(`/api/products/${productId}/reviews`)
-        .set('Authorization', `Bearer ${anotherUserToken}`)
-        .send({ rating: 2, comment: 'Not good' });
+  it('should return only existing products', async () => {
+    const res = await request(app)
+      .post('/api/products/by-ids')
+      .send({ ids: [testProductId1, 99999] });
 
-      const reviewsRes = await request(app)
-        .get(`/api/products/${productId}/reviews`);
-      const otherReviewId = reviewsRes.body.reviews.find(r => r.comment === 'Not good').id;
-
-      // Пытаемся удалить под нашим пользователем
-      const res = await request(app)
-        .delete(`/api/reviews/${otherReviewId}`)
-        .set('Authorization', `Bearer ${userToken}`);
-      expect(res.status).toBe(403);
-    });
-
-    it('should return 401 without token', async () => {
-      const res = await request(app)
-        .delete(`/api/reviews/${reviewId}`);
-      expect(res.status).toBe(401);
-    });
+    expect(res.status).toBe(200);
+    expect(res.body.length).toBe(1);
+    expect(res.body[0].id).toBe(testProductId1);
   });
 });

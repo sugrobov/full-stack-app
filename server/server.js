@@ -1121,6 +1121,27 @@ app.get('/api/admin/reviews', verifyToken, requireAdmin, async (req, res) => {
   }
 });
 
+// Массовое удаление
+app.delete('/api/admin/reviews/bulk', verifyToken, requireAdmin, async (req, res) => {
+  const { ids } = req.body;
+  if (!ids || !ids.length) return res.status(400).json({ error: 'No review IDs provided' });
+  const placeholders = ids.map(() => '?').join(',');
+  try {
+    const [reviews] = await db.query(`SELECT product_id FROM reviews WHERE id IN (${placeholders})`, ids);
+    const productIds = [...new Set(reviews.map(r => r.product_id))];
+    await db.query(`DELETE FROM reviews WHERE id IN (${placeholders})`, ids);
+    for (const pid of productIds) {
+      const [avgResult] = await db.query('SELECT AVG(rating) as avg_rating FROM reviews WHERE product_id = ? AND is_approved = 1', [pid]);
+      const avgRating = avgResult[0].avg_rating ? parseFloat(avgResult[0].avg_rating).toFixed(1) : 0;
+      await db.query('UPDATE products SET rating = ? WHERE id = ?', [avgRating, pid]);
+    }
+    res.json({ message: `${ids.length} reviews deleted` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete reviews' });
+  }
+});
+
 // Удалить отзыв (админ) с пересчётом среднего рейтинга
 app.delete('/api/admin/reviews/:id', verifyToken, requireAdmin, async (req, res) => {
   const reviewId = parseInt(req.params.id);
@@ -1230,27 +1251,6 @@ app.delete('/api/reviews/:id', verifyToken, async (req, res) => {
 });
 
 // ==================== УПРАВЛЕНИЕ ОТЗЫВАМИ ====================
-
-// Массовое удаление
-app.delete('/api/admin/reviews/bulk', verifyToken, requireAdmin, async (req, res) => {
-  const { ids } = req.body;
-  if (!ids || !ids.length) return res.status(400).json({ error: 'No review IDs provided' });
-  const placeholders = ids.map(() => '?').join(',');
-  try {
-    const [reviews] = await db.query(`SELECT product_id FROM reviews WHERE id IN (${placeholders})`, ids);
-    const productIds = [...new Set(reviews.map(r => r.product_id))];
-    await db.query(`DELETE FROM reviews WHERE id IN (${placeholders})`, ids);
-    for (const pid of productIds) {
-      const [avgResult] = await db.query('SELECT AVG(rating) as avg_rating FROM reviews WHERE product_id = ? AND is_approved = 1', [pid]);
-      const avgRating = avgResult[0].avg_rating ? parseFloat(avgResult[0].avg_rating).toFixed(1) : 0;
-      await db.query('UPDATE products SET rating = ? WHERE id = ?', [avgRating, pid]);
-    }
-    res.json({ message: `${ids.length} reviews deleted` });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to delete reviews' });
-  }
-});
 
 // Редактирование отзыва
 app.put('/api/admin/reviews/:id', verifyToken, requireAdmin, async (req, res) => {
