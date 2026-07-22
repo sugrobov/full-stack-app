@@ -748,6 +748,46 @@ describe('Admin API', () => {
       expect(reviewsRes.body.reviews.length).toBe(0);
     });
   });
+
+  describe('DELETE /api/admin/products/:id', () => {
+    it('should delete a product as admin', async () => {
+      const res = await request(app)
+        .delete(`/api/admin/products/${adminProductId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(res.status).toBe(200);
+      expect(res.body.message).toBe('Product deleted');
+
+      // Verify product is actually deleted
+      const check = await request(app)
+        .get(`/api/admin/products/${adminProductId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(check.status).toBe(404);
+    });
+
+    it('should return 200 even if product does not exist (idempotent)', async () => {
+      // Try deleting again
+      const res = await request(app)
+        .delete(`/api/admin/products/${adminProductId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(res.status).toBe(200);
+      expect(res.body.message).toBe('Product deleted');
+    });
+
+    it('should return 403 for regular user', async () => {
+      const userToken = await registerAndGetToken({ name: 'DelUser', email: 'deluser@example.com', password: 'password123' });
+      const res = await request(app)
+        .delete(`/api/admin/products/${adminProductId}`)
+        .set('Authorization', `Bearer ${userToken}`);
+      expect(res.status).toBe(403);
+    });
+
+    it('should return 401 without token', async () => {
+      const res = await request(app)
+        .delete(`/api/admin/products/${adminProductId}`);
+      expect(res.status).toBe(401);
+    });
+  });
+
 });
 
 describe('Reviews API', () => {
