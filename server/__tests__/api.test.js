@@ -547,6 +547,51 @@ describe('Admin API', () => {
     });
   });
 
+  describe('PUT /api/admin/products/:id', () => {
+    const updatedData = {
+      name: 'Updated Admin Product',
+      category_id: adminCategoryId,
+      price: 39.99,
+      discount_price: 34.99,
+      rating: 4.0,
+      stock: 75,
+      description: 'Updated description',
+    };
+
+    it('should update a product as admin', async () => {
+      const res = await request(app)
+        .put(`/api/admin/products/${adminProductId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(updatedData);
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('message', 'Product updated');
+
+      // Проверяем, что данные действительно обновились
+      const getRes = await request(app)
+        .get(`/api/admin/products/${adminProductId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(getRes.body.name).toBe('Updated Admin Product');
+      expect(getRes.body.price).toBe('39.99');
+      expect(getRes.body.stock).toBe(75);
+    });
+
+    it('should return 403 for regular user', async () => {
+      const userToken = await registerAndGetToken({ name: 'UpdateUser', email: 'updateuser@example.com', password: 'password123' });
+      const res = await request(app)
+        .put(`/api/admin/products/${adminProductId}`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send(updatedData);
+      expect(res.status).toBe(403);
+    });
+
+    it('should return 401 without token', async () => {
+      const res = await request(app)
+        .put(`/api/admin/products/${adminProductId}`)
+        .send(updatedData);
+      expect(res.status).toBe(401);
+    });
+  });
+
   describe('POST /api/admin/products', () => {
     const newProduct = {
       name: 'Admin Created Product',
