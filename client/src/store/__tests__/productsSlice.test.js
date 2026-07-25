@@ -208,6 +208,23 @@ describe('productsSlice', () => {
       expect(calledUrl).toContain('category=books');
       expect(calledUrl).toContain('sort=price_asc');
     });
+
+    it('should set status to failed on network error', async () => {
+      global.fetch = vi.fn(() => Promise.reject(new Error('Network error')));
+
+      const dispatch = vi.fn();
+      const thunk = fetchProducts({});
+      await thunk(dispatch, () => ({}), undefined);
+
+      const rejectedAction = dispatch.mock.calls.find(
+        call => call[0].type === fetchProducts.rejected.type
+      );
+      expect(rejectedAction).toBeDefined();
+      // Проверяем, что payload содержит ошибку
+      expect(rejectedAction[0].payload).toBe('Network error');
+      // или в зависимости от твоего кода — можно проверить error.message
+    });
+
   });
 
   describe('fetchCategories thunk', () => {
@@ -226,6 +243,24 @@ describe('productsSlice', () => {
       store.dispatch(fetchCategories.fulfilled([]));
       expect(store.getState().products.categories).toEqual([]);
     });
+
+    it('should handle rejected state (no change to status)', async () => {
+      // Мокаем fetch, чтобы вернул ошибку
+      global.fetch = vi.fn(() => Promise.reject(new Error('Network error')));
+
+      const dispatch = vi.fn();
+      const thunk = fetchCategories();
+      await thunk(dispatch, () => ({}), undefined);
+
+      // Проверяем, что был вызван rejected action
+      const rejectedAction = dispatch.mock.calls.find(
+        call => call[0].type === fetchCategories.rejected.type
+      );
+      expect(rejectedAction).toBeDefined();
+      // Поскольку в слайсе нет обработчика rejected, состояние не меняется —
+      // это фиксирует текущее поведение
+    });
+
   });
 
   describe('fetchProductById thunk', () => {

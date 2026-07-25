@@ -1,3 +1,5 @@
+import axios from 'axios';
+vi.mock('axios');
 import authReducer, { logout, clearError } from '../authSlice';
 import { register, login, loadUser } from '../authSlice';
 
@@ -95,6 +97,25 @@ describe('authSlice', () => {
       expect(state.isLoading).toBe(false);
       expect(state.error).toBe(error.message);
     });
+    it('should dispatch fulfilled with user data on successful login (integration)', async () => {
+      const fakeUser = { id: 1, name: 'Test', email: 'test@test.com', role: 'user' };
+      const fakeToken = 'fake-jwt';
+      axios.post.mockResolvedValueOnce({ data: { token: fakeToken, user: fakeUser } });
+
+      const dispatch = vi.fn();
+      const thunk = login({ email: 'test@test.com', password: '123456' });
+      await thunk(dispatch, () => ({}), undefined);
+
+      const fulfilledAction = dispatch.mock.calls.find(
+        call => call[0].type === login.fulfilled.type
+      );
+      expect(fulfilledAction[0].payload).toEqual({ token: fakeToken, user: fakeUser });
+      expect(axios.post).toHaveBeenCalledWith('/api/auth/login', {
+        email: 'test@test.com',
+        password: '123456',
+      });
+    });
+
   });
 
   describe('loadUser thunk', () => {
@@ -123,5 +144,14 @@ describe('authSlice', () => {
       expect(state.user).toBeNull();
       expect(state.token).toBeNull();
     });
+
+    it('should throw "No token" when token is missing in store', async () => {
+      const dispatch = vi.fn();
+      const getState = vi.fn(() => ({ auth: { token: null } })); // или undefined
+      const thunk = loadUser();
+
+      await expect(thunk(dispatch, getState, undefined)).rejects.toThrow('No token');
+    });
+
   });
 });
