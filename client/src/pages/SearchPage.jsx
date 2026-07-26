@@ -49,7 +49,7 @@ const SearchPage = () => {
 
   if (!query) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8" data-testid="no-query">
         <Breadcrumb />
         <div className="text-center py-12">
           <p className="text-gray-600">Введите поисковый запрос</p>
@@ -62,7 +62,7 @@ const SearchPage = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8" data-testid="search-results">
       <Breadcrumb />
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-3xl font-bold text-gray-800">
@@ -72,23 +72,25 @@ const SearchPage = () => {
           <button
             onClick={handleGoBack}
             className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition"
+            data-testid="back-button"
           >
             ← Назад
           </button>
           <Link
             to="/"
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+            data-testid="home-link"
           >
             На главную
           </Link>
         </div>
       </div>
-      <p className="text-gray-600 mb-8">Найдено товаров: {pagination.totalItems}</p>
+      <p className="text-gray-600 mb-8" data-testid="total-items">Найдено товаров: {pagination.totalItems}</p>
 
       {loading ? (
-        <div className="text-center py-12">Загрузка...</div>
+        <div className="text-center py-12" data-testid="loading-message">Загрузка...</div>
       ) : products.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg shadow">
+        <div className="text-center py-12 bg-white rounded-lg shadow" data-testid="empty-message">
           <p className="text-gray-600">Ничего не найдено. Попробуйте другой запрос.</p>
           <Link to="/" className="mt-4 inline-block text-blue-600 hover:underline">
             Вернуться в каталог
@@ -96,12 +98,12 @@ const SearchPage = () => {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="product-grid">
             {products.map(product => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
-          <div className="mt-8 flex justify-center">
+          <div className="mt-8 flex justify-center" data-testid="pagination-container">
             <Pagination
               currentPage={pagination.currentPage}
               totalPages={pagination.totalPages}
