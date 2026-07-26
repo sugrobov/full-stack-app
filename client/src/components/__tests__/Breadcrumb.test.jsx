@@ -86,9 +86,13 @@ describe('Breadcrumb', () => {
   it('does not render product name if not found in store and no prop', () => {
     renderBreadcrumb({ route: '/product/999', productName: undefined, state: { items: [] } });
     expect(screen.getByText('Главная')).toBeInTheDocument();
-    expect(screen.getByText('Каталог товаров')).toBeInTheDocument();
-    // Третьего элемента нет (кроме разделителей)
+    const catalog = screen.getByText('Каталог товаров');
+    expect(catalog).toBeInTheDocument();
+    // Это должен быть span с aria-current, а не ссылка
+    expect(catalog.tagName).toBe('SPAN');
+    expect(catalog).toHaveAttribute('aria-current', 'page');
+    // Единственная ссылка – "Главная"
     const links = screen.getAllByRole('link');
-    expect(links).toHaveLength(2); // Главная и Каталог товаров
+    expect(links).toHaveLength(1);
   });
 });
