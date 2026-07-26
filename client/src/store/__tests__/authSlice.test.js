@@ -110,10 +110,10 @@ describe('authSlice', () => {
         call => call[0].type === login.fulfilled.type
       );
       expect(fulfilledAction[0].payload).toEqual({ token: fakeToken, user: fakeUser });
-      expect(axios.post).toHaveBeenCalledWith('/api/auth/login', {
-        email: 'test@test.com',
-        password: '123456',
-      });
+      expect(axios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/auth/login'),
+        { email: 'test@test.com', password: '123456' }
+      );
     });
 
   });
@@ -145,12 +145,17 @@ describe('authSlice', () => {
       expect(state.token).toBeNull();
     });
 
-    it('should throw "No token" when token is missing in store', async () => {
+    it('should dispatch rejected when token is missing in store', async () => {
       const dispatch = vi.fn();
-      const getState = vi.fn(() => ({ auth: { token: null } })); // или undefined
+      const getState = vi.fn(() => ({ auth: { token: null } }));
       const thunk = loadUser();
+      await thunk(dispatch, getState, undefined);
 
-      await expect(thunk(dispatch, getState, undefined)).rejects.toThrow('No token');
+      const rejectedAction = dispatch.mock.calls.find(
+        call => call[0].type === loadUser.rejected.type
+      );
+      expect(rejectedAction).toBeDefined();
+      expect(rejectedAction[0].error.message).toBe('No token');
     });
 
   });

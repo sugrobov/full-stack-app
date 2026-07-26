@@ -210,19 +210,12 @@ describe('productsSlice', () => {
     });
 
     it('should set status to failed on network error', async () => {
-      global.fetch = vi.fn(() => Promise.reject(new Error('Network error')));
-
-      const dispatch = vi.fn();
-      const thunk = fetchProducts({});
-      await thunk(dispatch, () => ({}), undefined);
-
-      const rejectedAction = dispatch.mock.calls.find(
-        call => call[0].type === fetchProducts.rejected.type
-      );
-      expect(rejectedAction).toBeDefined();
-      // Проверяем, что payload содержит ошибку
-      expect(rejectedAction[0].payload).toBe('Network error');
-      // или в зависимости от твоего кода — можно проверить error.message
+      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+      const store = createTestStore(initialState);
+      await store.dispatch(fetchProducts());
+      const state = store.getState().products;
+      expect(state.status).toBe('failed');
+      expect(state.error).toBe('Network error');
     });
 
   });
@@ -264,6 +257,10 @@ describe('productsSlice', () => {
   });
 
   describe('fetchProductById thunk', () => {
+    beforeEach(() => {
+      global.fetch = mockFetch;  // используем глобальный mockFetch
+      mockFetch.mockClear();
+    });
     it('should set loading and clear currentProduct on pending', () => {
       const store = createTestStore({ ...initialState, currentProduct: { id: 2 } });
       store.dispatch(fetchProductById.pending());
