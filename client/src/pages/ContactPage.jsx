@@ -129,7 +129,7 @@ const ContactPage = () => {
       
       <div className="bg-white rounded-lg shadow-md p-6 max-w-2xl mx-auto">
         {submitSuccess ? (
-          <div className="text-center py-8">
+          <div data-testid="submit-success" className="text-center py-8">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -156,8 +156,8 @@ const ContactPage = () => {
               onChange={handleChange}
               required
               placeholder="Введите тему сообщения"
+              data-testid="subject-input"
             />
-            
             
             <Input
               label="Текст сообщения"
@@ -169,13 +169,14 @@ const ContactPage = () => {
               required
               rows={6}
               placeholder="Опишите ваш вопрос или предложение"
+              data-testid="message-input"
             />
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Каптча
               </label>
               <div className="flex items-center">
-                <div className="bg-gray-100 px-4 py-3 rounded-md mr-3">
+                <div className="bg-gray-100 px-4 py-3 rounded-md mr-3" data-testid="captcha-display">
                   <span className="text-2xl font-bold text-gray-800">{captchaValue}</span>
                 </div>
                 <Button
@@ -196,6 +197,8 @@ const ContactPage = () => {
                   onChange={handleChange}
                   required
                   placeholder="Введите код с картинки"
+                  aria-label="Код с картинки"
+                  data-testid="captcha-input"
                 />
               </div>
               <div className="mt-2">
@@ -204,17 +207,18 @@ const ContactPage = () => {
                   type="button"
                   onClick={handleCaptchaVerify}
                   disabled={!formData.captcha}
+                  data-testid="captcha-verify-button"
                 >
                   Подтвердить
                 </Button>
                 {isCaptchaVerified && (
-                  <span className="ml-2 text-green-600 text-sm">✓ Подтверждено</span>
+                  <span data-testid="captcha-verified" className="ml-2 text-green-600 text-sm">✓ Подтверждено</span>
                 )}
               </div>
             </div>
             
             {submitError && (
-              <div className="mb-6 p-3 bg-red-50 text-red-700 rounded-md">
+              <div data-testid="submit-error" className="mb-6 p-3 bg-red-50 text-red-700 rounded-md">
                 {submitError}
               </div>
             )}
@@ -224,6 +228,7 @@ const ContactPage = () => {
                 variant="primary"
                 type="submit"
                 disabled={isSubmitting || !isCaptchaVerified}
+                data-testid="submit-button"
               >
                 {isSubmitting ? 'Отправка...' : 'Отправить'}
               </Button>
@@ -232,6 +237,7 @@ const ContactPage = () => {
                 variant="secondary"
                 type="button"
                 onClick={handleReset}
+                data-testid="reset-button"
               >
                 Очистить
               </Button>
