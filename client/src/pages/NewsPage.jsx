@@ -85,7 +85,7 @@ const NewsPage = () => {
     setCurrentPage(1);
   };
 
-  return (
+    return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-6">
         <Breadcrumb />
@@ -94,9 +94,10 @@ const NewsPage = () => {
       <h1 className="text-3xl font-bold text-gray-800 mb-8">Новости</h1>
 
       {/* Фильтр по категориям */}
-      <div className="flex flex-wrap gap-2 mb-8">
+      <div className="flex flex-wrap gap-2 mb-8" data-testid="category-filters">
         <button
           onClick={() => handleCategoryChange('')}
+          data-testid="category-All"
           className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
             selectedCategory === ''
               ? 'bg-blue-600 text-white'
@@ -109,6 +110,7 @@ const NewsPage = () => {
           <button
             key={cat}
             onClick={() => handleCategoryChange(cat)}
+            data-testid={`category-${cat}`}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
               selectedCategory === cat
                 ? 'bg-blue-600 text-white'
@@ -122,7 +124,7 @@ const NewsPage = () => {
 
       {/* Список новостей */}
       {paginatedNews.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg shadow">
+        <div data-testid="empty-news" className="text-center py-12 bg-white rounded-lg shadow">
           <p className="text-gray-600">Новости не найдены</p>
         </div>
       ) : (
@@ -134,6 +136,7 @@ const NewsPage = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.1 }}
               className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+              data-testid={`news-card-${news.id}`}
             >
               <Link to={`/news/${news.id}`} className="block p-6">
                 <div className="flex flex-col sm:flex-row sm:items-start gap-4">
@@ -157,10 +160,10 @@ const NewsPage = () => {
                         })}
                       </time>
                     </div>
-                    <h2 className="text-xl font-semibold text-gray-800 mb-2 hover:text-blue-600 transition-colors">
+                    <h2 className="text-xl font-semibold text-gray-800 mb-2 hover:text-blue-600 transition-colors" data-testid={`news-title-${news.id}`}>
                       {news.title}
                     </h2>
-                    <p className="text-gray-600 line-clamp-2">{news.preview}</p>
+                    <p className="text-gray-600 line-clamp-2" data-testid={`news-preview-${news.id}`}>{news.preview}</p>
                     <div className="mt-3 text-blue-600 text-sm font-medium hover:text-blue-800 transition-colors">
                       Читать далее →
                     </div>
@@ -174,11 +177,12 @@ const NewsPage = () => {
 
       {/* Пагинация */}
       {totalPages > 1 && (
-        <div className="flex justify-center items-center space-x-2 mt-8">
+        <div className="flex justify-center items-center space-x-2 mt-8" data-testid="pagination">
           <Button
             variant="secondary"
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
             disabled={currentPage === 1}
+            data-testid="prev-button"
           >
             ← Назад
           </Button>
@@ -187,6 +191,7 @@ const NewsPage = () => {
               key={page}
               variant={page === currentPage ? 'primary' : 'secondary'}
               onClick={() => setCurrentPage(page)}
+              data-testid={`page-${page}`}
             >
               {page}
             </Button>
@@ -195,6 +200,7 @@ const NewsPage = () => {
             variant="secondary"
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
+            data-testid="next-button"
           >
             Вперед →
           </Button>
