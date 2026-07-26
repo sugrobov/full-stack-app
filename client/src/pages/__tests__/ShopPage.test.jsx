@@ -32,6 +32,9 @@ vi.mock('../../components/ProductSearch', () => ({ default: () => <div>ProductSe
 vi.mock('../../components/ProductCardSkeleton', () => ({ default: () => <div>Skeleton</div> }));
 vi.mock('../../components/SortSelect', () => ({ default: () => <div>SortSelect</div> }));
 vi.mock('../../components/ResetFiltersButton', () => ({ default: () => <div>ResetFilters</div> }));
+vi.mock('../../components/UI/Button', () => ({
+  default: ({ children, onClick }) => <button onClick={onClick}>{children}</button>,
+}));
 vi.mock('framer-motion', () => ({
   motion: {
     div: ({ children, ...props }) => <div {...props}>{children}</div>,
@@ -85,17 +88,17 @@ describe('ShopPage', () => {
     expect(screen.getAllByText('Skeleton').length).toBe(6);
   });
 
-//   it('shows error state and retry button when failed', () => {
-//     renderShop({ status: 'failed', items: [] });
-//     expect(screen.getByText('Ошибка загрузки товаров')).toBeInTheDocument();
-//     const retryButton = screen.getByText('Повторить попытку');
-//     expect(retryButton).toBeInTheDocument();
-//   });
+  it('shows error state and retry button when error exists', () => {
+    renderShop({ status: 'failed', error: 'Network error', items: [] });
+    expect(screen.getByText('Ошибка загрузки товаров')).toBeInTheDocument();
+    const retryButton = screen.getByText('Повторить попытку');
+    expect(retryButton).toBeInTheDocument();
+  });
 
-//   it('shows empty message when no items and not loading', () => {
-//     renderShop({ status: 'succeeded', items: [], totalItems: 0 });
-//     expect(screen.getByText('Товары не найдены')).toBeInTheDocument();
-//   });
+  it('shows empty message when no items and not loading', () => {
+    renderShop({ status: 'succeeded', items: [], totalItems: 0 });
+    expect(screen.getByText('Товары не найдены')).toBeInTheDocument();
+  });
 
   it('renders product cards when items exist', () => {
     const items = [

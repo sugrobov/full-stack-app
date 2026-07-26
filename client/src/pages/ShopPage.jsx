@@ -10,6 +10,7 @@ import ProductSearch from '../components/ProductSearch';
 import ProductCardSkeleton from '../components/ProductCardSkeleton';
 import SortSelect from '../components/SortSelect';
 import ResetFiltersButton from '../components/ResetFiltersButton';
+import Button from '../components/UI/Button';
 import { motion } from 'framer-motion';
 
 const containerVariants = {
@@ -27,7 +28,7 @@ const itemVariants = {
 const ShopPage = () => {
   const dispatch = useDispatch();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { items, status, currentPage, totalPages, totalItems, selectedCategory, minPrice, maxPrice, sort } = useSelector(state => state.products);
+  const { items, status, error, currentPage, totalPages, totalItems, selectedCategory, minPrice, maxPrice, sort } = useSelector(state => state.products);
 
   useEffect(() => {
     const category = searchParams.get('category') || '';
@@ -70,12 +71,15 @@ const ShopPage = () => {
   };
 
   const showSkeletons = items.length === 0 && status === 'loading';
-  if (status === 'failed' && items.length === 0) {
+
+  if (error) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center py-12">
-          <div className="text-red-500 text-lg mb-4">Ошибка загрузки товаров</div>
-          <button onClick={() => dispatch(fetchProducts())} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Повторить попытку</button>
+        <div className="text-center" role="alert">
+          <p className="text-red-500 text-lg mb-4">Ошибка загрузки товаров</p>
+          <Button onClick={() => dispatch(fetchProducts())}>
+            Повторить попытку
+          </Button>
         </div>
       </div>
     );
