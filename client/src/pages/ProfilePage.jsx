@@ -87,7 +87,7 @@ const ProfilePage = () => {
     }
   };
 
-  return (
+   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <h1 className="text-3xl font-bold mb-8">Личный кабинет</h1>
       {message && <div className="bg-green-100 text-green-700 p-3 rounded mb-4">{message}</div>}
@@ -97,12 +97,12 @@ const ProfilePage = () => {
         <h2 className="text-xl font-semibold mb-4">Редактировать профиль</h2>
         <form onSubmit={handleUpdateProfile} className="space-y-4">
           <div>
-            <label className="block text-gray-700">Имя</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full border rounded px-3 py-2" required />
+            <label htmlFor="name" className="block text-gray-700">Имя</label>
+            <input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full border rounded px-3 py-2" required />
           </div>
           <div>
-            <label className="block text-gray-700">Email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border rounded px-3 py-2" required />
+            <label htmlFor="email" className="block text-gray-700">Email</label>
+            <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border rounded px-3 py-2" required />
           </div>
           <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Сохранить изменения</button>
         </form>
@@ -113,12 +113,12 @@ const ProfilePage = () => {
         <form onSubmit={handleChangePassword} className="space-y-4">
           <input type="hidden" autoComplete="username" value={user?.email || ''} />
           <div>
-            <label className="block text-gray-700">Текущий пароль</label>
-            <input type="password" autoComplete="current-password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="w-full border rounded px-3 py-2" required />
+            <label htmlFor="currentPassword" className="block text-gray-700">Текущий пароль</label>
+            <input id="currentPassword" type="password" autoComplete="current-password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="w-full border rounded px-3 py-2" required />
           </div>
           <div>
-            <label className="block text-gray-700">Новый пароль (мин. 6 символов)</label>
-            <input type="password" autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full border rounded px-3 py-2" required />
+            <label htmlFor="newPassword" className="block text-gray-700">Новый пароль (мин. 6 символов)</label>
+            <input id="newPassword" type="password" autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full border rounded px-3 py-2" required />
           </div>
           <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Сменить пароль</button>
         </form>
@@ -144,7 +144,7 @@ const ProfilePage = () => {
                     <span className="font-medium">Заказ №{order.id}</span>
                     <span className="text-sm text-gray-500">{formatRelativeDate(order.created_at)}</span>
                   </div>
-                  <div>Сумма: {order.total.toLocaleString()} ₽</div>
+                  <div data-testid="order-total">Сумма: {order.total.toLocaleString()} ₽</div>
                   <div>Статус: {order.status === 'pending' ? 'Оформлен' : order.status}</div>
                   <div className="mt-2 text-sm text-gray-600">Адрес: {order.address}</div>
                   {order.items && itemsArray.length > 0 && (
