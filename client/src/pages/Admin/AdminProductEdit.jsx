@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import ProductImageUpload from '../Products/components/ProductImageUpload'; // компонент загрузки изображения
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const AdminProductEdit = () => {
   const { id } = useParams();
@@ -75,7 +75,7 @@ const AdminProductEdit = () => {
     try {
       const token = localStorage.getItem('token');
       await axios.put(`${API_URL}/admin/products/${id}`, {
-        name, category_id, price, discount_price, stock, description, images
+        name, category_id, price, discount_price, stock: String(stock), description, images
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -90,14 +90,16 @@ const AdminProductEdit = () => {
     }
   };
 
-  if (loading) return <div className="p-8">Загрузка...</div>;
+  if (loading) return <div className="p-8" data-testid="loading-message">Загрузка...</div>;
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Редактирование товара</h1>
-      <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
-        {/* БЛОК ЗАГРУЗКИ ИЗОБРАЖЕНИЯ */}
-        <div>
+      <h1 className="text-2xl font-bold mb-6" data-testid="admin-product-edit-heading">
+        Редактирование товара
+      </h1>
+      <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl" data-testid="admin-product-edit-form">
+        {/* Блок изображения */}
+        <div data-testid="image-upload-section">
           <label className="block font-medium mb-2">Изображение товара</label>
           <ProductImageUpload
             productId={id}
@@ -107,44 +109,101 @@ const AdminProductEdit = () => {
         </div>
 
         <div>
-          <label className="block font-medium mb-1">Название</label>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full border rounded px-3 py-2" required />
+          <label htmlFor="product-name" className="block font-medium mb-1">Название</label>
+          <input
+            id="product-name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full border rounded px-3 py-2"
+            required
+            data-testid="product-name-input"
+          />
         </div>
 
         <div>
-          <label className="block font-medium mb-1">Категория</label>
-          <select value={category_id} onChange={(e) => setCategoryId(e.target.value)} className="w-full border rounded px-3 py-2" required>
+          <label htmlFor="product-category" className="block font-medium mb-1">Категория</label>
+          <select
+            id="product-category"
+            value={category_id}
+            onChange={(e) => setCategoryId(e.target.value)}
+            className="w-full border rounded px-3 py-2"
+            required
+            data-testid="product-category-select"
+          >
             <option value="">Выберите категорию</option>
-            {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
           </select>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block font-medium mb-1">Цена</label>
-            <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="w-full border rounded px-3 py-2" required />
+            <label htmlFor="product-price" className="block font-medium mb-1">Цена</label>
+            <input
+              id="product-price"
+              type="number"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className="w-full border rounded px-3 py-2"
+              required
+              data-testid="product-price-input"
+            />
           </div>
           <div>
-            <label className="block font-medium mb-1">Цена со скидкой</label>
-            <input type="number" value={discount_price} onChange={(e) => setDiscountPrice(e.target.value)} className="w-full border rounded px-3 py-2" />
+            <label htmlFor="product-discount-price" className="block font-medium mb-1">Цена со скидкой</label>
+            <input
+              id="product-discount-price"
+              type="number"
+              value={discount_price}
+              onChange={(e) => setDiscountPrice(e.target.value)}
+              className="w-full border rounded px-3 py-2"
+              data-testid="product-discount-price-input"
+            />
           </div>
         </div>
 
         <div>
-          <label className="block font-medium mb-1">Количество на складе</label>
-          <input type="number" value={stock} onChange={(e) => setStock(e.target.value)} className="w-full border rounded px-3 py-2" required />
+          <label htmlFor="product-stock" className="block font-medium mb-1">Количество на складе</label>
+          <input
+            id="product-stock"
+            type="number"
+            value={stock}
+            onChange={(e) => setStock(e.target.value)}
+            className="w-full border rounded px-3 py-2"
+            required
+            data-testid="product-stock-input"
+          />
         </div>
 
         <div>
-          <label className="block font-medium mb-1">Описание</label>
-          <textarea rows="5" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full border rounded px-3 py-2" />
+          <label htmlFor="product-description" className="block font-medium mb-1">Описание</label>
+          <textarea
+            id="product-description"
+            rows="5"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full border rounded px-3 py-2"
+            data-testid="product-description-textarea"
+          />
         </div>
 
         <div className="flex gap-4">
-          <button type="submit" disabled={saving} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50">
+          <button
+            type="submit"
+            disabled={saving}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+            data-testid="save-button"
+          >
             {saving ? 'Сохранение...' : 'Сохранить'}
           </button>
-          <button type="button" onClick={() => navigate('/admin/products')} className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+          <button
+            type="button"
+            onClick={() => navigate('/admin/products')}
+            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+            data-testid="cancel-button"
+          >
             Отмена
           </button>
         </div>
