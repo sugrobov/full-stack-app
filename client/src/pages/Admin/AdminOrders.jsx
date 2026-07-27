@@ -92,30 +92,58 @@ const AdminOrders = () => {
 
   if (loading) return <TableSkeleton columns={7} rows={5} />;
 
-  return (
-    <div className="container mx-auto px-4 py-8">
+   return (
+    <div className="container mx-auto px-4 py-8" data-testid="admin-orders">
       <h1 className="text-3xl font-bold mb-8">Управление заказами</h1>
       <BackToAdminButton />
       {/* Фильтры */}
-      <div className="bg-white rounded-lg shadow p-6 mb-8">
+      <div className="bg-white rounded-lg shadow p-6 mb-8" data-testid="admin-orders-filters">
         <h2 className="text-xl font-semibold mb-4">Фильтры</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} className="border p-2 rounded">
+          <select
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+            className="border p-2 rounded"
+            data-testid="status-filter"
+          >
             {statusOptions.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
-          <input type="text" placeholder="Email пользователя" value={emailSearch} onChange={(e) => { setEmailSearch(e.target.value); setPage(1); }} className="border p-2 rounded" />
-          <input type="date" placeholder="Дата от" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }} className="border p-2 rounded" />
-          <input type="date" placeholder="Дата до" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }} className="border p-2 rounded" />
+          <input
+            type="text"
+            placeholder="Email пользователя"
+            value={emailSearch}
+            onChange={(e) => { setEmailSearch(e.target.value); setPage(1); }}
+            className="border p-2 rounded"
+            data-testid="email-filter"
+          />
+          <input
+            type="date"
+            placeholder="Дата от"
+            value={dateFrom}
+            onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+            className="border p-2 rounded"
+            data-testid="date-from"
+          />
+          <input
+            type="date"
+            placeholder="Дата до"
+            value={dateTo}
+            onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+            className="border p-2 rounded"
+            data-testid="date-to"
+          />
         </div>
         <div className="mt-4">
-          <button onClick={resetFilters} className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Сбросить фильтры</button>
+          <button onClick={resetFilters} className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600" data-testid="reset-filters-btn">
+            Сбросить фильтры
+          </button>
         </div>
       </div>
 
       {/* Таблица заказов */}
-      <div className="bg-white rounded-lg shadow overflow-x-auto">
+      <div className="bg-white rounded-lg shadow overflow-x-auto" data-testid="admin-orders-table">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -130,7 +158,7 @@ const AdminOrders = () => {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {orders.map(order => (
-              <tr key={order.id}>
+              <tr key={order.id} data-testid={`order-row-${order.id}`}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.id}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.user_name}<br /><span className="text-xs text-gray-500">{order.user_email}</span></td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{Number(order.total).toLocaleString()} ₽</td>
@@ -140,6 +168,7 @@ const AdminOrders = () => {
                     onChange={(e) => updateStatus(order.id, e.target.value)}
                     disabled={updating === order.id}
                     className="border rounded px-2 py-1 text-sm"
+                    data-testid={`status-select-${order.id}`}
                   >
                     <option value="pending">Ожидает</option>
                     <option value="paid">Оплачен</option>
@@ -167,7 +196,7 @@ const AdminOrders = () => {
       </div>
 
       {/* Пагинация */}
-      <div className="mt-6">
+      <div className="mt-6" data-testid="orders-pagination">
         <Pagination
           currentPage={pagination.page}
           totalPages={pagination.totalPages}
