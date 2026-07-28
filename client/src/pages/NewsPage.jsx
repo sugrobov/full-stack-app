@@ -85,50 +85,55 @@ const NewsPage = () => {
     setCurrentPage(1);
   };
 
-    return (
-    <div className="container mx-auto px-4 py-8">
+  return (
+    <main className="container mx-auto px-4 py-8" aria-labelledby="news-page-heading">
       <div className="mb-6">
         <Breadcrumb />
       </div>
 
-      <h1 className="text-3xl font-bold text-gray-800 mb-8">Новости</h1>
+      <h1 id="news-page-heading" className="text-3xl font-bold text-gray-800 mb-8">Новости</h1>
 
       {/* Фильтр по категориям */}
-      <div className="flex flex-wrap gap-2 mb-8" data-testid="category-filters">
-        <button
-          onClick={() => handleCategoryChange('')}
-          data-testid="category-All"
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-            selectedCategory === ''
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          Все
-        </button>
-        {categories.map(cat => (
+      <ul className="flex flex-wrap gap-2 mb-8" data-testid="category-filters" role="list">
+        <li role="listitem">
           <button
-            key={cat}
-            onClick={() => handleCategoryChange(cat)}
-            data-testid={`category-${cat}`}
+            onClick={() => handleCategoryChange('')}
+            data-testid="category-All"
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              selectedCategory === cat
+              selectedCategory === ''
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
+            aria-pressed={selectedCategory === ''}
           >
-            {cat}
+            Все
           </button>
+        </li>
+        {categories.map(cat => (
+          <li key={cat} role="listitem">
+            <button
+              onClick={() => handleCategoryChange(cat)}
+              data-testid={`category-${cat}`}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                selectedCategory === cat
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              aria-pressed={selectedCategory === cat}
+            >
+              {cat}
+            </button>
+          </li>
         ))}
-      </div>
+      </ul>
 
       {/* Список новостей */}
       {paginatedNews.length === 0 ? (
-        <div data-testid="empty-news" className="text-center py-12 bg-white rounded-lg shadow">
+        <div data-testid="empty-news" className="text-center py-12 bg-white rounded-lg shadow" role="status">
           <p className="text-gray-600">Новости не найдены</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-6" role="list" aria-label="Список новостей">
           {paginatedNews.map((news, idx) => (
             <motion.div
               key={news.id}
@@ -137,22 +142,21 @@ const NewsPage = () => {
               transition={{ delay: idx * 0.1 }}
               className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
               data-testid={`news-card-${news.id}`}
+              role="listitem"
             >
-              <Link to={`/news/${news.id}`} className="block p-6">
+              <Link to={`/news/${news.id}`} className="block p-6" aria-label={`Читать новость: ${news.title}`}>
                 <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-                  {/* Заглушка изображения */}
-                  <div className="w-full sm:w-48 h-32 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div className="w-full sm:w-48 h-32 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0" aria-hidden="true">
                     <svg className="w-12 h-12 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                     </svg>
                   </div>
-
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
                       <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full font-medium">
                         {news.category}
                       </span>
-                      <time className="text-sm text-gray-400">
+                      <time className="text-sm text-gray-400" dateTime={news.date}>
                         {new Date(news.date).toLocaleDateString('ru-RU', {
                           day: 'numeric',
                           month: 'long',
@@ -177,12 +181,13 @@ const NewsPage = () => {
 
       {/* Пагинация */}
       {totalPages > 1 && (
-        <div className="flex justify-center items-center space-x-2 mt-8" data-testid="pagination">
+        <nav className="flex justify-center items-center space-x-2 mt-8" data-testid="pagination" aria-label="Пагинация новостей">
           <Button
             variant="secondary"
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
             disabled={currentPage === 1}
             data-testid="prev-button"
+            aria-label="Предыдущая страница"
           >
             ← Назад
           </Button>
@@ -192,6 +197,8 @@ const NewsPage = () => {
               variant={page === currentPage ? 'primary' : 'secondary'}
               onClick={() => setCurrentPage(page)}
               data-testid={`page-${page}`}
+              aria-label={`Страница ${page}`}
+              aria-current={page === currentPage ? 'page' : undefined}
             >
               {page}
             </Button>
@@ -201,12 +208,13 @@ const NewsPage = () => {
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
             data-testid="next-button"
+            aria-label="Следующая страница"
           >
             Вперед →
           </Button>
-        </div>
+        </nav>
       )}
-    </div>
+    </main>
   );
 };
 
