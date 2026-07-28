@@ -1,10 +1,11 @@
+// client/src/pages/Admin/AdminUsers.jsx
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 import BackToAdminButton from '../../components/UI/BackToAdminButton';
 import Pagination from '../../components/Pagination';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 const ITEMS_PER_PAGE = 10;
 
 const AdminUsers = () => {
@@ -13,7 +14,6 @@ const AdminUsers = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
 
-  // Pagination state
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ page: 1, limit: ITEMS_PER_PAGE, totalPages: 1, totalItems: 0 });
 
@@ -40,9 +40,7 @@ const AdminUsers = () => {
     }
   };
 
-  const handlePageChange = (newPage) => {
-    setPage(newPage);
-  };
+  const handlePageChange = (newPage) => setPage(newPage);
 
   const updateRole = async (userId, newRole) => {
     setUpdating(userId);
@@ -60,23 +58,27 @@ const AdminUsers = () => {
     }
   };
 
-  if (loading) return <div className="text-center py-8">Загрузка...</div>;
+  if (loading) return <div className="text-center py-8" role="status" aria-label="Загрузка">Загрузка...</div>;
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <main className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Управление пользователями</h1>
       <BackToAdminButton />
-      <div className="bg-white rounded-lg shadow overflow-x-auto">
 
-        <table className="min-w-full divide-y divide-gray-200">
+      <section aria-labelledby="users-table-heading" className="bg-white rounded-lg shadow overflow-x-auto">
+        <h2 id="users-table-heading" className="sr-only">Список пользователей</h2>
+        <table className="min-w-full divide-y divide-gray-200" aria-describedby="users-table-desc">
+          <caption id="users-table-desc" className="sr-only">
+            Таблица пользователей с возможностью изменения ролей и пагинацией
+          </caption>
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Имя</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Роль</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Дата регистрации</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Действия</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Имя</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Роль</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Дата регистрации</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Действия</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -91,22 +93,24 @@ const AdminUsers = () => {
                     onChange={(e) => updateRole(user.id, e.target.value)}
                     disabled={updating === user.id}
                     className="border rounded px-2 py-1 text-sm"
+                    aria-label={`Роль пользователя ${user.name}`}
                   >
                     <option value="user">Пользователь</option>
                     <option value="admin">Администратор</option>
                   </select>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(user.created_at).toLocaleDateString()}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {new Date(user.created_at).toLocaleDateString()}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  {/* Можно добавить кнопку удаления, но осторожно */}
+                  {/* Можно добавить кнопку удаления */}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
+      </section>
 
-      {/* Пагинация */}
       <div className="mt-6">
         <Pagination
           currentPage={pagination.page}
@@ -116,7 +120,7 @@ const AdminUsers = () => {
           itemsPerPage={pagination.limit}
         />
       </div>
-    </div>
+    </main>
   );
 };
 
