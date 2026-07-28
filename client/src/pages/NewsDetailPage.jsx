@@ -68,28 +68,29 @@ const NewsDetailPage = () => {
 
   if (!news) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8" aria-labelledby="news-not-found-heading">
         <Breadcrumb />
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Новость не найдена</h2>
+        <div className="text-center py-12" role="alert">
+          <h2 id="news-not-found-heading" className="text-2xl font-bold text-gray-800 mb-4">Новость не найдена</h2>
           <p className="text-gray-600 mb-6">Извините, запрашиваемая новость не существует.</p>
           <Link to="/news">
             <Button variant="primary">Все новости</Button>
           </Link>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <main className="container mx-auto px-4 py-8" aria-labelledby="news-title">
       <div className="flex items-center justify-between mb-6">
         <Breadcrumb />
         <Link
           to="/news"
           className="ml-4 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+          aria-label="Вернуться к списку новостей"
         >
-          <svg className="mr-2 -ml-1 h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="mr-2 -ml-1 h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
           К новостям
@@ -102,7 +103,7 @@ const NewsDetailPage = () => {
         className="bg-white rounded-lg shadow-md overflow-hidden max-w-3xl mx-auto"
       >
         {/* Заглушка изображения */}
-        <div className="w-full h-64 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="w-full h-64 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center" aria-hidden="true">
           <svg className="w-24 h-24 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
           </svg>
@@ -113,7 +114,7 @@ const NewsDetailPage = () => {
             <span className="text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full font-medium">
               {news.category}
             </span>
-            <time className="text-sm text-gray-400">
+            <time className="text-sm text-gray-400" dateTime={news.date}>
               {new Date(news.date).toLocaleDateString('ru-RU', {
                 day: 'numeric',
                 month: 'long',
@@ -122,7 +123,7 @@ const NewsDetailPage = () => {
             </time>
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-800 mb-6">{news.title}</h1>
+          <h1 id="news-title" className="text-3xl font-bold text-gray-800 mb-6">{news.title}</h1>
 
           <div className="prose prose-gray max-w-none">
             <p className="text-lg text-gray-600 leading-relaxed mb-4">{news.preview}</p>
@@ -138,7 +139,7 @@ const NewsDetailPage = () => {
           </div>
         </div>
       </motion.div>
-    </div>
+    </main>
   );
 };
 
