@@ -160,7 +160,7 @@ const ProductPage = () => {
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
                     className={`w-16 h-16 rounded-md overflow-hidden border-2 ${currentImageIndex === index ? 'border-blue-500' : 'border-transparent'}`}
-                    aria-label={`Показать изображение ${index + 1}`}
+                    aria-label={`Миниатюра ${index + 1}`}
                     aria-current={currentImageIndex === index ? 'true' : undefined}
                   >
                     {isValidLocalImage(img) && !failedImages[img] ? (
