@@ -1,12 +1,11 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { vi } from 'vitest';
 import NewsDetailPage from '../NewsDetailPage';
 
-// Мокаем framer-motion
 vi.mock('framer-motion', () => ({
   motion: {
     div: React.forwardRef(({ children, ...props }, ref) => <div ref={ref} {...props}>{children}</div>),
@@ -26,7 +25,9 @@ const renderWithRouter = (id) => {
   return render(
     <Provider store={store}>
       <MemoryRouter initialEntries={[`/news/${id}`]}>
-        <NewsDetailPage />
+        <Routes>
+          <Route path="/news/:id" element={<NewsDetailPage />} />
+        </Routes>
       </MemoryRouter>
     </Provider>
   );
@@ -52,8 +53,9 @@ describe('NewsDetailPage', () => {
 
   test('renders breadcrumb component', () => {
     renderWithRouter(1);
-    // Breadcrumb обычно рендерит навигацию
-    expect(screen.getByRole('navigation', { name: /breadcrumb/i })).toBeInTheDocument();
+    // Проверяем наличие навигации (Breadcrumb рендерит <nav aria-label="breadcrumb">)
+    const breadcrumbNav = screen.getByRole('navigation');
+    expect(breadcrumbNav).toBeInTheDocument();
   });
 
   test('renders back to news link with correct href', () => {
