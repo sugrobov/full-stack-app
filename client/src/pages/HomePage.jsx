@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Button from '../components/UI/Button';
 
-// Статические данные (можно будет заменить на API)
 const newsItems = [
   { id: 1, date: '2025-05-10', title: 'Новая коллекция летней одежды', preview: 'Лёгкие ткани, яркие цвета — встречайте лето стильно!' },
   { id: 2, date: '2025-05-05', title: 'Скидка 20% на электронику', preview: 'Только до конца недели. Успейте купить смартфоны и ноутбуки со скидкой.' },
@@ -25,9 +24,9 @@ const advantages = [
 
 const HomePage = () => {
   return (
-    <div className="bg-white">
-      {/* Hero — минималистичный */}
-      <section className="py-24 px-4 text-center">
+    <main className="bg-white">
+      {/* Hero */}
+      <section className="py-24 px-4 text-center" aria-label="Приветственный блок">
         <motion.h1
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -49,8 +48,9 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Преимущества — иконки, без карточек */}
-      <section className="max-w-5xl mx-auto px-4 py-16 border-t border-gray-100">
+      {/* Преимущества */}
+      <section className="max-w-5xl mx-auto px-4 py-16 border-t border-gray-100" aria-labelledby="advantages-heading">
+        <h2 id="advantages-heading" className="sr-only">Наши преимущества</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {advantages.map((adv, idx) => (
             <motion.div
@@ -60,7 +60,7 @@ const HomePage = () => {
               transition={{ delay: idx * 0.1 }}
               viewport={{ once: true }}
             >
-              <div className="text-3xl mb-2">{adv.icon}</div>
+              <div className="text-3xl mb-2" aria-hidden="true">{adv.icon}</div>
               <h3 className="text-sm font-semibold text-gray-800 mb-1">{adv.title}</h3>
               <p className="text-xs text-gray-500">{adv.text}</p>
             </motion.div>
@@ -68,9 +68,9 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Акции — горизонтальные баннеры с мягким градиентом */}
-      <section className="max-w-5xl mx-auto px-4 py-16 border-t border-gray-100">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-8 text-center">Акции и предложения</h2>
+      {/* Акции */}
+      <section className="max-w-5xl mx-auto px-4 py-16 border-t border-gray-100" aria-labelledby="promotions-heading">
+        <h2 id="promotions-heading" className="text-2xl font-semibold text-gray-900 mb-8 text-center">Акции и предложения</h2>
         <div className="space-y-4">
           {promotions.map((item) => (
             <motion.div
@@ -97,9 +97,9 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Новости — список с датой и заголовком */}
-      <section className="max-w-5xl mx-auto px-4 py-16 border-t border-gray-100">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-8 text-center">Новости</h2>
+      {/* Новости */}
+      <section className="max-w-5xl mx-auto px-4 py-16 border-t border-gray-100" aria-labelledby="news-heading">
+        <h2 id="news-heading" className="text-2xl font-semibold text-gray-900 mb-8 text-center">Новости</h2>
         <div className="space-y-6">
           {newsItems.map((news) => (
             <motion.div
@@ -123,12 +123,14 @@ const HomePage = () => {
       </section>
 
       {/* Подписка */}
-      <section className="bg-gray-50 py-16 px-4">
+      <section className="bg-gray-50 py-16 px-4" aria-labelledby="subscribe-heading">
         <div className="max-w-xl mx-auto text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Будьте в курсе новостей</h2>
+          <h2 id="subscribe-heading" className="text-xl font-semibold text-gray-900 mb-2">Будьте в курсе новостей</h2>
           <p className="text-sm text-gray-500 mb-6">Подпишитесь на рассылку и получайте первыми информацию о скидках и новинках</p>
           <form className="flex flex-col sm:flex-row gap-3" onSubmit={(e) => { e.preventDefault(); alert('Функция подписки в разработке'); }}>
+            <label htmlFor="subscribe-email" className="sr-only">Ваш email</label>
             <input
+              id="subscribe-email"
               type="email"
               placeholder="Ваш email"
               className="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -138,7 +140,7 @@ const HomePage = () => {
           </form>
         </div>
       </section>
-    </div>
+    </main>
   );
 };
 
