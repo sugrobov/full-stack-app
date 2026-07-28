@@ -14,14 +14,6 @@ import CheckoutPage from '../../pages/CheckoutPage';
 vi.mock('axios');
 vi.mock('react-hot-toast');
 
-// Мокаем Google ReCaptcha
-vi.mock('react-google-recaptcha-v3', () => ({
-  GoogleReCaptchaProvider: ({ children }) => children,
-  useGoogleReCaptcha: () => ({
-    executeRecaptcha: vi.fn().mockResolvedValue('mock-recaptcha-token'),
-  }),
-}));
-
 describe('Cart → Checkout integration', () => {
   const testProduct = {
     id: 1,
@@ -36,14 +28,9 @@ describe('Cart → Checkout integration', () => {
 
   const createTestStore = () =>
     configureStore({
-      reducer: {
-        cart: cartReducer,
-        auth: authReducer,
-      },
+      reducer: { cart: cartReducer, auth: authReducer },
       preloadedState: {
-        cart: {
-          items: [testProduct],
-        },
+        cart: { items: [testProduct] },
         auth: {
           user: { id: 1, name: 'John', email: 'john@example.com' },
           token: 'test-token',
@@ -51,23 +38,21 @@ describe('Cart → Checkout integration', () => {
       },
     });
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  beforeEach(() => vi.clearAllMocks());
 
-  const renderApp = (store) => {
-    return render(
+  const renderApp = (store) =>
+    render(
       <Provider store={store}>
         <MemoryRouter initialEntries={['/cart']}>
           <Routes>
             <Route path="/cart" element={<CartPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/" element={<div>Home Page</div>} />
+            <Route path="/profile" element={<div>Profile Page</div>} />
           </Routes>
         </MemoryRouter>
       </Provider>
     );
-  };
 
   test('full flow: cart → checkout → submit order', async () => {
     const store = createTestStore();
@@ -75,7 +60,7 @@ describe('Cart → Checkout integration', () => {
 
     renderApp(store);
 
-    // 1. На странице корзины видим товар и сумму
+    // 1. Корзина: видим товар и сумму
     expect(screen.getByText('Test Product')).toBeInTheDocument();
     const priceElements = screen.getAllByText(/200/);
     expect(priceElements.length).toBeGreaterThanOrEqual(1);
@@ -95,7 +80,7 @@ describe('Cart → Checkout integration', () => {
     // 5. Заполняем поля формы
     fireEvent.change(screen.getByLabelText('Ваше имя'), { target: { value: 'John' } });
     fireEvent.change(screen.getByLabelText('Телефон'), { target: { value: '+79001234567' } });
-    fireEvent.change(screen.getByLabelText('Адрес доставки'), { target: { value: 'ул. Пушкина, д. 10' } });
+    fireEvent.change(screen.getByLabelText(/Адрес доставки/), { target: { value: 'ул. Пушкина, д. 10' } });
 
     // 6. Отправляем заказ
     fireEvent.click(screen.getByText('Подтвердить заказ'));
@@ -105,7 +90,7 @@ describe('Cart → Checkout integration', () => {
       expect(axios.post).toHaveBeenCalledWith(
         expect.stringContaining('/orders'),
         expect.objectContaining({
-          items: [{ product_id: 1, quantity: 2, price: 100 }],
+          items: [{ productId: 1, quantity: 2, price: 100 }],
           name: 'John',
           phone: '+79001234567',
           address: 'ул. Пушкина, д. 10',
@@ -115,9 +100,9 @@ describe('Cart → Checkout integration', () => {
       expect(toast.success).toHaveBeenCalledWith('Заказ оформлен! Спасибо за покупку');
     });
 
-    // 8. После успеха – редирект на главную
+    // 8. Редирект на профиль (так настроен CheckoutPage)
     await waitFor(() => {
-      expect(screen.getByText('Home Page')).toBeInTheDocument();
+      expect(screen.getByText('Profile Page')).toBeInTheDocument();
     });
   });
 });

@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import Button from '../components/UI/Button';
 
 const CheckoutPage = () => {
-  const { items, totalQuantity } = useSelector(state => state.cart);
+  const { items } = useSelector(state => state.cart);
   const { user, token } = useSelector(state => state.auth);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -50,7 +50,7 @@ const CheckoutPage = () => {
 
     try {
       await axios.post(
-        `${import.meta.env.VITE_API_URL}/orders`,
+        `${import.meta.env.VITE_API_URL || '/api'}/orders`,
         { name, address, phone, items: orderItems },
         { headers: { Authorization: `Bearer ${token}` } }
       );
