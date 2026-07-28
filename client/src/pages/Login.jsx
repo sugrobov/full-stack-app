@@ -10,7 +10,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { user, isLoading, error } = useSelector(state => state.auth);
 
-  useEffect(() => { // редирект на главную страницу, если пользователь уже авторизован
+  useEffect(() => {
     if (user) navigate('/');
   }, [user, navigate]);
 
@@ -23,12 +23,13 @@ const Login = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow">
-      <h2 className="text-2xl font-bold mb-6">Вход</h2>
-      <form onSubmit={handleSubmit}>
+    <main className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow" aria-labelledby="login-heading">
+      <h2 id="login-heading" className="text-2xl font-bold mb-6">Вход</h2>
+      <form onSubmit={handleSubmit} noValidate>
         <div className="mb-4">
-          <label className="block text-gray-700">Email</label>
+          <label htmlFor="login-email" className="block text-gray-700">Email</label>
           <input
+            id="login-email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -37,8 +38,9 @@ const Login = () => {
           />
         </div>
         <div className="mb-4">
-          <label className="block text-gray-700">Пароль</label>
+          <label htmlFor="login-password" className="block text-gray-700">Пароль</label>
           <input
+            id="login-password"
             type="password"
             autoComplete="current-password"
             value={password}
@@ -47,7 +49,7 @@ const Login = () => {
             required
           />
         </div>
-        {error && <p className="text-red-500 mb-4">{error}</p>}
+        {error && <p className="text-red-500 mb-4" role="alert">{error}</p>}
         <button
           type="submit"
           disabled={isLoading}
@@ -59,7 +61,7 @@ const Login = () => {
       <p className="mt-4 text-center">
         Нет аккаунта? <Link to="/register" className="text-blue-600">Зарегистрироваться</Link>
       </p>
-    </div>
+    </main>
   );
 };
 
