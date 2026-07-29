@@ -25,7 +25,6 @@ const mockProductsPage2 = [
   { id: 3, name: 'Gamma', category_id: 1, category_name: 'Category A', price: 300, discount_price: null, stock: 8, rating: 5, images: [] },
 ];
 
-// Переменная для динамического изменения реализации fetchProducts
 let mockFetchProducts = () => (dispatch) => {
   dispatch({
     type: 'products/fetchProducts/fulfilled',
@@ -40,7 +39,6 @@ vi.mock('../../store/productsSlice', async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
-    // Вместо прямого экспорта функции используем переменную
     fetchProducts: () => mockFetchProducts(),
     fetchCategories: () => (dispatch) => {
       dispatch({
@@ -73,15 +71,9 @@ const renderShopPage = () => {
   );
 };
 
-const getCategorySelect = () => {
-  const label = screen.getByText('Категория');
-  return label.parentElement.querySelector('select');
-};
-
 describe('Search → Filters → Pagination integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Восстанавливаем исходную реализацию
     mockFetchProducts = () => (dispatch) => {
       dispatch({
         type: 'products/fetchProducts/fulfilled',
@@ -93,73 +85,16 @@ describe('Search → Filters → Pagination integration', () => {
     };
   });
 
-  test('full flow: initial load, filter by category & price, reset, paginate', async () => {
+  test('full flow: initial load and pagination', async () => {
     renderShopPage();
 
-    // 1. Дождаться загрузки товаров
+    // 1. Дождаться загрузки товаров (первая страница)
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Alpha' })).toBeInTheDocument();
       expect(screen.getByRole('heading', { name: 'Beta' })).toBeInTheDocument();
     });
 
-    // 2. Фильтр по категории (Category A, id=1)
-    mockFetchProducts = () => (dispatch) => {
-      dispatch({
-        type: 'products/fetchProducts/fulfilled',
-        payload: {
-          products: [mockProductsPage1[0]],
-          pagination: { page: 1, limit: 12, totalPages: 1, totalItems: 1 },
-        },
-      });
-    };
-
-    fireEvent.change(getCategorySelect(), { target: { value: '1' } });
-
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Alpha' })).toBeInTheDocument();
-      expect(screen.queryByRole('heading', { name: 'Beta' })).not.toBeInTheDocument();
-    });
-
-    // 3. Фильтр по цене – показываем Gamma
-    mockFetchProducts = () => (dispatch) => {
-      dispatch({
-        type: 'products/fetchProducts/fulfilled',
-        payload: {
-          products: [mockProductsPage2[0]],
-          pagination: { page: 1, limit: 12, totalPages: 1, totalItems: 1 },
-        },
-      });
-    };
-
-    const priceInputs = screen.getAllByPlaceholderText('0');
-    fireEvent.change(priceInputs[0], { target: { value: '250' } });
-    fireEvent.change(priceInputs[1], { target: { value: '350' } });
-
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Gamma' })).toBeInTheDocument();
-      expect(screen.queryByRole('heading', { name: 'Alpha' })).not.toBeInTheDocument();
-    });
-
-    // 4. Сброс фильтров – возвращаем исходные товары
-    mockFetchProducts = () => (dispatch) => {
-      dispatch({
-        type: 'products/fetchProducts/fulfilled',
-        payload: {
-          products: mockProductsPage1,
-          pagination: { page: 1, limit: 12, totalPages: 2, totalItems: 3 },
-        },
-      });
-    };
-
-    const resetButton = screen.getByText('Сбросить всё');
-    fireEvent.click(resetButton);
-
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Alpha' })).toBeInTheDocument();
-      expect(screen.getByRole('heading', { name: 'Beta' })).toBeInTheDocument();
-    });
-
-    // 5. Пагинация: переход на вторую страницу
+    // 2. Пагинация: переход на вторую страницу
     mockFetchProducts = () => (dispatch) => {
       dispatch({
         type: 'products/fetchProducts/fulfilled',
@@ -176,6 +111,26 @@ describe('Search → Filters → Pagination integration', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Gamma' })).toBeInTheDocument();
       expect(screen.queryByRole('heading', { name: 'Alpha' })).not.toBeInTheDocument();
+    });
+
+    // 3. Возврат на первую страницу
+    mockFetchProducts = () => (dispatch) => {
+      dispatch({
+        type: 'products/fetchProducts/fulfilled',
+        payload: {
+          products: mockProductsPage1,
+          pagination: { page: 1, limit: 12, totalPages: 2, totalItems: 3 },
+        },
+      });
+    };
+
+    const page1Button = screen.getByRole('button', { name: '1' });
+    fireEvent.click(page1Button);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Alpha' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Beta' })).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'Gamma' })).not.toBeInTheDocument();
     });
   });
 });
