@@ -9,7 +9,23 @@ const baseProducts = [
   { id: 3, name: 'Книга', category: 'Книги', price: 500, image: '' },
 ];
 
+// Универсальный мок, возвращающий продукты для /products, иначе пустой успех
+const setProductMock = (products, totalPages = 2, currentPage = 1) => {
+  mockAxios.get.mockImplementation((url) => {
+    if (url.includes('/products')) {
+      return Promise.resolve({ data: { products, totalPages, currentPage } });
+    }
+    return Promise.resolve({ data: {} });
+  });
+};
+
 test('фильтрация по категории обновляет список товаров', async () => {
+  setProductMock(baseProducts);
+  renderWithProviders(<ShopPage />, { initialEntries: ['/shop'] });
+
+  await waitFor(() => screen.getByText('Футболка'));
+
+  // Меняем мок для фильтрации
   mockAxios.get.mockImplementation((url) => {
     if (url.includes('category=Книги')) {
       return Promise.resolve({ data: { products: [baseProducts[2]], totalPages: 1, currentPage: 1 } });
@@ -19,10 +35,6 @@ test('фильтрация по категории обновляет списо
     }
     return Promise.resolve({ data: {} });
   });
-
-  renderWithProviders(<ShopPage />, { initialEntries: ['/shop'] });
-
-  await waitFor(() => screen.getByText('Футболка'));
 
   const categorySelect = screen.getByLabelText('Категория');
   await userEvent.selectOptions(categorySelect, 'Книги');
@@ -34,6 +46,11 @@ test('фильтрация по категории обновляет списо
 });
 
 test('поиск по названию с debounce', async () => {
+  setProductMock(baseProducts);
+  renderWithProviders(<ShopPage />, { initialEntries: ['/shop'] });
+
+  await waitFor(() => screen.getByText('Футболка'));
+
   mockAxios.get.mockImplementation((url) => {
     if (url.includes('search=Джинсы')) {
       return Promise.resolve({ data: { products: [baseProducts[1]], totalPages: 1, currentPage: 1 } });
@@ -43,10 +60,6 @@ test('поиск по названию с debounce', async () => {
     }
     return Promise.resolve({ data: {} });
   });
-
-  renderWithProviders(<ShopPage />, { initialEntries: ['/shop'] });
-
-  await waitFor(() => screen.getByText('Футболка'));
 
   const searchInput = screen.getByPlaceholderText('Поиск товаров...');
   await userEvent.type(searchInput, 'Джинсы');

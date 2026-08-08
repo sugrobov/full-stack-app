@@ -1,6 +1,12 @@
 import { screen, waitFor } from '@testing-library/react';
-import { renderWithProviders } from '../test-utils.jsx';
+import { renderWithProviders, mockAxios } from '../test-utils.jsx';
 import AppRoutes from '../../routes';
+
+// Дополнительно гарантируем, что любые запросы внутри AppRoutes не вызовут ошибок
+beforeAll(() => {
+  mockAxios.get.mockResolvedValue({ data: {} });
+  mockAxios.post.mockResolvedValue({ data: {} });
+});
 
 test('неавторизованный пользователь перенаправляется с /admin на /login', async () => {
   renderWithProviders(<AppRoutes />, {

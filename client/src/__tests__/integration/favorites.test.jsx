@@ -7,6 +7,7 @@ import FavoritesPage from '../../pages/FavoritesPage';
 const product = { id: 1, name: 'Тестовый товар', price: 100, category: 'Тест', image: '' };
 
 test('добавление в избранное и отображение на странице избранного', async () => {
+  // Мок возвращает продукт для /products, иначе пустой успех
   mockAxios.get.mockImplementation((url) => {
     if (url.includes('/products')) {
       return Promise.resolve({ data: { products: [product], totalPages: 1, currentPage: 1 } });

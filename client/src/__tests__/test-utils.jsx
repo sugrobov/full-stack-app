@@ -24,16 +24,8 @@ vi.mock('../utils/axiosConfig', () => ({
   },
 }));
 
-// Безопасные реализации по умолчанию для любых запросов
-mockGet.mockImplementation((url) => {
-  if (url.includes('/products')) {
-    return Promise.resolve({ data: { products: [], totalPages: 1, currentPage: 1 } });
-  }
-  if (url.includes('/categories')) {
-    return Promise.resolve({ data: [] }); // массив категорий
-  }
-  return Promise.resolve({ data: {} });
-});
+// Безопасные реализации по умолчанию – любой запрос возвращает успех
+mockGet.mockResolvedValue({ data: {} });
 mockPost.mockResolvedValue({ data: {} });
 mockPut.mockResolvedValue({ data: {} });
 mockDelete.mockResolvedValue({ data: {} });
