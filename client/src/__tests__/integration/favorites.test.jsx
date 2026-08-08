@@ -7,12 +7,9 @@ import FavoritesPage from '../../pages/FavoritesPage';
 const product = { id: 1, name: 'Тестовый товар', price: 100, category: 'Тест', image: '' };
 
 test('добавление в избранное и отображение на странице избранного', async () => {
-  // Мок возвращает продукт для /products, иначе пустой успех
-  mockAxios.get.mockImplementation((url) => {
-    if (url.includes('/products')) {
-      return Promise.resolve({ data: { products: [product], totalPages: 1, currentPage: 1 } });
-    }
-    return Promise.resolve({ data: {} });
+  // Мок первого запроса товаров при монтировании ShopPage
+  mockAxios.get.mockResolvedValueOnce({
+    data: { products: [product], totalPages: 1, currentPage: 1 },
   });
 
   const { store, unmount } = renderWithProviders(<ShopPage />, { initialEntries: ['/shop'] });
@@ -23,6 +20,7 @@ test('добавление в избранное и отображение на 
   expect(store.getState().favorites.items).toContainEqual(product);
   unmount();
 
+  // Страница избранного не делает запросов, просто отображает из store
   renderWithProviders(<FavoritesPage />, { store, initialEntries: ['/favorites'] });
 
   await waitFor(() => {
