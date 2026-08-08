@@ -9,21 +9,42 @@ const baseProducts = [
   { id: 3, name: 'Книга', category: 'Книги', price: 500, image: '' },
 ];
 
-test('фильтрация по категории обновляет список товаров', async () => {
-  // Первый запрос (монтирование) — загружаем все продукты
-  mockAxios.get.mockResolvedValueOnce({
-    data: { products: baseProducts, totalPages: 2, currentPage: 1 },
+const setupDefaultMocks = (products = baseProducts, totalPages = 2, currentPage = 1) => {
+  mockAxios.get.mockImplementation((url) => {
+    if (url.includes('/products')) {
+      return Promise.resolve({ data: { products, totalPages, currentPage } });
+    }
+    if (url.includes('/categories')) {
+      return Promise.resolve({ data: ['Одежда', 'Книги'] });
+    }
+    return Promise.resolve({ data: {} });
   });
-  // Второй запрос (после выбора категории)
-  mockAxios.get.mockResolvedValueOnce({
-    data: { products: [baseProducts[2]], totalPages: 1, currentPage: 1 },
-  });
+};
 
+beforeEach(() => {
+  mockAxios.get.mockReset();
+  setupDefaultMocks();
+});
+
+test('фильтрация по категории обновляет список товаров', async () => {
   renderWithProviders(<ShopPage />, { initialEntries: ['/shop'] });
 
-  // Дождаться появления товаров
   await waitFor(() => {
     expect(screen.getByText('Футболка')).toBeInTheDocument();
+  });
+
+  // Переопределяем мок для фильтрации
+  mockAxios.get.mockImplementation((url) => {
+    if (url.includes('category=Книги')) {
+      return Promise.resolve({ data: { products: [baseProducts[2]], totalPages: 1, currentPage: 1 } });
+    }
+    if (url.includes('/products')) {
+      return Promise.resolve({ data: { products: baseProducts, totalPages: 2, currentPage: 1 } });
+    }
+    if (url.includes('/categories')) {
+      return Promise.resolve({ data: ['Одежда', 'Книги'] });
+    }
+    return Promise.resolve({ data: {} });
   });
 
   const categorySelect = screen.getByLabelText('Категория');
@@ -36,17 +57,23 @@ test('фильтрация по категории обновляет списо
 });
 
 test('поиск по названию с debounce', async () => {
-  mockAxios.get.mockResolvedValueOnce({
-    data: { products: baseProducts, totalPages: 2, currentPage: 1 },
-  });
-  mockAxios.get.mockResolvedValueOnce({
-    data: { products: [baseProducts[1]], totalPages: 1, currentPage: 1 },
-  });
-
   renderWithProviders(<ShopPage />, { initialEntries: ['/shop'] });
 
   await waitFor(() => {
     expect(screen.getByText('Футболка')).toBeInTheDocument();
+  });
+
+  mockAxios.get.mockImplementation((url) => {
+    if (url.includes('search=Джинсы')) {
+      return Promise.resolve({ data: { products: [baseProducts[1]], totalPages: 1, currentPage: 1 } });
+    }
+    if (url.includes('/products')) {
+      return Promise.resolve({ data: { products: baseProducts, totalPages: 2, currentPage: 1 } });
+    }
+    if (url.includes('/categories')) {
+      return Promise.resolve({ data: ['Одежда', 'Книги'] });
+    }
+    return Promise.resolve({ data: {} });
   });
 
   const searchInput = screen.getByPlaceholderText('Поиск товаров...');

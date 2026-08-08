@@ -9,7 +9,6 @@ import cartReducer from '../store/cartSlice';
 import favoritesReducer from '../store/favoritesSlice';
 import productsReducer from '../store/productsSlice';
 
-// ---------- Моки axios ----------
 const mockGet = vi.fn();
 const mockPost = vi.fn();
 const mockPut = vi.fn();
@@ -24,13 +23,13 @@ vi.mock('../utils/axiosConfig', () => ({
   },
 }));
 
-// Безопасные реализации по умолчанию, соответствующие структурам ответов API
+// Безопасные реализации по умолчанию
 mockGet.mockImplementation((url) => {
   if (url.includes('/products')) {
     return Promise.resolve({ data: { products: [], totalPages: 0, currentPage: 1 } });
   }
   if (url.includes('/categories')) {
-    return Promise.resolve({ data: [] }); // массив категорий
+    return Promise.resolve({ data: [] });
   }
   return Promise.resolve({ data: {} });
 });
@@ -38,7 +37,6 @@ mockPost.mockResolvedValue({ data: {} });
 mockPut.mockResolvedValue({ data: {} });
 mockDelete.mockResolvedValue({ data: {} });
 
-// ---------- Остальные моки ----------
 vi.mock('framer-motion', () => ({
   motion: {
     div: ({ children, ...props }) => React.createElement('div', props, children),
@@ -58,7 +56,6 @@ export const mockAxios = {
   delete: mockDelete,
 };
 
-// ---------- Redux + рендер ----------
 const defaultReducers = {
   auth: authReducer,
   cart: cartReducer,
