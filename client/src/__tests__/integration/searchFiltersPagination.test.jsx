@@ -1,6 +1,6 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { renderWithProviders, mockAxios } from '../test-utils';
+import { renderWithProviders, mockAxios } from '../test-utils.jsx';
 import ShopPage from '../../pages/ShopPage';
 
 const baseProducts = [

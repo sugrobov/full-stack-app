@@ -10,21 +10,24 @@ import favoritesReducer from '../store/favoritesSlice';
 import productsReducer from '../store/productsSlice';
 
 // 1. Мок axios (настраиваемый)
-const mockAxios = {
-  get: vi.fn(),
-  post: vi.fn(),
-  put: vi.fn(),
-  delete: vi.fn(),
-};
+const mockGet = vi.fn();
+const mockPost = vi.fn();
+const mockPut = vi.fn();
+const mockDelete = vi.fn();
 
 // Устанавливаем безопасные реализации по умолчанию
-mockAxios.get.mockResolvedValue({ data: { products: [], totalPages: 0, currentPage: 1 } });
-mockAxios.post.mockResolvedValue({ data: {} });
-mockAxios.put.mockResolvedValue({ data: {} });
-mockAxios.delete.mockResolvedValue({ data: {} });
+mockGet.mockResolvedValue({ data: { products: [], totalPages: 0, currentPage: 1 } });
+mockPost.mockResolvedValue({ data: {} });
+mockPut.mockResolvedValue({ data: {} });
+mockDelete.mockResolvedValue({ data: {} });
 
 vi.mock('../utils/axiosConfig', () => ({
-  default: mockAxios,
+  default: {
+    get: mockGet,
+    post: mockPost,
+    put: mockPut,
+    delete: mockDelete,
+  },
 }));
 
 // 2. Мок framer-motion (убирает анимации)
@@ -41,6 +44,14 @@ vi.mock('framer-motion', () => ({
 vi.mock('react-google-recaptcha', () => ({
   default: (props) => <div data-testid="recaptcha-mock" {...props} />,
 }));
+
+// Экспорт объекта для настройки в тестах
+export const mockAxios = {
+  get: mockGet,
+  post: mockPost,
+  put: mockPut,
+  delete: mockDelete,
+};
 
 // 4. Базовая конфигурация store
 const defaultReducers = {
