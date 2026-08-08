@@ -9,37 +9,65 @@ const baseProducts = [
   { id: 3, name: 'Книга', category: 'Книги', price: 500, image: '' },
 ];
 
-test('фильтрация по категории обновляет список товаров', async () => {
-  mockAxios.get
-    .mockResolvedValueOnce({ data: { products: baseProducts, totalPages: 2, currentPage: 1 } })
-    .mockResolvedValueOnce({ data: { products: [baseProducts[2]], totalPages: 1, currentPage: 1 } });
+// Универсальный мок для GET, различающий URL
+function mockGetSuccessForProducts(products = baseProducts, totalPages = 2, currentPage = 1) {
+  mockAxios.get.mockImplementation((url) => {
+    if (url.includes('/products')) {
+      return Promise.resolve({ data: { products, totalPages, currentPage } });
+    }
+    // Все остальные запросы (например, категории) возвращаем безопасную заглушку
+    return Promise.resolve({ data: {} });
+  });
+}
 
+test('фильтрация по категории обновляет список товаров', async () => {
+  mockGetSuccessForProducts(baseProducts);
   renderWithProviders(<ShopPage />, { initialEntries: ['/shop'] });
 
+  // Дожидаемся загрузки товаров
   await waitFor(() => screen.getByText('Футболка'));
+
+  // Теперь эмулируем ответ для фильтрации по категории "Книги"
+  mockAxios.get.mockImplementation((url) => {
+    if (url.includes('category=Книги')) {
+      return Promise.resolve({ data: { products: [baseProducts[2]], totalPages: 1, currentPage: 1 } });
+    }
+    if (url.includes('/products')) {
+      return Promise.resolve({ data: { products: baseProducts, totalPages: 2, currentPage: 1 } });
+    }
+    return Promise.resolve({ data: {} });
+  });
+
   const categorySelect = screen.getByLabelText('Категория');
   await userEvent.selectOptions(categorySelect, 'Книги');
 
   await waitFor(() => {
-    expect(mockAxios.get).toHaveBeenCalledWith(expect.stringContaining('category=Книги'));
     expect(screen.getByText('Книга')).toBeInTheDocument();
     expect(screen.queryByText('Футболка')).not.toBeInTheDocument();
   });
 });
 
 test('поиск по названию с debounce', async () => {
-  mockAxios.get
-    .mockResolvedValueOnce({ data: { products: baseProducts, totalPages: 2, currentPage: 1 } })
-    .mockResolvedValueOnce({ data: { products: [baseProducts[1]], totalPages: 1, currentPage: 1 } });
-
+  mockGetSuccessForProducts(baseProducts);
   renderWithProviders(<ShopPage />, { initialEntries: ['/shop'] });
 
   await waitFor(() => screen.getByText('Футболка'));
+
+  // Для поиска переопределяем мок
+  mockAxios.get.mockImplementation((url) => {
+    if (url.includes('search=Джинсы')) {
+      return Promise.resolve({ data: { products: [baseProducts[1]], totalPages: 1, currentPage: 1 } });
+    }
+    if (url.includes('/products')) {
+      return Promise.resolve({ data: { products: baseProducts, totalPages: 2, currentPage: 1 } });
+    }
+    return Promise.resolve({ data: {} });
+  });
+
   const searchInput = screen.getByPlaceholderText('Поиск товаров...');
   await userEvent.type(searchInput, 'Джинсы');
 
   await waitFor(() => {
-    expect(mockAxios.get).toHaveBeenCalledWith(expect.stringContaining('search=Джинсы'));
     expect(screen.getByText('Джинсы')).toBeInTheDocument();
     expect(screen.queryByText('Футболка')).not.toBeInTheDocument();
   }, { timeout: 500 });

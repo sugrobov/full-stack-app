@@ -9,17 +9,11 @@ import cartReducer from '../store/cartSlice';
 import favoritesReducer from '../store/favoritesSlice';
 import productsReducer from '../store/productsSlice';
 
-// 1. Мок axios (настраиваемый)
+// ---------- Моки axios ----------
 const mockGet = vi.fn();
 const mockPost = vi.fn();
 const mockPut = vi.fn();
 const mockDelete = vi.fn();
-
-// Устанавливаем безопасные реализации по умолчанию
-mockGet.mockResolvedValue({ data: { products: [], totalPages: 0, currentPage: 1 } });
-mockPost.mockResolvedValue({ data: {} });
-mockPut.mockResolvedValue({ data: {} });
-mockDelete.mockResolvedValue({ data: {} });
 
 vi.mock('../utils/axiosConfig', () => ({
   default: {
@@ -30,17 +24,15 @@ vi.mock('../utils/axiosConfig', () => ({
   },
 }));
 
-// 2. Мок framer-motion (убирает анимации)
+// --------- Mock для framer motion
 vi.mock('framer-motion', () => ({
   motion: {
     div: ({ children, ...props }) => React.createElement('div', props, children),
     span: ({ children, ...props }) => React.createElement('span', props, children),
-    // можно добавить другие элементы при необходимости
   },
   AnimatePresence: ({ children }) => children,
 }));
 
-// 3. Мок GoogleReCaptcha
 vi.mock('react-google-recaptcha', () => ({
   default: (props) => <div data-testid="recaptcha-mock" {...props} />,
 }));
@@ -53,7 +45,7 @@ export const mockAxios = {
   delete: mockDelete,
 };
 
-// 4. Базовая конфигурация store
+// ---------- Redux + рендер ----------
 const defaultReducers = {
   auth: authReducer,
   cart: cartReducer,
@@ -68,7 +60,6 @@ export function createMockStore(customReducers = {}, preloadedState = {}) {
   });
 }
 
-// 5. Утилита рендера с провайдерами
 export function renderWithProviders(
   ui,
   {
@@ -89,4 +80,3 @@ export function renderWithProviders(
   }
   return { store, ...render(ui, { wrapper: Wrapper, ...renderOptions }) };
 }
-

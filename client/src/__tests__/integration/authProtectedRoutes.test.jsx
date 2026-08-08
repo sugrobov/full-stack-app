@@ -1,6 +1,11 @@
 import { screen, waitFor } from '@testing-library/react';
-import { renderWithProviders } from '../test-utils.jsx';
+import { renderWithProviders, mockAxios } from '../test-utils.jsx';
 import AppRoutes from '../../routes';
+
+// Заглушка для всех GET запросов, которые может сделать AppRoutes при инициализации
+beforeEach(() => {
+  mockAxios.get.mockResolvedValue({ data: {} });
+});
 
 test('неавторизованный пользователь перенаправляется с /admin на /login', async () => {
   renderWithProviders(<AppRoutes />, {
