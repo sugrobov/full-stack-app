@@ -90,5 +90,3 @@ export function renderWithProviders(
   return { store, ...render(ui, { wrapper: Wrapper, ...renderOptions }) };
 }
 
-// Экспортируем мок axios для индивидуальной настройки в тестах
-export { mockAxios };
