@@ -17,6 +17,12 @@ const mockAxios = {
   delete: vi.fn(),
 };
 
+// Устанавливаем безопасные реализации по умолчанию
+mockAxios.get.mockResolvedValue({ data: { products: [], totalPages: 0, currentPage: 1 } });
+mockAxios.post.mockResolvedValue({ data: {} });
+mockAxios.put.mockResolvedValue({ data: {} });
+mockAxios.delete.mockResolvedValue({ data: {} });
+
 vi.mock('../utils/axiosConfig', () => ({
   default: mockAxios,
 }));
