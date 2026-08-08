@@ -7,8 +7,11 @@ import FavoritesPage from '../../pages/FavoritesPage';
 const product = { id: 1, name: 'Тестовый товар', price: 100, category: 'Тест', image: '' };
 
 test('добавление в избранное и отображение на странице избранного', async () => {
-  mockAxios.get.mockResolvedValueOnce({
-    data: { products: [product], totalPages: 1, currentPage: 1 },
+  mockAxios.get.mockImplementation((url) => {
+    if (url.includes('/products')) {
+      return Promise.resolve({ data: { products: [product], totalPages: 1, currentPage: 1 } });
+    }
+    return Promise.resolve({ data: {} });
   });
 
   const { store, unmount } = renderWithProviders(<ShopPage />, { initialEntries: ['/shop'] });

@@ -24,7 +24,21 @@ vi.mock('../utils/axiosConfig', () => ({
   },
 }));
 
-// --------- Mock для framer motion
+// Безопасные реализации по умолчанию для любых запросов
+mockGet.mockImplementation((url) => {
+  if (url.includes('/products')) {
+    return Promise.resolve({ data: { products: [], totalPages: 1, currentPage: 1 } });
+  }
+  if (url.includes('/categories')) {
+    return Promise.resolve({ data: [] }); // массив категорий
+  }
+  return Promise.resolve({ data: {} });
+});
+mockPost.mockResolvedValue({ data: {} });
+mockPut.mockResolvedValue({ data: {} });
+mockDelete.mockResolvedValue({ data: {} });
+
+// ---------- Остальные моки ----------
 vi.mock('framer-motion', () => ({
   motion: {
     div: ({ children, ...props }) => React.createElement('div', props, children),
@@ -37,7 +51,6 @@ vi.mock('react-google-recaptcha', () => ({
   default: (props) => <div data-testid="recaptcha-mock" {...props} />,
 }));
 
-// Экспорт объекта для настройки в тестах
 export const mockAxios = {
   get: mockGet,
   post: mockPost,
