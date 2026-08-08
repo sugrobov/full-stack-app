@@ -1,5 +1,5 @@
 import { screen, waitFor } from '@testing-library/react';
-import { renderWithProviders } from '../test-utils';
+import { renderWithProviders } from '../test-utils.jsx';
 import AppRoutes from '../../routes';
 
 test('неавторизованный пользователь перенаправляется с /admin на /login', async () => {
