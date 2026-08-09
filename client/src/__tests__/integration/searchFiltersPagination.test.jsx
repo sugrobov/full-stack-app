@@ -9,21 +9,18 @@ const baseProducts = [
   { id: 3, name: 'Книга', category: 'Книги', price: 500, image: '' },
 ];
 
-const setupDefaultMocks = (products = baseProducts, totalPages = 2, currentPage = 1) => {
+beforeEach(() => {
+  mockAxios.get.mockReset();
+  // Мок по умолчанию для ShopPage
   mockAxios.get.mockImplementation((url) => {
     if (url.includes('/products')) {
-      return Promise.resolve({ data: { products, totalPages, currentPage } });
+      return Promise.resolve({ data: { products: baseProducts, totalPages: 2, currentPage: 1 } });
     }
     if (url.includes('/categories')) {
       return Promise.resolve({ data: ['Одежда', 'Книги'] });
     }
     return Promise.resolve({ data: {} });
   });
-};
-
-beforeEach(() => {
-  mockAxios.get.mockReset();
-  setupDefaultMocks();
 });
 
 test('фильтрация по категории обновляет список товаров', async () => {
