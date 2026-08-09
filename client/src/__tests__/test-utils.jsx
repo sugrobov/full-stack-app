@@ -26,20 +26,7 @@ vi.mock('../utils/axiosConfig', () => ({
   },
 }));
 
-// Безопасные реализации по умолчанию
-mockGet.mockImplementation((url) => {
-  if (url.includes('/products')) {
-    return Promise.resolve({ data: { products: [], totalPages: 0, currentPage: 1 } });
-  }
-  if (url.includes('/categories')) {
-    return Promise.resolve({ data: [] });
-  }
-  return Promise.resolve({ data: {} });
-});
-mockPost.mockResolvedValue({ data: {} });
-mockPut.mockResolvedValue({ data: {} });
-mockDelete.mockResolvedValue({ data: {} });
-
+// Остальные моки
 vi.mock('framer-motion', () => ({
   motion: {
     div: ({ children, ...props }) => React.createElement('div', props, children),

@@ -6,10 +6,20 @@ import FavoritesPage from '../../pages/FavoritesPage';
 
 const product = { id: 1, name: 'Тестовый товар', price: 100, category: 'Тест', image: '' };
 
-test('добавление в избранное и отображение на странице избранного', async () => {
-  mockAxios.get.mockResolvedValueOnce({ data: ['Тест'] });
-  mockAxios.get.mockResolvedValueOnce({ data: { products: [product], totalPages: 1, currentPage: 1 } });
+beforeEach(() => {
+  mockAxios.get.mockReset();
+  mockAxios.get.mockImplementation((url) => {
+    if (url.includes('/products')) {
+      return Promise.resolve({ data: { products: [product], totalPages: 1, currentPage: 1 } });
+    }
+    if (url.includes('/categories')) {
+      return Promise.resolve({ data: ['Тест'] });
+    }
+    return Promise.resolve({ data: {} });
+  });
+});
 
+test('добавление в избранное и отображение на странице избранного', async () => {
   const { store, unmount } = renderWithProviders(<ShopPage />, { initialEntries: ['/shop'] });
 
   await waitFor(() => screen.getByText('Тестовый товар'));
