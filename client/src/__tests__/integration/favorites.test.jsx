@@ -1,44 +1,62 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { renderWithProviders, mockAxios } from '../test-utils.jsx';
+import { vi } from 'vitest';
+import { renderWithProviders } from '../test-utils.jsx';
+import { mockGet } from '../mockAxios';
 import ShopPage from '../../pages/ShopPage';
 import FavoritesPage from '../../pages/FavoritesPage';
 
-const product = { id: 1, name: 'Тестовый товар', price: 100, category: 'Тест', image: '' };
+vi.mock('axios', () => ({
+  default: {
+    create: () => ({
+      get: mockGet,
+      post: vi.fn(),
+      put: vi.fn(),
+      patch: vi.fn(),
+      delete: vi.fn(),
+      interceptors: {
+        request: { use: vi.fn(), eject: vi.fn() },
+        response: { use: vi.fn(), eject: vi.fn() },
+      },
+    }),
+    get: mockGet,
+  },
+}));
 
-const makeProductResponse = (products, totalPages = 1, currentPage = 1) => ({
+const product = { id: 1, name: 'Тестовый товар', price: 100, category: 'Тест', image: '' };
+const makeProductResponse = (products, totalPages = 1) => ({
   data: {
     products,
     pagination: { totalPages, totalItems: products.length },
-    currentPage,
+    currentPage: 1,
   },
 });
 
 beforeEach(() => {
-  mockAxios.get.mockReset();
-  mockAxios.get.mockResolvedValueOnce({ data: ['Тест'] }); // категории
-  mockAxios.get.mockResolvedValueOnce(makeProductResponse([product])); // продукты
+  mockGet.mockReset();
+  mockGet.mockImplementation((url) => {
+    if (url.includes('/products')) {
+      return Promise.resolve(makeProductResponse([product]));
+    }
+    if (url.includes('/categories')) {
+      return Promise.resolve({ data: ['Тест'] });
+    }
+    return Promise.resolve({ data: {} });
+  });
 });
 
 test('добавление в избранное и отображение на странице избранного', async () => {
   const { store, unmount } = renderWithProviders(<ShopPage />, { initialEntries: ['/shop'] });
-
   await waitFor(() => screen.getByText('Тестовый товар'));
-  const favButton = screen.getByLabelText('Добавить в избранное');
-  await userEvent.click(favButton);
+
+  await userEvent.click(screen.getByLabelText('Добавить в избранное'));
   expect(store.getState().favorites.items).toContainEqual(product);
   unmount();
 
   renderWithProviders(<FavoritesPage />, { store, initialEntries: ['/favorites'] });
+  await waitFor(() => expect(screen.getByText('Тестовый товар')).toBeInTheDocument());
 
-  await waitFor(() => {
-    expect(screen.getByText('Тестовый товар')).toBeInTheDocument();
-  });
-
-  const removeButton = screen.getByLabelText('Удалить из избранного');
-  await userEvent.click(removeButton);
+  await userEvent.click(screen.getByLabelText('Удалить из избранного'));
   expect(store.getState().favorites.items).toHaveLength(0);
-  await waitFor(() => {
-    expect(screen.queryByText('Тестовый товар')).not.toBeInTheDocument();
-  });
+  await waitFor(() => expect(screen.queryByText('Тестовый товар')).not.toBeInTheDocument());
 });

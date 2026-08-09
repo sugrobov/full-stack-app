@@ -1,7 +1,26 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { renderWithProviders, mockAxios } from '../test-utils.jsx';
+import { vi } from 'vitest';
+import { renderWithProviders } from '../test-utils.jsx';
+import { mockGet } from '../mockAxios';
 import ShopPage from '../../pages/ShopPage';
+
+vi.mock('axios', () => ({
+  default: {
+    create: () => ({
+      get: mockGet,
+      post: vi.fn(),
+      put: vi.fn(),
+      patch: vi.fn(),
+      delete: vi.fn(),
+      interceptors: {
+        request: { use: vi.fn(), eject: vi.fn() },
+        response: { use: vi.fn(), eject: vi.fn() },
+      },
+    }),
+    get: mockGet,
+  },
+}));
 
 const baseProducts = [
   { id: 1, name: 'Футболка', category: 'Одежда', price: 1000, image: '' },
@@ -18,26 +37,37 @@ const makeProductResponse = (products, totalPages = 2, currentPage = 1) => ({
 });
 
 beforeEach(() => {
-  mockAxios.get.mockReset();
-  // Порядок запросов: категории, потом продукты
-  mockAxios.get.mockResolvedValueOnce({ data: ['Одежда', 'Книги'] });
-  mockAxios.get.mockResolvedValueOnce(makeProductResponse(baseProducts));
+  mockGet.mockReset();
+  mockGet.mockImplementation((url) => {
+    if (url.includes('/products')) {
+      return Promise.resolve(makeProductResponse(baseProducts));
+    }
+    if (url.includes('/categories')) {
+      return Promise.resolve({ data: ['Одежда', 'Книги'] });
+    }
+    return Promise.resolve({ data: {} });
+  });
 });
 
 test('фильтрация по категории обновляет список товаров', async () => {
   renderWithProviders(<ShopPage />, { initialEntries: ['/shop'] });
+  await waitFor(() => expect(screen.getByText('Футболка')).toBeInTheDocument());
 
-  await waitFor(() => {
-    expect(screen.getByText('Футболка')).toBeInTheDocument();
+  // Переопределяем для фильтрации
+  mockGet.mockImplementation((url) => {
+    if (url.includes('category=Книги')) {
+      return Promise.resolve(makeProductResponse([baseProducts[2]], 1));
+    }
+    if (url.includes('/products')) {
+      return Promise.resolve(makeProductResponse(baseProducts));
+    }
+    if (url.includes('/categories')) {
+      return Promise.resolve({ data: ['Одежда', 'Книги'] });
+    }
+    return Promise.resolve({ data: {} });
   });
 
-  // Новый набор запросов: категории + фильтрованные продукты
-  mockAxios.get.mockResolvedValueOnce({ data: ['Одежда', 'Книги'] });
-  mockAxios.get.mockResolvedValueOnce(makeProductResponse([baseProducts[2]], 1));
-
-  const categorySelect = screen.getByLabelText('Категория');
-  await userEvent.selectOptions(categorySelect, 'Книги');
-
+  await userEvent.selectOptions(screen.getByLabelText('Категория'), 'Книги');
   await waitFor(() => {
     expect(screen.getByText('Книга')).toBeInTheDocument();
     expect(screen.queryByText('Футболка')).not.toBeInTheDocument();
@@ -46,17 +76,22 @@ test('фильтрация по категории обновляет списо
 
 test('поиск по названию с debounce', async () => {
   renderWithProviders(<ShopPage />, { initialEntries: ['/shop'] });
+  await waitFor(() => expect(screen.getByText('Футболка')).toBeInTheDocument());
 
-  await waitFor(() => {
-    expect(screen.getByText('Футболка')).toBeInTheDocument();
+  mockGet.mockImplementation((url) => {
+    if (url.includes('search=Джинсы')) {
+      return Promise.resolve(makeProductResponse([baseProducts[1]], 1));
+    }
+    if (url.includes('/products')) {
+      return Promise.resolve(makeProductResponse(baseProducts));
+    }
+    if (url.includes('/categories')) {
+      return Promise.resolve({ data: ['Одежда', 'Книги'] });
+    }
+    return Promise.resolve({ data: {} });
   });
 
-  mockAxios.get.mockResolvedValueOnce({ data: ['Одежда', 'Книги'] });
-  mockAxios.get.mockResolvedValueOnce(makeProductResponse([baseProducts[1]], 1));
-
-  const searchInput = screen.getByPlaceholderText('Поиск товаров...');
-  await userEvent.type(searchInput, 'Джинсы');
-
+  await userEvent.type(screen.getByPlaceholderText('Поиск товаров...'), 'Джинсы');
   await waitFor(() => {
     expect(screen.getByText('Джинсы')).toBeInTheDocument();
     expect(screen.queryByText('Футболка')).not.toBeInTheDocument();

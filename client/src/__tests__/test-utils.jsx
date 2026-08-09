@@ -9,15 +9,6 @@ import cartReducer from '../store/cartSlice';
 import favoritesReducer from '../store/favoritesSlice';
 import productsReducer from '../store/productsSlice';
 
-import { mockGet, mockPost, mockPut, mockPatch, mockDelete } from '../../__mocks__/axios';
-
-// Безопасные умолчания
-mockGet.mockResolvedValue({ data: {} });
-mockPost.mockResolvedValue({ data: {} });
-mockPut.mockResolvedValue({ data: {} });
-mockPatch.mockResolvedValue({ data: {} });
-mockDelete.mockResolvedValue({ data: {} });
-
 vi.mock('framer-motion', () => ({
   motion: {
     div: ({ children, ...props }) => React.createElement('div', props, children),
@@ -29,14 +20,6 @@ vi.mock('framer-motion', () => ({
 vi.mock('react-google-recaptcha', () => ({
   default: (props) => <div data-testid="recaptcha-mock" {...props} />,
 }));
-
-export const mockAxios = {
-  get: mockGet,
-  post: mockPost,
-  put: mockPut,
-  patch: mockPatch,
-  delete: mockDelete,
-};
 
 const defaultReducers = {
   auth: authReducer,
