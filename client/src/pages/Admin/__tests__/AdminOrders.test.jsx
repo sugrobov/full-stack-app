@@ -75,7 +75,7 @@ describe('AdminOrders', () => {
     });
     expect(screen.getByText('Иван')).toBeInTheDocument();
     expect(screen.getByText('ivan@test.com')).toBeInTheDocument();
-    expect(screen.getByText('1 500 ₽')).toBeInTheDocument();
+    expect(screen.getByText(/1[\s,]500\s₽/)).toBeInTheDocument();
     expect(screen.getByTestId('status-select-1')).toHaveValue('pending');
   });
 

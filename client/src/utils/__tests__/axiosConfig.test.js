@@ -1,3 +1,5 @@
+import { vi } from 'vitest';
+vi.unmock('axios');
 import axios from 'axios';
 
 const { mockDispatch, mockLogout } = vi.hoisted(() => ({

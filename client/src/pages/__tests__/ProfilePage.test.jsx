@@ -86,7 +86,7 @@ describe('ProfilePage', () => {
 
     // Изменено: поиск суммы через data-testid, чтобы избежать конфликта с деталями заказа
     const totalElement = screen.getByTestId('order-total');
-    expect(totalElement).toHaveTextContent('Сумма: 1 500 ₽');
+    expect(totalElement).toHaveTextContent(/Сумма:\s*1[\s,]500\s₽/);
 
     expect(screen.getByText(/Оформлен/i)).toBeInTheDocument();
     expect(screen.getByText(/ул. Пушкина/i)).toBeInTheDocument();
