@@ -9,13 +9,24 @@ import cartReducer from '../store/cartSlice';
 import favoritesReducer from '../store/favoritesSlice';
 import productsReducer from '../store/productsSlice';
 
-// Включаем автоматический мок axiosConfig
-vi.mock('../utils/axiosConfig');
+// vi.hoisted гарантирует, что функции созданы до vi.mock
+const { mockGet, mockPost, mockPut, mockDelete } = vi.hoisted(() => ({
+  mockGet: vi.fn(),
+  mockPost: vi.fn(),
+  mockPut: vi.fn(),
+  mockDelete: vi.fn(),
+}));
 
-// Импортируем функции из мока
-import { mockGet, mockPost, mockPut, mockDelete } from '../utils/__mocks__/axiosConfig';
+vi.mock('../utils/axiosConfig', () => ({
+  default: {
+    get: mockGet,
+    post: mockPost,
+    put: mockPut,
+    delete: mockDelete,
+  },
+}));
 
-// Устанавливаем безопасные реализации по умолчанию
+// Безопасные реализации по умолчанию
 mockGet.mockImplementation((url) => {
   if (url.includes('/products')) {
     return Promise.resolve({ data: { products: [], totalPages: 0, currentPage: 1 } });
@@ -29,7 +40,6 @@ mockPost.mockResolvedValue({ data: {} });
 mockPut.mockResolvedValue({ data: {} });
 mockDelete.mockResolvedValue({ data: {} });
 
-// Остальные моки
 vi.mock('framer-motion', () => ({
   motion: {
     div: ({ children, ...props }) => React.createElement('div', props, children),
@@ -42,7 +52,6 @@ vi.mock('react-google-recaptcha', () => ({
   default: (props) => <div data-testid="recaptcha-mock" {...props} />,
 }));
 
-// Экспорт для тестов
 export const mockAxios = {
   get: mockGet,
   post: mockPost,
@@ -50,7 +59,6 @@ export const mockAxios = {
   delete: mockDelete,
 };
 
-// Redux и рендер
 const defaultReducers = {
   auth: authReducer,
   cart: cartReducer,
