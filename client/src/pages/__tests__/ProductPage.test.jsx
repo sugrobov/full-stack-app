@@ -121,7 +121,7 @@ describe('ProductPage', () => {
         };
         renderProductPage(state);
         expect(screen.getByText('Тестовый товар')).toBeInTheDocument();
-        expect(screen.getByText('1,000 ₽')).toBeInTheDocument();
+        expect(screen.getByText('1 000 ₽')).toBeInTheDocument();
         expect(screen.getByText('Описание товара')).toBeInTheDocument();
         expect(screen.getByText('10 шт.')).toBeInTheDocument();
     });

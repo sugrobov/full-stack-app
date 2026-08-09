@@ -81,7 +81,7 @@ describe('CartPage', () => {
         // Перечёркнутая обычная цена — только одна
         expect(screen.getByText('500 ₽')).toBeInTheDocument();
         // Обычная цена
-        expect(screen.getByText('1,000 ₽')).toBeInTheDocument();
+        expect(screen.getByText('1 000 ₽')).toBeInTheDocument();
         // Итоговая сумма
         expect(screen.getAllByText('2400 ₽').length).toBeGreaterThan(0); // computedTotal = 2000+400=2400
     });
