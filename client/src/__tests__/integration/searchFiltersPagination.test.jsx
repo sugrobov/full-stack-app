@@ -4,25 +4,18 @@ import { vi } from 'vitest';
 import { renderWithProviders } from '../test-utils.jsx';
 import ShopPage from '../../pages/ShopPage';
 
-// Создаём mockGet через hoisted, чтобы избежать ошибки инициализации
+// hoisted переменные для фабрики vi.mock
 const { mockGet } = vi.hoisted(() => ({
   mockGet: vi.fn(),
 }));
 
-vi.mock('axios', () => ({
+vi.mock('../../utils/axiosConfig', () => ({
   default: {
-    create: () => ({
-      get: mockGet,
-      post: vi.fn(),
-      put: vi.fn(),
-      patch: vi.fn(),
-      delete: vi.fn(),
-      interceptors: {
-        request: { use: vi.fn(), eject: vi.fn() },
-        response: { use: vi.fn(), eject: vi.fn() },
-      },
-    }),
     get: mockGet,
+    post: vi.fn(),
+    put: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
   },
 }));
 
