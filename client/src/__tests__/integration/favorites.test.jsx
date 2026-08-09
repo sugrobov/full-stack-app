@@ -16,15 +16,8 @@ const makeProductResponse = (products, totalPages = 1, currentPage = 1) => ({
 
 beforeEach(() => {
   mockAxios.get.mockReset();
-  mockAxios.get.mockImplementation((url) => {
-    if (url.includes('/products')) {
-      return Promise.resolve(makeProductResponse([product]));
-    }
-    if (url.includes('/categories')) {
-      return Promise.resolve({ data: ['Тест'] });
-    }
-    return Promise.resolve({ data: {} });
-  });
+  mockAxios.get.mockResolvedValueOnce({ data: ['Тест'] }); // категории
+  mockAxios.get.mockResolvedValueOnce(makeProductResponse([product])); // продукты
 });
 
 test('добавление в избранное и отображение на странице избранного', async () => {

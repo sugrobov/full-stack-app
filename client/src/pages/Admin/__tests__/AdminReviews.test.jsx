@@ -10,7 +10,20 @@ import toast from 'react-hot-toast';
 import { vi } from 'vitest';
 import AdminReviews from '../AdminReviews';
 
-vi.mock('axios');
+vi.mock('axios', () => ({
+  default: {
+    get: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
+  },
+  get: vi.fn(),
+  post: vi.fn(),
+  put: vi.fn(),
+  patch: vi.fn(),
+  delete: vi.fn(),
+}));
 vi.mock('react-hot-toast');
 
 vi.mock('../../../components/UI/TableSkeleton', () => ({

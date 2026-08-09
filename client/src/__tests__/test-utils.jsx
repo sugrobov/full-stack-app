@@ -9,16 +9,15 @@ import cartReducer from '../store/cartSlice';
 import favoritesReducer from '../store/favoritesSlice';
 import productsReducer from '../store/productsSlice';
 
-// Импортируем мок-функции из глобального __mocks__/axios
-import { mockGet, mockPost, mockPut, mockDelete } from '../../__mocks__/axios';
+import { mockGet, mockPost, mockPut, mockPatch, mockDelete } from '../../__mocks__/axios';
 
-// Устанавливаем безопасные реализации по умолчанию
+// Безопасные умолчания
 mockGet.mockResolvedValue({ data: {} });
 mockPost.mockResolvedValue({ data: {} });
 mockPut.mockResolvedValue({ data: {} });
+mockPatch.mockResolvedValue({ data: {} });
 mockDelete.mockResolvedValue({ data: {} });
 
-// Моки framer-motion и recaptcha
 vi.mock('framer-motion', () => ({
   motion: {
     div: ({ children, ...props }) => React.createElement('div', props, children),
@@ -31,15 +30,14 @@ vi.mock('react-google-recaptcha', () => ({
   default: (props) => <div data-testid="recaptcha-mock" {...props} />,
 }));
 
-// Экспорт для использования в интеграционных тестах
 export const mockAxios = {
   get: mockGet,
   post: mockPost,
   put: mockPut,
+  patch: mockPatch,
   delete: mockDelete,
 };
 
-// Redux store и рендер-утилита
 const defaultReducers = {
   auth: authReducer,
   cart: cartReducer,
