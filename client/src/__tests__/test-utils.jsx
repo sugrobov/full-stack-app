@@ -9,7 +9,7 @@ import cartReducer from '../store/cartSlice';
 import favoritesReducer from '../store/favoritesSlice';
 import productsReducer from '../store/productsSlice';
 
-// vi.hoisted гарантирует, что функции созданы до vi.mock
+// Создаём мок-функции через vi.hoisted, чтобы они были доступны до vi.mock
 const { mockGet, mockPost, mockPut, mockDelete } = vi.hoisted(() => ({
   mockGet: vi.fn(),
   mockPost: vi.fn(),
@@ -17,8 +17,19 @@ const { mockGet, mockPost, mockPut, mockDelete } = vi.hoisted(() => ({
   mockDelete: vi.fn(),
 }));
 
-vi.mock('../utils/axiosConfig', () => ({
+// Мокаем сам axios, а не наш модуль axiosConfig
+vi.mock('axios', () => ({
   default: {
+    create: () => ({
+      get: mockGet,
+      post: mockPost,
+      put: mockPut,
+      delete: mockDelete,
+      interceptors: {
+        request: { use: vi.fn(), eject: vi.fn() },
+        response: { use: vi.fn(), eject: vi.fn() },
+      },
+    }),
     get: mockGet,
     post: mockPost,
     put: mockPut,
@@ -26,7 +37,13 @@ vi.mock('../utils/axiosConfig', () => ({
   },
 }));
 
-// Остальные моки
+// Безопасные реализации по умолчанию
+mockGet.mockResolvedValue({ data: {} });
+mockPost.mockResolvedValue({ data: {} });
+mockPut.mockResolvedValue({ data: {} });
+mockDelete.mockResolvedValue({ data: {} });
+
+// Моки framer-motion и recaptcha
 vi.mock('framer-motion', () => ({
   motion: {
     div: ({ children, ...props }) => React.createElement('div', props, children),
@@ -46,6 +63,7 @@ export const mockAxios = {
   delete: mockDelete,
 };
 
+// Redux store и рендер-утилита (без изменений)
 const defaultReducers = {
   auth: authReducer,
   cart: cartReducer,

@@ -6,11 +6,19 @@ import FavoritesPage from '../../pages/FavoritesPage';
 
 const product = { id: 1, name: 'Тестовый товар', price: 100, category: 'Тест', image: '' };
 
+const makeProductResponse = (products, totalPages = 1, currentPage = 1) => ({
+  data: {
+    products,
+    pagination: { totalPages, totalItems: products.length },
+    currentPage,
+  },
+});
+
 beforeEach(() => {
   mockAxios.get.mockReset();
   mockAxios.get.mockImplementation((url) => {
     if (url.includes('/products')) {
-      return Promise.resolve({ data: { products: [product], totalPages: 1, currentPage: 1 } });
+      return Promise.resolve(makeProductResponse([product]));
     }
     if (url.includes('/categories')) {
       return Promise.resolve({ data: ['Тест'] });
