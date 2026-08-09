@@ -2,9 +2,12 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { renderWithProviders } from '../test-utils.jsx';
-import { mockGet } from '../mockAxios';
 import ShopPage from '../../pages/ShopPage';
 import FavoritesPage from '../../pages/FavoritesPage';
+
+const { mockGet } = vi.hoisted(() => ({
+  mockGet: vi.fn(),
+}));
 
 vi.mock('axios', () => ({
   default: {

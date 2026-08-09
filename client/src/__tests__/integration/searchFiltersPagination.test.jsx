@@ -2,8 +2,12 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { renderWithProviders } from '../test-utils.jsx';
-import { mockGet } from '../mockAxios';
 import ShopPage from '../../pages/ShopPage';
+
+// Создаём mockGet через hoisted, чтобы избежать ошибки инициализации
+const { mockGet } = vi.hoisted(() => ({
+  mockGet: vi.fn(),
+}));
 
 vi.mock('axios', () => ({
   default: {
@@ -53,7 +57,6 @@ test('фильтрация по категории обновляет списо
   renderWithProviders(<ShopPage />, { initialEntries: ['/shop'] });
   await waitFor(() => expect(screen.getByText('Футболка')).toBeInTheDocument());
 
-  // Переопределяем для фильтрации
   mockGet.mockImplementation((url) => {
     if (url.includes('category=Книги')) {
       return Promise.resolve(makeProductResponse([baseProducts[2]], 1));
