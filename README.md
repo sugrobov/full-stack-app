@@ -1,107 +1,140 @@
-# Online Store (fullstack)
+# Full-Stack Online Store
 
-Интернет-магазин с клиентской и серверной частью.  
-Фронтенд — React + Redux Toolkit + Tailwind, бэкенд — Node.js + Express + MySQL.
+[![CI](https://github.com/sugrobov/full-stack-app/actions/workflows/main.yml/badge.svg)](https://github.com/sugrobov/full-stack-app/actions)
 
-## Ключевые возможности
+Полноценное приложение интернет-магазина с клиентской частью на React (Vite), сервером на Node.js (Express), MySQL и E2E-тестами на Cypress.
 
-- Каталог товаров с фильтрацией, сортировкой, поиском и пагинацией
-- Карточка товара со слайдером изображений и отзывами
-- Корзина с сохранением состояния между сессиями (localForage)
-- Избранное
-- Регистрация / авторизация (JWT)
-- Личный кабинет с профилем и историей заказов
-- **Админ‑панель**
-  - Управление товарами (создание, редактирование, удаление)
-  - **Загрузка изображений товаров** (drag & drop, конвертация в WebP, галерея)
-  - Управление заказами, пользователями, отзывами
-- REST API на Express с валидацией, защитой маршрутов и загрузкой файлов
+## 🧱 Структура проекта
 
-## Технический стек
+```
+full-stack-app/
+├── client/                    # Фронтенд (React + Vite)
+│   ├── src/
+│   │   ├── components/        # Переиспользуемые UI-компоненты
+│   │   ├── pages/             # Страницы приложения
+│   │   ├── store/             # Redux-слайсы (auth, cart, favorites, products)
+│   │   ├── hooks/             # Кастомные хуки (useDebounce)
+│   │   ├── routes/            # Маршрутизация
+│   │   └── utils/             # Axios-конфиг, утилиты
+│   ├── __tests__/             # Юнит и интеграционные тесты (Vitest)
+│   └── vite.config.js
+├── server/                    # Бэкенд (Express)
+│   ├── __tests__/             # API-тесты (Jest)
+│   ├── uploads/products/      # Загруженные изображения
+│   └── server.js
+├── cypress/                   # E2E-тесты (Cypress)
+├── .husky/                    # Git-хуки (pre-commit)
+├── .github/workflows/         # CI/CD (GitHub Actions)
+├── docker-compose.yml         # Контейнеры: db, server, client, migrate
+└── package.json               # Workspace root
+```
 
-**Клиент:** React 18, Redux Toolkit, React Router 6, Tailwind CSS 4, Vite, Axios, Framer Motion, react-dropzone, react-hot-toast  
-**Сервер:** Node.js, Express, MySQL2 (пул промисов), JWT, bcryptjs, multer, sharp, file-type, uuid  
-**База данных:** MySQL (таблицы products, product_images, categories, users, orders, reviews и др.)
+## 🚀 Быстрый старт
 
-## Установка и запуск
-
-### 1. Клонирование и установка
+### 1. Клонирование и установка зависимостей
 
 ```bash
 git clone https://github.com/sugrobov/full-stack-app.git
 cd full-stack-app
-npm install
-cd client && npm install && cd ..
-cd server && npm install && cd ..
+npm run install-all   # установит зависимости в корне, client и server
 ```
 
-### 2. Настройка базы данных
+### 2. Настройка окружения
 
-Убедитесь, что MySQL запущен.
+Создайте в папке `server/` файл `.env` на основе `.env.example` и заполните переменные (порт, база данных, JWT, SMTP и т.д.).
 
-В папке `server` переименуйте `.env.example` в `.env` и укажите свои параметры подключения.
+Клиентское окружение — `client/.env` на основе `client/.env.example` (переменная `VITE_API_URL`).
 
-Инициализируйте таблицы и тестовые данные (опционально):
+База данных MySQL. Инициализировать таблицы можно командой:
 
 ```bash
-cd server
-npm run init-db
+cd server && npm run init-db
 ```
 
 ### 3. Запуск в режиме разработки
 
-Из корня проекта:
+```bash
+npm run dev   # параллельно запускает client (Vite) и server (nodemon)
+```
+
+По умолчанию:
+
+- Фронтенд: http://localhost:5173
+- Бэкенд: http://localhost:5000
+
+Отдельный запуск: `npm run client` / `npm run server`.
+
+## 🧪 Тестирование
+
+### Юнит / интеграционные тесты (клиент)
 
 ```bash
-npm run dev
+cd client && npm test
 ```
 
-Запускаются одновременно:
+Vitest + Testing Library. Тесты расположены в `client/src/__tests__/`, а также рядом с компонентами и слайсами.
 
-- Клиент: http://localhost:5173
-- Сервер: http://localhost:5000
-
-Отдельный запуск:
+### API-тесты сервера
 
 ```bash
-npm run client   # фронтенд
-npm run server   # бэкенд
+cd server && npm test
 ```
 
-## Особенности работы с изображениями
+Jest + Supertest. Требуется тестовая БД (см. `server/.env.test`).
 
-Загруженные администратором изображения конвертируются в .webp, сохраняются в `server/uploads/products/` и отображаются через кастомный endpoint.
+### E2E-тесты (Cypress)
 
-В админке реализована галерея: можно добавить несколько изображений, удалить любое.
-
-Все публичные страницы (каталог, карточка товара, корзина, поиск) поддерживают как сидированные `/images/`, так и загруженные `/uploads/` пути.
-
-## Деплой клиента (Netlify)
-
-Файл `netlify.toml` уже настроен. Подключите репозиторий, укажите:
-
-- Build command: `npm run build`
-- Publish directory: `dist`
-
-## Структура проекта
-
-```
-├── client/          # React-приложение
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── store/   # Redux slices
-│   │   └── utils/
-│   └── vite.config.js
-├── server/          # Express API
-│   ├── server.js
-│   ├── auth.js
-│   ├── init-db.js
-│   ├── uploads/products/  # загруженные изображения
-│   └── .env.example
-└── .gitignore
+```bash
+# Из корня проекта (предварительно запустите сервер и клиент)
+npx cypress open
 ```
 
-## Лицензия
+Конфигурация: `cypress.config.js`, сценарии — в `cypress/e2e/`.
 
-MIT
+## 🔄 Pre-commit Hook (Husky + lint-staged)
+
+Перед каждым коммитом автоматически запускается линтинг staged-файлов клиента:
+
+```json
+"client/src/**/*.{js,jsx}": ["eslint --config client/eslint.config.js --fix --max-warnings=0"]
+```
+
+Это гарантирует, что в репозиторий не попадёт код с ошибками ESLint. Настройка: `.husky/pre-commit` → `npx lint-staged`.
+
+Если нужно пропустить проверку (не рекомендуется), используйте `git commit --no-verify`.
+
+## 📦 Сборка для продакшена
+
+```bash
+npm run build   # сборка клиента в client/dist
+```
+
+Файл `netlify.toml` уже настроен для деплоя клиента (build command `npm run build`, publish directory `dist`). Также есть `docker-compose.yml` для запуска полного стека в контейнерах.
+
+## 📄 Переменные окружения (сервер)
+
+См. `server/.env.example`. Основные параметры:
+
+- `PORT` – порт сервера (по умолчанию 5000)
+- `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` – параметры MySQL
+- `JWT_SECRET` – секрет для токенов авторизации
+- `CLIENT_URL` – URL фронтенда (для CORS в продакшене)
+- `EMAIL_USER`, `EMAIL_PASS`, `EMAIL_FROM`, `CONTACT_EMAIL` – SMTP для формы обратной связи
+
+## 🤝 Участие в разработке
+
+1. Создайте ветку от `main`
+2. Внесите изменения
+3. Убедитесь, что тесты проходят (`cd client && npm test`, `cd server && npm test`)
+4. Создайте Pull Request
+
+## 📊 Статус тестов (август 2026)
+
+- Всего тестов: 294
+- Пропущено: 3 (из-за технических ограничений моков Vitest, планируется исправление)
+- Pre-commit hook: ✅ активен
+- CI: ✅ зелёный
+
+## 📜 Лицензия
+
+ISC
