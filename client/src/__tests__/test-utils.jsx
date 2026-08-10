@@ -10,48 +10,20 @@ import favoritesReducer from '../store/favoritesSlice';
 import productsReducer from '../store/productsSlice';
 
 vi.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, ...props }) => React.createElement('div', props, children),
-    span: ({ children, ...props }) => React.createElement('span', props, children),
-  },
+  motion: { div: (props) => React.createElement('div', props), span: (props) => React.createElement('span', props) },
   AnimatePresence: ({ children }) => children,
 }));
-
 vi.mock('react-google-recaptcha', () => ({
   default: (props) => <div data-testid="recaptcha-mock" {...props} />,
 }));
 
-const defaultReducers = {
-  auth: authReducer,
-  cart: cartReducer,
-  favorites: favoritesReducer,
-  products: productsReducer,
-};
-
+const defaultReducers = { auth: authReducer, cart: cartReducer, favorites: favoritesReducer, products: productsReducer };
 export function createMockStore(customReducers = {}, preloadedState = {}) {
-  return configureStore({
-    reducer: { ...defaultReducers, ...customReducers },
-    preloadedState,
-  });
+  return configureStore({ reducer: { ...defaultReducers, ...customReducers }, preloadedState });
 }
-
-export function renderWithProviders(
-  ui,
-  {
-    preloadedState = {},
-    store = createMockStore({}, preloadedState),
-    initialEntries = ['/'],
-    ...renderOptions
-  } = {}
-) {
+export function renderWithProviders(ui, { preloadedState = {}, store = createMockStore({}, preloadedState), initialEntries = ['/'], ...renderOptions } = {}) {
   function Wrapper({ children }) {
-    return (
-      <Provider store={store}>
-        <MemoryRouter initialEntries={initialEntries}>
-          {children}
-        </MemoryRouter>
-      </Provider>
-    );
+    return <Provider store={store}><MemoryRouter initialEntries={initialEntries}>{children}</MemoryRouter></Provider>;
   }
   return { store, ...render(ui, { wrapper: Wrapper, ...renderOptions }) };
 }

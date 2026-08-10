@@ -1,23 +1,8 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { vi } from 'vitest';
 import { renderWithProviders } from '../test-utils.jsx';
+import axiosConfig from '../../utils/axiosConfig'; // берём замоканный модуль
 import ShopPage from '../../pages/ShopPage';
-
-// hoisted переменные для фабрики vi.mock
-const { mockGet } = vi.hoisted(() => ({
-  mockGet: vi.fn(),
-}));
-
-vi.mock('../../utils/axiosConfig', () => ({
-  default: {
-    get: mockGet,
-    post: vi.fn(),
-    put: vi.fn(),
-    patch: vi.fn(),
-    delete: vi.fn(),
-  },
-}));
 
 const baseProducts = [
   { id: 1, name: 'Футболка', category: 'Одежда', price: 1000, image: '' },
@@ -34,8 +19,9 @@ const makeProductResponse = (products, totalPages = 2, currentPage = 1) => ({
 });
 
 beforeEach(() => {
-  mockGet.mockReset();
-  mockGet.mockImplementation((url) => {
+  // Сбрасываем и задаём поведение мока для get
+  axiosConfig.get.mockReset();
+  axiosConfig.get.mockImplementation((url) => {
     if (url.includes('/products')) {
       return Promise.resolve(makeProductResponse(baseProducts));
     }
@@ -50,7 +36,8 @@ test('фильтрация по категории обновляет списо
   renderWithProviders(<ShopPage />, { initialEntries: ['/shop'] });
   await waitFor(() => expect(screen.getByText('Футболка')).toBeInTheDocument());
 
-  mockGet.mockImplementation((url) => {
+  // Меняем мок для фильтрации
+  axiosConfig.get.mockImplementation((url) => {
     if (url.includes('category=Книги')) {
       return Promise.resolve(makeProductResponse([baseProducts[2]], 1));
     }
@@ -74,7 +61,7 @@ test('поиск по названию с debounce', async () => {
   renderWithProviders(<ShopPage />, { initialEntries: ['/shop'] });
   await waitFor(() => expect(screen.getByText('Футболка')).toBeInTheDocument());
 
-  mockGet.mockImplementation((url) => {
+  axiosConfig.get.mockImplementation((url) => {
     if (url.includes('search=Джинсы')) {
       return Promise.resolve(makeProductResponse([baseProducts[1]], 1));
     }
