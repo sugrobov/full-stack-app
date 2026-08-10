@@ -4,16 +4,11 @@ import { vi } from 'vitest';
 import { renderWithProviders } from '../test-utils.jsx';
 import FavoritesPage from '../../pages/FavoritesPage';
 
-// Мокаем fetchFavorites через hoisted, чтобы избежать ошибок инициализации
-const { mockFetchFavorites } = vi.hoisted(() => ({
-  mockFetchFavorites: vi.fn(() => ({ type: 'favorites/fetchFulfilled', payload: [] })),
-}));
-
 vi.mock('../../store/favoritesSlice', async () => {
   const actual = await vi.importActual('../../store/favoritesSlice');
   return {
     ...actual,
-    fetchFavorites: mockFetchFavorites,
+    fetchFavorites: vi.fn(() => Promise.resolve({ type: 'favorites/fetchFulfilled', payload: [] })),
   };
 });
 
