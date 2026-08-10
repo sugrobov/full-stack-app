@@ -10,7 +10,8 @@
     "start": "concurrently \"npm run server\" \"npm run client\"",
     "build": "cd client && npm run build",
     "dev": "npm run start",
-    "test": "echo \"No tests specified\" && exit 0"
+    "test": "echo \"No tests specified\" && exit 0",
+    "prepare": "husky"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -27,7 +28,14 @@
   "devDependencies": {
     "concurrently": "^8.2.2",
     "cypress": "^15.16.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "wait-on": "^9.0.10"
+  },
+  "lint-staged": {
+    "client/src/**/*.{js,jsx}": [
+      "client/node_modules/.bin/eslint --config client/eslint.config.js --fix --max-warnings=0"
+    ]
   },
   "keywords": [],
   "author": "",
