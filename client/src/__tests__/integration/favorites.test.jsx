@@ -4,6 +4,7 @@ import { vi } from 'vitest';
 import { renderWithProviders } from '../test-utils.jsx';
 import FavoritesPage from '../../pages/FavoritesPage';
 
+// Мокаем fetchFavorites глобально для этого файла
 vi.mock('../../store/favoritesSlice', async () => {
   const actual = await vi.importActual('../../store/favoritesSlice');
   return {
