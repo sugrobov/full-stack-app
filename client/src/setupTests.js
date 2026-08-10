@@ -1,43 +1,9 @@
+// client/src/setupTests.js
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
+import { axiosMock, localforageMock, framerMotionMock, recaptchaMock } from './__tests__/test-utils/mocks';
 
-// hoisted-переменные для axios
-const { mockGet, mockPost, mockPut, mockPatch, mockDelete } = vi.hoisted(() => ({
-  mockGet: vi.fn(),
-  mockPost: vi.fn(),
-  mockPut: vi.fn(),
-  mockPatch: vi.fn(),
-  mockDelete: vi.fn(),
-}));
-
-vi.mock('axios', () => ({
-  default: {
-    create: () => ({
-      get: mockGet,
-      post: mockPost,
-      put: mockPut,
-      patch: mockPatch,
-      delete: mockDelete,
-      interceptors: {
-        request: { use: vi.fn(), eject: vi.fn() },
-        response: { use: vi.fn(), eject: vi.fn() },
-      },
-    }),
-    get: mockGet,
-    post: mockPost,
-    put: mockPut,
-    patch: mockPatch,
-    delete: mockDelete,
-  },
-}));
-
-// Мок localforage, чтобы избежать ошибок хранилища в тестах
-vi.mock('localforage', () => ({
-  default: {
-    createInstance: vi.fn(() => ({
-      getItem: vi.fn(),
-      setItem: vi.fn(),
-      removeItem: vi.fn(),
-    })),
-  },
-}));
+vi.mock('axios', () => axiosMock);
+vi.mock('localforage', () => localforageMock);
+vi.mock('framer-motion', () => framerMotionMock);
+vi.mock('react-google-recaptcha', () => recaptchaMock);
