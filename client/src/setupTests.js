@@ -1,25 +1,43 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
-// Создаём мок-функции, которые будут доступны через импорт axiosConfig
-const mockGet = vi.fn();
-const mockPost = vi.fn();
-const mockPut = vi.fn();
-const mockPatch = vi.fn();
-const mockDelete = vi.fn();
+// hoisted-переменные для axios
+const { mockGet, mockPost, mockPut, mockPatch, mockDelete } = vi.hoisted(() => ({
+  mockGet: vi.fn(),
+  mockPost: vi.fn(),
+  mockPut: vi.fn(),
+  mockPatch: vi.fn(),
+  mockDelete: vi.fn(),
+}));
 
-// Глобальный мок модуля axiosConfig
-vi.mock('../utils/axiosConfig', () => ({
+vi.mock('axios', () => ({
   default: {
+    create: () => ({
+      get: mockGet,
+      post: mockPost,
+      put: mockPut,
+      patch: mockPatch,
+      delete: mockDelete,
+      interceptors: {
+        request: { use: vi.fn(), eject: vi.fn() },
+        response: { use: vi.fn(), eject: vi.fn() },
+      },
+    }),
     get: mockGet,
     post: mockPost,
     put: mockPut,
     patch: mockPatch,
     delete: mockDelete,
-    // Если interceptors используются
-    interceptors: {
-      request: { use: vi.fn(), eject: vi.fn() },
-      response: { use: vi.fn(), eject: vi.fn() },
-    },
+  },
+}));
+
+// Мок localforage, чтобы избежать ошибок хранилища в тестах
+vi.mock('localforage', () => ({
+  default: {
+    createInstance: vi.fn(() => ({
+      getItem: vi.fn(),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    })),
   },
 }));

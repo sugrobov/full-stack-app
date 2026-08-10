@@ -1,7 +1,7 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../test-utils.jsx';
-import axiosConfig from '../../utils/axiosConfig'; // берём замоканный модуль
+import axios from 'axios'; // используем глобально замоканный axios
 import ShopPage from '../../pages/ShopPage';
 
 const baseProducts = [
@@ -19,9 +19,8 @@ const makeProductResponse = (products, totalPages = 2, currentPage = 1) => ({
 });
 
 beforeEach(() => {
-  // Сбрасываем и задаём поведение мока для get
-  axiosConfig.get.mockReset();
-  axiosConfig.get.mockImplementation((url) => {
+  axios.get.mockReset();
+  axios.get.mockImplementation((url) => {
     if (url.includes('/products')) {
       return Promise.resolve(makeProductResponse(baseProducts));
     }
@@ -36,8 +35,7 @@ test('фильтрация по категории обновляет списо
   renderWithProviders(<ShopPage />, { initialEntries: ['/shop'] });
   await waitFor(() => expect(screen.getByText('Футболка')).toBeInTheDocument());
 
-  // Меняем мок для фильтрации
-  axiosConfig.get.mockImplementation((url) => {
+  axios.get.mockImplementation((url) => {
     if (url.includes('category=Книги')) {
       return Promise.resolve(makeProductResponse([baseProducts[2]], 1));
     }
@@ -61,7 +59,7 @@ test('поиск по названию с debounce', async () => {
   renderWithProviders(<ShopPage />, { initialEntries: ['/shop'] });
   await waitFor(() => expect(screen.getByText('Футболка')).toBeInTheDocument());
 
-  axiosConfig.get.mockImplementation((url) => {
+  axios.get.mockImplementation((url) => {
     if (url.includes('search=Джинсы')) {
       return Promise.resolve(makeProductResponse([baseProducts[1]], 1));
     }

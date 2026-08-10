@@ -1,7 +1,7 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../test-utils.jsx';
-import axiosConfig from '../../utils/axiosConfig';
+import axios from 'axios';
 import ShopPage from '../../pages/ShopPage';
 import FavoritesPage from '../../pages/FavoritesPage';
 
@@ -15,8 +15,8 @@ const makeProductResponse = (products, totalPages = 1) => ({
 });
 
 beforeEach(() => {
-  axiosConfig.get.mockReset();
-  axiosConfig.get.mockImplementation((url) => {
+  axios.get.mockReset();
+  axios.get.mockImplementation((url) => {
     if (url.includes('/products')) {
       return Promise.resolve(makeProductResponse([product]));
     }
