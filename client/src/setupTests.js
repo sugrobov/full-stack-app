@@ -1,7 +1,7 @@
 // client/src/setupTests.js
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
-import { axiosMock, localforageMock, framerMotionMock, recaptchaMock } from './__tests__/test-utils/mocks.jsx';
+import { axiosMock, localforageMock, framerMotionMock, recaptchaMock } from './__tests__/test-utils/mocks';
 
 vi.mock('axios', () => axiosMock);
 vi.mock('localforage', () => localforageMock);
