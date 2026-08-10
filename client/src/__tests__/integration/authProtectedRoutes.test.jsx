@@ -1,15 +1,8 @@
 import { screen, waitFor } from '@testing-library/react';
-import { renderWithProviders, mockAxios } from '../test-utils.jsx';
+import { renderWithProviders } from '../test-utils.jsx';
 import AppRoutes from '../../routes';
 
-beforeEach(() => {
-  mockAxios.get.mockReset();
-  mockAxios.get.mockResolvedValue({ data: {} });
-  mockAxios.post.mockReset();
-  mockAxios.post.mockResolvedValue({ data: {} });
-});
-
-test.skip('неавторизованный пользователь перенаправляется с /admin на /login', async () => {
+test('неавторизованный пользователь перенаправляется с /admin на /login', async () => {
   renderWithProviders(<AppRoutes />, {
     preloadedState: {
       auth: { user: null, isAuthenticated: false, loading: false, error: null },
@@ -23,7 +16,7 @@ test.skip('неавторизованный пользователь перен�
   expect(screen.queryByTestId('admin-dashboard')).not.toBeInTheDocument();
 });
 
-test.skip('авторизованный админ видит AdminDashboard', async () => {
+test('авторизованный админ видит AdminDashboard', async () => {
   renderWithProviders(<AppRoutes />, {
     preloadedState: {
       auth: { user: { id: 1, name: 'Admin', role: 'admin' }, isAuthenticated: true, loading: false, error: null },
