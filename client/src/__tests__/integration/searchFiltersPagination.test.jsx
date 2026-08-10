@@ -1,7 +1,7 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../test-utils.jsx';
-import axios from 'axios'; // используем глобально замоканный axios
+import axios from 'axios';
 import ShopPage from '../../pages/ShopPage';
 
 const baseProducts = [
@@ -20,35 +20,34 @@ const makeProductResponse = (products, totalPages = 2, currentPage = 1) => ({
 
 beforeEach(() => {
   axios.get.mockReset();
-  axios.get.mockImplementation((url) => {
-    if (url.includes('/products')) {
-      return Promise.resolve(makeProductResponse(baseProducts));
-    }
-    if (url.includes('/categories')) {
-      return Promise.resolve({ data: ['Одежда', 'Книги'] });
-    }
-    return Promise.resolve({ data: {} });
+  // ВРЕМЕННО: даём фиксированный ответ, чтобы проверить рендер
+  axios.get.mockResolvedValue({
+    data: {
+      products: baseProducts,
+      pagination: { totalPages: 2, totalItems: 3 },
+      currentPage: 1,
+    },
   });
 });
 
 test('фильтрация по категории обновляет список товаров', async () => {
   renderWithProviders(<ShopPage />, { initialEntries: ['/shop'] });
+
+  // Ждём появления товаров
   await waitFor(() => expect(screen.getByText('Футболка')).toBeInTheDocument());
 
+  // Теперь имитируем клик по категории – компонент должен сделать новый запрос
   axios.get.mockImplementation((url) => {
     if (url.includes('category=Книги')) {
       return Promise.resolve(makeProductResponse([baseProducts[2]], 1));
     }
-    if (url.includes('/products')) {
-      return Promise.resolve(makeProductResponse(baseProducts));
-    }
-    if (url.includes('/categories')) {
-      return Promise.resolve({ data: ['Одежда', 'Книги'] });
-    }
-    return Promise.resolve({ data: {} });
+    // Для остальных запросов возвращаем изначальные продукты
+    return Promise.resolve(makeProductResponse(baseProducts));
   });
 
-  await userEvent.selectOptions(screen.getByLabelText('Категория'), 'Книги');
+  const categorySelect = screen.getByLabelText('Категория');
+  await userEvent.selectOptions(categorySelect, 'Книги');
+
   await waitFor(() => {
     expect(screen.getByText('Книга')).toBeInTheDocument();
     expect(screen.queryByText('Футболка')).not.toBeInTheDocument();
@@ -63,16 +62,12 @@ test('поиск по названию с debounce', async () => {
     if (url.includes('search=Джинсы')) {
       return Promise.resolve(makeProductResponse([baseProducts[1]], 1));
     }
-    if (url.includes('/products')) {
-      return Promise.resolve(makeProductResponse(baseProducts));
-    }
-    if (url.includes('/categories')) {
-      return Promise.resolve({ data: ['Одежда', 'Книги'] });
-    }
-    return Promise.resolve({ data: {} });
+    return Promise.resolve(makeProductResponse(baseProducts));
   });
 
-  await userEvent.type(screen.getByPlaceholderText('Поиск товаров...'), 'Джинсы');
+  const searchInput = screen.getByPlaceholderText('Поиск товаров...');
+  await userEvent.type(searchInput, 'Джинсы');
+
   await waitFor(() => {
     expect(screen.getByText('Джинсы')).toBeInTheDocument();
     expect(screen.queryByText('Футболка')).not.toBeInTheDocument();
