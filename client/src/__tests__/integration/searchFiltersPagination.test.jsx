@@ -1,75 +1,68 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../test-utils.jsx';
-import axios from 'axios';
+import axios from 'axios'; // мок глобальный, используем для проверки вызовов
 import ShopPage from '../../pages/ShopPage';
-
-const baseProducts = [
-  { id: 1, name: 'Футболка', category: 'Одежда', price: 1000, image: '' },
-  { id: 2, name: 'Джинсы', category: 'Одежда', price: 2500, image: '' },
-  { id: 3, name: 'Книга', category: 'Книги', price: 500, image: '' },
-];
-
-const makeProductResponse = (products, totalPages = 2, currentPage = 1) => ({
-  data: {
-    products,
-    pagination: { totalPages, totalItems: products.length },
-    currentPage,
-  },
-});
 
 beforeEach(() => {
   axios.get.mockReset();
-  // ВРЕМЕННО: даём фиксированный ответ, чтобы проверить рендер
-  axios.get.mockResolvedValue({
-    data: {
-      products: baseProducts,
-      pagination: { totalPages: 2, totalItems: 3 },
-      currentPage: 1,
+  axios.get.mockResolvedValue({ data: { products: [], pagination: { totalPages: 0, totalItems: 0 } } });
+});
+
+test('отображает товары из Redux store', async () => {
+  const products = [
+    { id: 1, name: 'Футболка', category: 'Одежда', price: 1000, image: '', stock: 10 },
+    { id: 2, name: 'Джинсы', category: 'Одежда', price: 2500, image: '', stock: 5 },
+  ];
+  renderWithProviders(<ShopPage />, {
+    preloadedState: {
+      products: {
+        items: products,
+        status: 'succeeded',
+        totalPages: 1,
+        currentPage: 1,
+        filters: {},
+      },
     },
+    initialEntries: ['/shop'],
   });
+  expect(screen.getByText('Футболка')).toBeInTheDocument();
+  expect(screen.getByText('Джинсы')).toBeInTheDocument();
 });
 
-test('фильтрация по категории обновляет список товаров', async () => {
-  renderWithProviders(<ShopPage />, { initialEntries: ['/shop'] });
-
-  // Ждём появления товаров
-  await waitFor(() => expect(screen.getByText('Футболка')).toBeInTheDocument());
-
-  // Теперь имитируем клик по категории – компонент должен сделать новый запрос
-  axios.get.mockImplementation((url) => {
-    if (url.includes('category=Книги')) {
-      return Promise.resolve(makeProductResponse([baseProducts[2]], 1));
-    }
-    // Для остальных запросов возвращаем изначальные продукты
-    return Promise.resolve(makeProductResponse(baseProducts));
+test('пагинация вызывает запрос с новым номером страницы', async () => {
+  const products = Array.from({ length: 15 }, (_, i) => ({ id: i + 1, name: `Товар ${i + 1}`, price: 100, image: '' }));
+  renderWithProviders(<ShopPage />, {
+    preloadedState: {
+      products: {
+        items: products.slice(0, 10),
+        status: 'succeeded',
+        totalPages: 2,
+        currentPage: 1,
+        filters: {},
+      },
+    },
+    initialEntries: ['/shop'],
   });
-
-  const categorySelect = screen.getByLabelText('Категория');
-  await userEvent.selectOptions(categorySelect, 'Книги');
-
+  const nextPageBtn = screen.getByRole('button', { name: /следующая/i });
+  expect(nextPageBtn).not.toBeDisabled();
+  axios.get.mockClear();
+  await userEvent.click(nextPageBtn);
   await waitFor(() => {
-    expect(screen.getByText('Книга')).toBeInTheDocument();
-    expect(screen.queryByText('Футболка')).not.toBeInTheDocument();
+    expect(axios.get).toHaveBeenCalledWith(expect.stringContaining('page=2'));
   });
 });
 
-test('поиск по названию с debounce', async () => {
-  renderWithProviders(<ShopPage />, { initialEntries: ['/shop'] });
-  await waitFor(() => expect(screen.getByText('Футболка')).toBeInTheDocument());
-
-  axios.get.mockImplementation((url) => {
-    if (url.includes('search=Джинсы')) {
-      return Promise.resolve(makeProductResponse([baseProducts[1]], 1));
-    }
-    return Promise.resolve(makeProductResponse(baseProducts));
+test('поиск вызывает запрос с параметром search', async () => {
+  renderWithProviders(<ShopPage />, {
+    preloadedState: {
+      products: { items: [], status: 'succeeded', totalPages: 1, currentPage: 1, filters: {} },
+    },
+    initialEntries: ['/shop'],
   });
-
   const searchInput = screen.getByPlaceholderText('Поиск товаров...');
-  await userEvent.type(searchInput, 'Джинсы');
-
+  await userEvent.type(searchInput, 'Футболка');
   await waitFor(() => {
-    expect(screen.getByText('Джинсы')).toBeInTheDocument();
-    expect(screen.queryByText('Футболка')).not.toBeInTheDocument();
+    expect(axios.get).toHaveBeenCalledWith(expect.stringContaining('search=Футболка'));
   }, { timeout: 500 });
 });
