@@ -130,10 +130,18 @@ npm run build   # сборка клиента в client/dist
 
 ## 📊 Статус тестов (август 2026)
 
-- Всего тестов: 294
-- Пропущено: 3 (из-за технических ограничений моков Vitest, планируется исправление)
-- Pre-commit hook: ✅ активен
+- Всего тестов: **297 passed, 0 skipped, 0 failed**
+- Pre-commit hook: ✅ активен (Husky + lint-staged)
 - CI: ✅ зелёный
+- README: обновлён
+
+### Последние исправления в тестах
+
+- Убраны `skip` из тестов **favorites** и **authProtectedRoutes**; тесты адаптированы под реальную логику компонентов.
+- Исправлен мок `framer-motion` (прокси для любых тегов).
+- URL в тестах **AdminProducts/AdminUsers** заменены на полные (`http://localhost:5000/api/...`).
+- Поиск цен в **ProductCard/ProductSearch** использует `content.includes` для неразрывного пробела.
+- Добавлен `data-testid="home-page"` в **HomePage**.
 
 ## 📜 Лицензия
 
