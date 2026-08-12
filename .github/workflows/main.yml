@@ -48,7 +48,7 @@ jobs:
           DB_USER: root
           DB_PASSWORD: ''
           DB_NAME: store_db_test
-        run: node migrate.js
+        run: node migrate.cjs
         working-directory: server
 
       - name: Run server integration tests
