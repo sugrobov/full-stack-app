@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
@@ -82,7 +82,7 @@ describe('AdminUsers', () => {
 
     await waitFor(() => {
       expect(axios.put).toHaveBeenCalledWith(
-        '/api/admin/users/1/role',
+        'http://localhost:5000/api/admin/users/1/role',
         { role: 'admin' },
         expect.objectContaining({ headers: { Authorization: 'Bearer test-token' } })
       );
@@ -102,8 +102,11 @@ describe('AdminUsers', () => {
     fireEvent.click(nextPageBtn);
     await waitFor(() => {
       expect(axios.get).toHaveBeenCalledWith(
-        '/api/admin/users',
-        expect.objectContaining({ params: { page: 2, limit: 10 } })
+        'http://localhost:5000/api/admin/users',
+        expect.objectContaining({
+          headers: { Authorization: 'Bearer test-token' },
+          params: { page: 2, limit: 10 }
+        })
       );
     });
   });

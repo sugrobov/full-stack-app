@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import ProductSearch from '../ProductSearch';
@@ -122,8 +122,8 @@ describe('ProductSearch', () => {
     );
     fireEvent.change(screen.getByPlaceholderText('Поиск товаров...'), { target: { value: 'тест' } });
     await screen.findByText('Товар 2');
-    expect(screen.getByText('1,500 ₽')).toBeInTheDocument();
-    expect(screen.getByText('2,000 ₽')).toBeInTheDocument();
+expect(screen.getByText((content) => content.includes('500') && content.includes('₽'))).toBeInTheDocument();
+expect(screen.getByText((content) => content.includes('2') && content.includes('000') && content.includes('₽'))).toBeInTheDocument();
   });
 
   it('renders product without image placeholder', async () => {

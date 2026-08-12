@@ -26,7 +26,7 @@ vi.mock('../../../components/UI/ConfirmModal', () => ({
     ) : null,
 }));
 vi.mock('../../../components/UI/Button', () => ({
-  default: ({ children, variant, size, onClick, className, type, ...props }) => (
+  default: ({ children, onClick, className, type, ...props }) => (
     <button onClick={onClick} className={className} type={type} {...props}>
       {children}
     </button>
@@ -174,7 +174,7 @@ describe('AdminProducts', () => {
 
     await waitFor(() => {
       expect(axios.post).toHaveBeenCalledWith(
-        '/api/admin/products',
+        'http://localhost:5000/api/admin/products',
         expect.objectContaining({ name: 'New Product', category_id: '1', price: '300', stock: '20' }),
         expect.any(Object)
       );
@@ -204,7 +204,7 @@ describe('AdminProducts', () => {
     fireEvent.click(screen.getByText('Подтвердить'));
 
     await waitFor(() => {
-      expect(axios.delete).toHaveBeenCalledWith('/api/admin/products/1', expect.any(Object));
+      expect(axios.delete).toHaveBeenCalledWith('http://localhost:5000/api/admin/products/1', expect.any(Object));
       expect(toast.success).toHaveBeenCalledWith('Товар удалён');
     });
     expect(screen.queryByTestId('confirm-modal')).not.toBeInTheDocument();
@@ -231,7 +231,7 @@ describe('AdminProducts', () => {
     fireEvent.click(nextPageBtn);
     await waitFor(() => {
       expect(axios.get).toHaveBeenCalledWith(
-        '/api/admin/products',
+        'http://localhost:5000/api/admin/products',
         expect.objectContaining({ params: { page: 2, limit: 10 } })
       );
     });

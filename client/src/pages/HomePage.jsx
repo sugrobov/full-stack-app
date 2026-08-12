@@ -24,7 +24,7 @@ const advantages = [
 
 const HomePage = () => {
   return (
-    <main className="bg-white">
+    <main data-testid="home-page" className="bg-white">
       {/* Hero */}
       <section className="py-24 px-4 text-center" aria-label="Приветственный блок">
         <motion.h1

@@ -10,7 +10,9 @@ import favoritesReducer from '../store/favoritesSlice';
 import productsReducer from '../store/productsSlice';
 
 vi.mock('framer-motion', () => ({
-  motion: { div: (props) => React.createElement('div', props), span: (props) => React.createElement('span', props) },
+  motion: new Proxy({}, {
+    get: (target, prop) => (props) => React.createElement(prop, props),
+  }),
   AnimatePresence: ({ children }) => children,
 }));
 vi.mock('react-google-recaptcha', () => ({

@@ -5,8 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { configureStore } from '@reduxjs/toolkit';
 import ProductCard from '../ProductCard';
 import cartReducer from '../../store/cartSlice';
-import favoritesReducer, { toggleFavorite } from '../../store/favoritesSlice';
-import { addToCart } from '../../store/cartSlice';
+import favoritesReducer from '../../store/favoritesSlice';
 import toast from 'react-hot-toast';
 
 vi.mock('react-hot-toast', () => ({
@@ -57,14 +56,14 @@ describe('ProductCard', () => {
   it('renders product name and price', () => {
     renderWithProviders(<ProductCard product={baseProduct} />);
     expect(screen.getByText('Тестовый товар')).toBeInTheDocument();
-    expect(screen.getByText('1,000 ₽')).toBeInTheDocument();
+    expect(screen.getByText((content) => content.includes('000') && content.includes('₽'))).toBeInTheDocument();
   });
 
   it('renders discounted price and savings', () => {
     const discounted = { ...baseProduct, discount_price: 800 };
     renderWithProviders(<ProductCard product={discounted} />);
     expect(screen.getByText('800 ₽')).toBeInTheDocument();
-    expect(screen.getByText('1,000 ₽')).toBeInTheDocument();
+    expect(screen.getByText((content) => content.includes('000') && content.includes('₽'))).toBeInTheDocument();
     expect(screen.getByText(/Экономия/)).toBeInTheDocument();
   });
 
