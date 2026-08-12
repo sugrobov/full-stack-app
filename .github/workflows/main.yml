@@ -35,6 +35,10 @@ jobs:
         run: npm ci
         working-directory: server
 
+      - name: Run server lint
+        run: npm run lint
+        working-directory: server  
+
       - name: Run migrations for test DB
         env:
           NODE_ENV: test
@@ -59,6 +63,10 @@ jobs:
 
       - name: Install client dependencies
         run: npm ci
+        working-directory: client
+
+      - name: Run client lint
+        run: npm run lint
         working-directory: client
 
       - name: Run client unit tests
