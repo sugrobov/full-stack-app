@@ -1241,10 +1241,9 @@ describe('User Profile API', () => {
       .send({ name: 'Profile User', email: 'profile@example.com', password: 'password123' });
     userToken = res.body.token;
     // Создаём второго пользователя для проверки конфликта email
-    //   const _res2 = await request(app)
-    //     .post('/api/auth/register')
-    //     .send({ name: 'Other', email: 'other@example.com', password: 'password123' });
-    //     _anotherUserToken = res2.body.token;
+    await request(app)
+      .post('/api/auth/register')
+      .send({ name: 'Other', email: 'other@example.com', password: 'password123' });
   });
 
   describe('PUT /api/users/profile', () => {
