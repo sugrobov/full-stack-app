@@ -170,7 +170,7 @@ const insertSampleData = () => {
 
       const products = [];
       // Для каждой категории создаём товары с ID = categoryId*100 + номер
-      categoryRows.forEach((cat, idx) => {
+      categoryRows.forEach((cat) => {
         const categoryId = cat.id;
         const productCount = Math.floor(Math.random() * 31) + 10; // 10-40 товаров
         for (let i = 1; i <= productCount; i++) {

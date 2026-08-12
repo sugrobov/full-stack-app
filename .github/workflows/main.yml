@@ -10,7 +10,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # убираем warning Node20
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     services:
       mysql:
@@ -31,13 +31,14 @@ jobs:
         with:
           node-version: '22'
 
+      # ===== Сервер =====
       - name: Install server dependencies
         run: npm ci
         working-directory: server
 
       - name: Run server lint
         run: npm run lint
-        working-directory: server  
+        working-directory: server
 
       - name: Run migrations for test DB
         env:
@@ -61,6 +62,7 @@ jobs:
         run: npm test
         working-directory: server
 
+      # ===== Клиент =====
       - name: Install client dependencies
         run: npm ci
         working-directory: client
@@ -73,85 +75,81 @@ jobs:
         run: npm run test
         working-directory: client
 
-      # # --- E2E шаги (временно отключены, будут починены отдельно) ---
-      # - name: Install root dependencies (Cypress)
-      #   run: npm ci
-      #
-      # - name: Create client .env for E2E
-      #   run: echo "VITE_API_URL=/api" > client/.env
-      #
-      # - name: Start server in test mode
-      #   run: |
-      #     nohup env NODE_ENV=test DB_HOST=127.0.0.1 DB_PORT=3306 DB_USER=root DB_PASSWORD='' DB_NAME=store_db_test START_SERVER=true npm run start:test --prefix server > /tmp/server.log 2>&1 &
-      #     sleep 2
-      #     echo "Server PID: $!"
-      #     ps aux | grep -E "node.*server" | grep -v grep || echo "Server process not found"
-      #
-      # - name: Start client dev server
-      #   run: |
-      #     nohup npm run dev --prefix client > /tmp/client.log 2>&1 &
-      #     sleep 2
-      #     echo "Client PID: $!"
-      #     ps aux | grep -E "node.*vite" | grep -v grep || echo "Client process not found"
-      #
-      # - name: Wait for servers to be ready
-      #   run: |
-      #     echo "=== Server log contents ==="
-      #     cat /tmp/server.log 2>/dev/null || echo "No server log yet"
-      #     echo ""
-      #     echo "=== Client log contents ==="
-      #     cat /tmp/client.log 2>/dev/null || echo "No client log yet"
-      #     echo ""
-      #     echo "Waiting for server (port 5000)..."
-      #     for i in $(seq 1 30); do
-      #       HTTP_CODE=$(curl -s -o /tmp/server-response.json -w "%{http_code}" http://127.0.0.1:5000/api/products 2>/dev/null || echo "000")
-      #       echo "Attempt $i: server returned $HTTP_CODE"
-      #       if echo "$HTTP_CODE" | grep -qE '^[23]'; then
-      #         echo "Server is ready!"
-      #         cat /tmp/server-response.json
-      #         break
-      #       fi
-      #       if [ "$i" -eq 30 ]; then
-      #         echo "Server failed to start. Full logs:"
-      #         echo "=== Server log ==="
-      #         cat /tmp/server.log
-      #         echo ""
-      #         echo "=== Running processes ==="
-      #         ps aux | grep node | grep -v grep
-      #         exit 1
-      #       fi
-      #       sleep 2
-      #     done
-      #     echo "Waiting for client (port 5173)..."
-      #     for i in $(seq 1 30); do
-      #       HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5173 2>/dev/null || echo "000")
-      #       echo "Attempt $i: client returned $HTTP_CODE"
-      #       if echo "$HTTP_CODE" | grep -qE '^[23]'; then
-      #         echo "Client is ready!"
-      #         break
-      #       fi
-      #       if [ "$i" -eq 30 ]; then
-      #         echo "Client failed to start. Full logs:"
-      #         echo "=== Client log ==="
-      #         cat /tmp/client.log
-      #         echo ""
-      #         echo "=== Running processes ==="
-      #         ps aux | grep node | grep -v grep
-      #         exit 1
-      #       fi
-      #       sleep 2
-      #     done
-      #
-      # - name: Verify API through Vite proxy
-      #   run: |
-      #     echo "Testing API through Vite proxy..."
-      #     curl -s http://127.0.0.1:5173/api/products | head -c 200
-      #     echo ""
-      #     echo "Proxy test complete."
-      #
-      # - name: Run Cypress E2E tests
-      #   run: npx cypress run
-      #   working-directory: .
-      #   env:
-      #     CYPRESS_baseUrl: http://127.0.0.1:5173
-      #     CYPRESS_defaultCommandTimeout: 10000
+      # ===== E2E (Cypress) =====
+      - name: Install root dependencies (Cypress)
+        run: npm ci
+
+      - name: Cache Cypress binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/Cypress
+          key: cypress-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            cypress-${{ runner.os }}-
+
+      - name: Create client .env for E2E
+        run: echo "VITE_API_URL=/api" > client/.env
+
+      - name: Start server in test mode
+        env:
+          NODE_ENV: test
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASSWORD: ''
+          DB_NAME: store_db_test
+          START_SERVER: true
+        run: |
+          nohup node server/server.js > /tmp/server.log 2>&1 &
+          echo "Server PID: $!"
+
+      - name: Start client dev server
+        run: |
+          nohup npx vite --host --port 5173 --prefix client > /tmp/client.log 2>&1 &
+          echo "Client PID: $!"
+
+      - name: Wait for servers
+        run: |
+          echo "=== Waiting for server (port 5000) ==="
+          for i in $(seq 1 30); do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5000/api/products || echo "000")
+            echo "Attempt $i: server $HTTP_CODE"
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "304" ]; then
+              echo "Server is ready!"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "Server failed to start. Logs:"
+              cat /tmp/server.log
+              exit 1
+            fi
+            sleep 2
+          done
+
+          echo "=== Waiting for client (port 5173) ==="
+          for i in $(seq 1 30); do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5173 || echo "000")
+            echo "Attempt $i: client $HTTP_CODE"
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "304" ]; then
+              echo "Client is ready!"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "Client failed to start. Logs:"
+              cat /tmp/client.log
+              exit 1
+            fi
+            sleep 2
+          done
+
+      - name: Verify API through Vite proxy
+        run: |
+          echo "Testing API proxy..."
+          curl -s http://127.0.0.1:5173/api/products | head -c 200
+          echo ""
+
+      - name: Run Cypress E2E tests
+        run: npx cypress run
+        env:
+          CYPRESS_baseUrl: http://127.0.0.1:5173
+          CYPRESS_defaultCommandTimeout: 10000

@@ -33,11 +33,11 @@ const validUser = {
   password: 'password123',
 };
 
-const adminUser = {
+/* const adminUser = {
   name: 'Admin User',
   email: 'admin@example.com',
   password: 'admin123',
-};
+}; */
 
 beforeAll(async () => {
   await resetDatabase();
@@ -1232,7 +1232,7 @@ describe('Admin API', () => {
 
 describe('User Profile API', () => {
   let userToken;
-  let anotherUserToken;
+  // let anotherUserToken;
 
   beforeAll(async () => {
     // Создаём основного пользователя
@@ -1241,10 +1241,10 @@ describe('User Profile API', () => {
       .send({ name: 'Profile User', email: 'profile@example.com', password: 'password123' });
     userToken = res.body.token;
     // Создаём второго пользователя для проверки конфликта email
-    const res2 = await request(app)
-      .post('/api/auth/register')
-      .send({ name: 'Other', email: 'other@example.com', password: 'password123' });
-    anotherUserToken = res2.body.token;
+    //   const _res2 = await request(app)
+    //     .post('/api/auth/register')
+    //     .send({ name: 'Other', email: 'other@example.com', password: 'password123' });
+    //     _anotherUserToken = res2.body.token;
   });
 
   describe('PUT /api/users/profile', () => {

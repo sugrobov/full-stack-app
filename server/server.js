@@ -845,7 +845,9 @@ app.put('/api/admin/products/:id', verifyToken, requireAdmin, async (req, res) =
         await db.query('DELETE FROM product_images WHERE product_id = ? AND image_url IN (?)', [id, toDelete]);
         for (const url of toDelete) {
           const filename = url.replace('/uploads/products/', '');
-          try { await fs.unlink(path.join(uploadDir, filename)); } catch { }
+          try { await fs.unlink(path.join(uploadDir, filename)); } catch {  
+            // noop 
+          }
         }
       }
 
@@ -1339,7 +1341,7 @@ app.use('/api/*', (req, res) => {
 });
 
 // Глобальный обработчик ошибок Express (4 параметра)
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   const statusCode = err.statusCode || err.status || 500;
   const message = err.message || 'Internal server error';
 
