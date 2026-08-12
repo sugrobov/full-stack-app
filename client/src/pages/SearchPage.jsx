@@ -5,13 +5,13 @@ import Pagination from '../components/Pagination';
 import Breadcrumb from '../components/Breadcrumb';
 
 const SearchPage = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const query = searchParams.get('q') || '';
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, totalItems: 0 });
-  const [currentPage, setCurrentPage] = useState(1);
+  const [, setCurrentPage] = useState(1);
 
   const fetchSearchResults = async (page = 1) => {
     if (!query.trim()) return;
@@ -35,6 +35,7 @@ const SearchPage = () => {
   useEffect(() => {
     setCurrentPage(1);
     fetchSearchResults(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
   const handlePageChange = (page) => {

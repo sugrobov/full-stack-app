@@ -10,7 +10,6 @@ const AdminProductEdit = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [product, setProduct] = useState(null);
   const [categories, setCategories] = useState([]);
   console.log('AdminProductEdit mounted, id:', id);
 
@@ -35,21 +34,13 @@ const AdminProductEdit = () => {
         console.log('Product response:', productRes.data);
         const p = productRes.data;
         console.log('Setting state with:', { name: p.name, category_id: p.category_id, price: p.price, stock: p.stock });
-        setProduct(p);
         setName(p.name);
         setCategoryId(p.category_id);
         setPrice(parseFloat(p.price) || '');
         setDiscountPrice(p.discount_price ? parseFloat(p.discount_price) : '');
         setStock(parseInt(p.stock) || '');
         setDescription(p.description || '');
-        // Безопасная установка изображения: используем первое изображение из массива или основное image
-        let firstImage = '';
-        if (p.images && Array.isArray(p.images) && p.images.length > 0) {
-          firstImage = p.images[0];
-        } else if (p.image) {
-          firstImage = p.image;
-        }
-        // console.log('First image:', firstImage);
+        // Устанавливаем изображения из массива (или пустой массив)
         setImages(p.images || []);
 
         // получаем категории с проверкой на массив

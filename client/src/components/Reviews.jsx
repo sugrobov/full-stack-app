@@ -27,6 +27,7 @@ const Reviews = ({ productId }) => {
   useEffect(() => {
     fetchReviews();
     fetchAvgRating();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productId, page]);
 
   // ---------- запрос с параметрами page и limit ----------

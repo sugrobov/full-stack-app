@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
 
@@ -24,7 +24,7 @@ const ProductImageUpload = ({ productId, images = [], onImagesChanged }) => {
       // после удаления обновляем список изображений
       const updated = images.filter(url => url !== urlToDelete);
       onImagesChanged(updated);
-    } catch (err) {
+    } catch {
       setError('Ошибка удаления изображения');
     }
   };

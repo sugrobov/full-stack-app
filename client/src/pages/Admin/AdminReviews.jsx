@@ -35,6 +35,7 @@ const AdminReviews = () => {
 
   useEffect(() => {
     fetchReviews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, filters]);
 
   const fetchReviews = async () => {
@@ -98,7 +99,7 @@ const AdminReviews = () => {
     }
   };
 
-  const handleToggleApprove = async (id, currentStatus) => {
+  const handleToggleApprove = async (id) => {
     try {
       await axios.patch(`${API_URL}/admin/reviews/${id}/toggle-approve`, {}, {
         headers: { Authorization: `Bearer ${token}` }
@@ -249,7 +250,7 @@ const AdminReviews = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatRelativeDate(review.created_at)}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <Button variant="ghost" size="sm" onClick={() => handleEdit(review)} aria-label="Редактировать отзыв">Ред.</Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleToggleApprove(review.id, review.is_approved)} className="text-purple-600 hover:text-purple-800" aria-label={review.is_approved ? 'Скрыть отзыв' : 'Показать отзыв'}>
+                  <Button variant="ghost" size="sm" onClick={() => handleToggleApprove(review.id)} className="text-purple-600 hover:text-purple-800" aria-label={review.is_approved ? 'Скрыть отзыв' : 'Показать отзыв'}>
                     {review.is_approved ? 'Скрыть' : 'Показать'}
                   </Button>
                   <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(review.id)} className="text-red-600 hover:text-red-800" aria-label="Удалить отзыв">Уд.</Button>

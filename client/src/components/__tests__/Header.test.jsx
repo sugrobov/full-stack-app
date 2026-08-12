@@ -6,8 +6,8 @@ import { configureStore } from '@reduxjs/toolkit';
 import Header from '../Header';
 import cartReducer from '../../store/cartSlice';
 import favoritesReducer from '../../store/favoritesSlice';
-import authReducer, { logout } from '../../store/authSlice';
-import productsReducer, { clearFilters } from '../../store/productsSlice';
+import authReducer from '../../store/authSlice';
+import productsReducer from '../../store/productsSlice';
 
 // Мокаем ConfirmModal, чтобы просто отображать children или проверять пропсы
 vi.mock('../UI/ConfirmModal', () => ({
@@ -133,7 +133,7 @@ describe('Header component', () => {
       ...defaultState,
       auth: { ...defaultState.auth, user: { id: 1, name: 'Иван', role: 'user' } },
     };
-    const { store } = renderHeader(state);
+    renderHeader(state);
 
     // Кликаем основную кнопку "Выйти" (которая в хедере)
     fireEvent.click(screen.getByText('Выйти'));

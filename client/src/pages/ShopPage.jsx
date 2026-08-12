@@ -37,6 +37,7 @@ const ShopPage = () => {
     const page = searchParams.get('page') || '1';
     const sortParam = searchParams.get('sort') || 'default';
     dispatch(setFiltersFromURL({ category, minPrice: minPriceParam, maxPrice: maxPriceParam, page, sort: sortParam }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

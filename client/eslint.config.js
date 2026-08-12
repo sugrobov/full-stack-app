@@ -10,7 +10,10 @@ export default [
     files: ['**/*.{js,jsx}'],
     languageOptions: {
       ecmaVersion: 'latest',
-      globals: globals.browser,
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
       parserOptions: {
         ecmaFeatures: { jsx: true },
       },
@@ -41,10 +44,13 @@ export default [
     languageOptions: {
       globals: {
         test: 'readonly',
+        it: 'readonly',
         expect: 'readonly',
         describe: 'readonly',
         beforeEach: 'readonly',
         afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
         vi: 'readonly',
         global: 'readonly',
       },

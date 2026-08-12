@@ -26,7 +26,7 @@ describe('useDebounce', () => {
   });
 
   it('clears timeout on unmount', () => {
-    const { result, unmount } = renderHook(() => useDebounce('test', 500));
+    const { unmount } = renderHook(() => useDebounce('test', 500));
     unmount();
     // просто убедимся, что нет ошибок — таймер должен быть очищен
   });

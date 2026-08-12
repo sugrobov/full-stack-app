@@ -29,6 +29,7 @@ const ProfilePage = () => {
       setEmail(user.email);
       fetchOrders();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, navigate]);
 
   useEffect(() => {

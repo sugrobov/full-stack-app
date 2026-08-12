@@ -6,7 +6,7 @@ import axios from 'axios';
 
 vi.mock('axios');
 vi.mock('../../Products/components/ProductImageUpload', () => ({
-  default: ({ images, onImagesChanged }) => (
+  default: () => (
     <div data-testid="image-upload-mock">
       Image Upload Mock
     </div>

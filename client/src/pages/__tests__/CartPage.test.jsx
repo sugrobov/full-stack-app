@@ -4,7 +4,7 @@ import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
 import { configureStore } from '@reduxjs/toolkit';
 import CartPage from '../CartPage';
-import cartReducer, { increaseQuantity, decreaseQuantity, removeFromCart, clearCart } from '../../store/cartSlice';
+import cartReducer from '../../store/cartSlice';
 import toast from 'react-hot-toast';
 
 vi.mock('react-hot-toast', () => ({

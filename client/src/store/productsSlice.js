@@ -87,7 +87,7 @@ const productsSlice = createSlice({
       state.currentPage = 1;
     },
     setFiltersFromURL: (state, action) => {
-      const { category, minPrice, maxPrice, page, sort } = action.payload;
+      const { category, minPrice, maxPrice, page } = action.payload;
       if (category !== undefined && category !== null) state.selectedCategory = category;
       if (minPrice !== undefined && minPrice !== null) state.minPrice = minPrice;
       if (maxPrice !== undefined && maxPrice !== null) state.maxPrice = maxPrice;

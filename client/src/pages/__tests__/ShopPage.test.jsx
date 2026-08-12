@@ -4,7 +4,7 @@ import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
 import { configureStore } from '@reduxjs/toolkit';
 import ShopPage from '../ShopPage';
-import productsReducer, { fetchProducts, fetchCategories } from '../../store/productsSlice';
+import productsReducer from '../../store/productsSlice';
 
 // Mock the store
 vi.mock('../../store/productsSlice', async (importOriginal) => {

@@ -9,7 +9,7 @@ vi.mock('axios');
 
 vi.mock('../ReviewSkeleton', () => ({ default: () => <div>Skeleton</div> }));
 vi.mock('../../utils/dateUtils', () => ({
-  formatRelativeDate: (date) => '2 дня назад',
+  formatRelativeDate: () => '2 дня назад',
 }));
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';

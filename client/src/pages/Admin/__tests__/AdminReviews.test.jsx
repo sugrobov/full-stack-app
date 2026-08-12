@@ -41,7 +41,7 @@ vi.mock('../../../components/UI/ConfirmModal', () => ({
     ) : null,
 }));
 vi.mock('../../../components/UI/Button', () => ({
-  default: ({ children, variant, size, onClick, className, type, ...props }) => (
+  default: ({ children, onClick, className, type, ...props }) => (
     <button onClick={onClick} className={className} type={type} {...props}>
       {children}
     </button>

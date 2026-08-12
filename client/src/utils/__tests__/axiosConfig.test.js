@@ -46,7 +46,6 @@ describe('axios interceptors', () => {
   describe('response interceptor error', () => {
     it('dispatches logout and redirects on 401', () => {
       const error = { response: { status: 401 } };
-      const mockHref = vi.fn();
       Object.defineProperty(window, 'location', {
         value: { href: '' },
         writable: true,

@@ -13,11 +13,6 @@ const CartPage = () => {
   return sum + (Number(item.totalPrice) || 0);
 }, 0);
 
-  const safeFormat = (value) => {
-    const num = Number(value);
-    return isNaN(num) ? '0' : num.toLocaleString();
-  };
-
   const handleRemoveItem = (id) => {
     toast.success('Товар удалён из корзины');
     dispatch(removeFromCart(id));

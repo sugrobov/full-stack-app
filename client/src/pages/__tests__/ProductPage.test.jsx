@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { configureStore } from '@reduxjs/toolkit';
 import ProductPage from '../ProductPage';
-import productsReducer, { fetchProductById } from '../../store/productsSlice';
+import productsReducer from '../../store/productsSlice';
 import cartReducer from '../../store/cartSlice';
 import favoritesReducer from '../../store/favoritesSlice';
 import authReducer from '../../store/authSlice';

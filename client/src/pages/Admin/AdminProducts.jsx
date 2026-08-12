@@ -42,10 +42,12 @@ const AdminProducts = () => {
   useEffect(() => {
     fetchProducts();
     fetchCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
   useEffect(() => {
     applyFilters();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [products, search, selectedCategory, minPrice, maxPrice]);
 
   const fetchProducts = async () => {
@@ -122,20 +124,6 @@ const AdminProducts = () => {
     } catch (err) {
       console.error('Ошибка сохранения товара:', err);
     }
-  };
-
-  const handleEdit = (product) => {
-    setEditingProduct(product);
-    setFormData({
-      name: product.name,
-      category_id: product.category_id,
-      price: product.price,
-      discount_price: product.discount_price || '',
-      rating: product.rating || '',
-      stock: product.stock,
-      description: product.description || '',
-      images: []
-    });
   };
 
   const handleDeleteClick = (id) => {
