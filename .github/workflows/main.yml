@@ -110,7 +110,8 @@ jobs:
 
       - name: Start client dev server
         run: |
-          nohup npx vite --host --port 5173 --prefix client > /tmp/client.log 2>&1 &
+          cd client
+          nohup npx vite --host --port 5173 > /tmp/client.log 2>&1 &
           echo "Client PID: $!"
 
       - name: Wait for servers
