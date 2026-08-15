@@ -71,9 +71,14 @@ jobs:
         run: npm run lint
         working-directory: client
 
+      - name: Remove E2E .env before client unit tests
+        run: rm -f client/.env
+
       - name: Run client unit tests
         run: npm run test
         working-directory: client
+        env:
+          VITE_API_URL: http://localhost:5000/api
 
       # ===== E2E (Cypress) =====
       - name: Install root dependencies (Cypress)

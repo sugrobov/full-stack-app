@@ -82,7 +82,7 @@ describe('AdminUsers', () => {
 
     await waitFor(() => {
       expect(axios.put).toHaveBeenCalledWith(
-        'http://localhost:5000/api/admin/users/1/role',
+        expect.stringContaining('/api/admin/users/1/role'),
         { role: 'admin' },
         expect.objectContaining({ headers: { Authorization: 'Bearer test-token' } })
       );
@@ -102,7 +102,7 @@ describe('AdminUsers', () => {
     fireEvent.click(nextPageBtn);
     await waitFor(() => {
       expect(axios.get).toHaveBeenCalledWith(
-        'http://localhost:5000/api/admin/users',
+        expect.stringContaining('/api/admin/users'),
         expect.objectContaining({
           headers: { Authorization: 'Bearer test-token' },
           params: { page: 2, limit: 10 }
