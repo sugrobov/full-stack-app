@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import Button from '../components/UI/Button';
 
@@ -23,10 +24,17 @@ const advantages = [
 ];
 
 const HomePage = () => {
+  const { user } = useSelector(state => state.auth);
+
   return (
     <main data-testid="home-page" className="bg-white">
       {/* Hero */}
       <section className="py-24 px-4 text-center" aria-label="Приветственный блок">
+        {user && (
+          <p className="text-2xl md:text-3xl font-semibold text-gray-800 mb-4">
+            Добро пожаловать, {user.name}
+          </p>
+        )}
         <motion.h1
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}

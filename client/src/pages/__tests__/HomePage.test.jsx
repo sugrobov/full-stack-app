@@ -1,8 +1,11 @@
 import React from 'react';
 import { render, screen, fireEvent, within } from '@testing-library/react'; // добавлен within
 import { MemoryRouter } from 'react-router-dom';
+import { Provider } from 'react-redux';
+import { configureStore } from '@reduxjs/toolkit';
 import { vi } from 'vitest';
 import HomePage from '../HomePage';
+import authReducer from '../../store/authSlice';
 
 vi.mock('framer-motion', () => ({
   motion: {
@@ -17,10 +20,16 @@ describe('HomePage', () => {
   });
 
   const renderHomePage = () => {
+    const store = configureStore({
+      reducer: { auth: authReducer },
+      preloadedState: { auth: { user: null, token: null, isLoading: false, error: null } },
+    });
     return render(
-      <MemoryRouter>
-        <HomePage />
-      </MemoryRouter>
+      <Provider store={store}>
+        <MemoryRouter>
+          <HomePage />
+        </MemoryRouter>
+      </Provider>
     );
   };
 

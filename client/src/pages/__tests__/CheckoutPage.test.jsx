@@ -109,10 +109,10 @@ describe('CheckoutPage', () => {
         phone: '1234567890',
         items: [{ productId: 1, quantity: 2, price: 100 }],
       });
-      expect(toast.success).toHaveBeenCalledWith('Заказ оформлен! Спасибо за покупку');
+      expect(toast.success).toHaveBeenCalledWith('Заказ успешно оформлен');
     });
 
-    await waitFor(() => expect(screen.getByText('Profile')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Home')).toBeInTheDocument());
   });
 
   test('shows error message on failure', async () => {
@@ -162,6 +162,6 @@ describe('CheckoutPage', () => {
     expect(submitButton).toBeDisabled();
 
     resolvePromise({ data: { orderId: 1 } });
-    await waitFor(() => expect(screen.getByText('Profile')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Home')).toBeInTheDocument());
   });
 });

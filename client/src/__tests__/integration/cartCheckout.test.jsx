@@ -81,6 +81,7 @@ describe('Cart → Checkout integration', () => {
     fireEvent.change(screen.getByLabelText('Ваше имя'), { target: { value: 'John' } });
     fireEvent.change(screen.getByLabelText('Телефон'), { target: { value: '+79001234567' } });
     fireEvent.change(screen.getByLabelText(/Адрес доставки/), { target: { value: 'ул. Пушкина, д. 10' } });
+    fireEvent.change(screen.getByLabelText(/Email/), { target: { value: 'john@example.com' } });
 
     // 6. Отправляем заказ
     fireEvent.click(screen.getByText('Подтвердить заказ'));
@@ -94,15 +95,16 @@ describe('Cart → Checkout integration', () => {
           name: 'John',
           phone: '+79001234567',
           address: 'ул. Пушкина, д. 10',
+          email: 'john@example.com',
         }),
         expect.any(Object)
       );
-      expect(toast.success).toHaveBeenCalledWith('Заказ оформлен! Спасибо за покупку');
+      expect(toast.success).toHaveBeenCalledWith('Заказ успешно оформлен');
     });
 
-    // 8. Редирект на профиль (так настроен CheckoutPage)
+    // 8. Редирект на главную (так настроен CheckoutPage)
     await waitFor(() => {
-      expect(screen.getByText('Profile Page')).toBeInTheDocument();
+      expect(screen.getByText('Home Page')).toBeInTheDocument();
     });
   });
 });

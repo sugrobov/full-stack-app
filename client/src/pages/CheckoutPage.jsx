@@ -70,8 +70,8 @@ const CheckoutPage = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       dispatch(clearCart());
-      navigate('/profile?orderSuccess=true');
-      toast.success('Заказ оформлен! Спасибо за покупку');
+      navigate('/');
+      toast.success('Заказ успешно оформлен');
     } catch (err) {
       setError(err.response?.data?.error || 'Не удалось оформить заказ');
     } finally {

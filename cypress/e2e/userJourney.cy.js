@@ -74,7 +74,13 @@ describe('Основной пользовательский сценарий', (
 
 describe('Валидация формы оформления заказа', () => {
   before(() => {
-    // Предположим, пользователь уже авторизован (или перехватываем запрос)
+    // Создаём пользователя через API (как в auth.cy.js), затем входим
+    cy.request({
+      method: 'POST',
+      url: 'http://localhost:5000/api/auth/register',
+      body: { name: 'Test User', email: 'test@example.com', password: 'password' },
+      failOnStatusCode: false,
+    });
     cy.visit('/login');
     cy.get('[data-testid="login-email"]').type('test@example.com');
     cy.get('[data-testid="login-password"]').type('password');
@@ -114,7 +120,16 @@ describe('Валидация формы оформления заказа', () =
 
 describe('Защита маршрутов', () => {
   it('Редирект на /login при попытке доступа к /checkout без авторизации', () => {
+    // Полный сброс авторизации: localStorage, sessionStorage, IndexedDB (redux-persist), cookies
+    cy.window().then((win) => {
+      win.localStorage.clear();
+      win.sessionStorage.clear();
+      if (win.indexedDB) {
+        win.indexedDB.deleteDatabase('shoppingCart');
+      }
+    });
     cy.clearCookies();
+    cy.reload();
     cy.visit('/checkout');
     cy.url().should('include', '/login');
     cy.contains('Вход').should('be.visible');
