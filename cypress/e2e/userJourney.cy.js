@@ -109,6 +109,13 @@ describe('Валидация формы оформления заказа', () =
     cy.get('a[href="/cart"]').first().click();
     cy.get('[data-testid="checkout-button"]').click();
     cy.url().should('include', '/checkout');
+
+    // Очищаем предзаполненные поля (name/email берутся из user),
+    // чтобы проверка «пустых обязательных полей» работала корректно
+    cy.get('[data-testid="checkout-name"]').clear();
+    cy.get('[data-testid="checkout-email"]').clear();
+    cy.get('[data-testid="checkout-address"]').clear();
+    cy.get('[data-testid="checkout-phone"]').clear();
   });
 
   it('Показывает ошибки при пустых обязательных полях', () => {
@@ -118,9 +125,12 @@ describe('Валидация формы оформления заказа', () =
     cy.contains('Телефон обязателен').should('be.visible');
   });
 
-  it('Блокирует кнопку отправки при незаполненных полях', () => {
+  it('Не отправляет форму при незаполненных полях', () => {
     cy.get('[data-testid="checkout-name"]').clear();
-    cy.get('[data-testid="submit-order"]').should('be.disabled');
+    cy.get('[data-testid="submit-order"]').click();
+    // Форма не отправляется и не покидает /checkout
+    cy.url().should('include', '/checkout');
+    cy.contains('Имя обязательно').should('be.visible');
   });
 
   it('Проверяет формат email', () => {
