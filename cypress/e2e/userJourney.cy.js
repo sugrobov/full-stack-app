@@ -99,10 +99,16 @@ describe('Валидация формы оформления заказа', () =
     cy.get('[data-testid="login-email"]').type('test@example.com');
     cy.get('[data-testid="login-password"]').type('password123');
     cy.get('[data-testid="login-submit"]').click();
-    // Добавляем товар в корзину для доступности checkout
-    cy.visit('/shop');
+
+    // Добавляем товар в корзину и переходим на /checkout через SPA-навигацию
+    // (клики по ссылкам), чтобы избежать полной перезагрузки (cy.visit), при
+    // которой ProtectedRoute редиректит /checkout на /login до rehydrate auth.
+    cy.url().should('eq', Cypress.config().baseUrl + '/');
+    cy.get('a[href="/shop"]').first().click();
     cy.get('[data-testid="add-to-cart-button"]').first().click();
-    cy.visit('/checkout');
+    cy.get('a[href="/cart"]').first().click();
+    cy.get('[data-testid="checkout-button"]').click();
+    cy.url().should('include', '/checkout');
   });
 
   it('Показывает ошибки при пустых обязательных полях', () => {
