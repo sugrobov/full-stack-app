@@ -86,16 +86,18 @@ describe('Валидация формы оформления заказа', () =
     cy.clearCookies();
     cy.reload();
 
-    // Создаём пользователя через API (как в auth.cy.js), затем входим
+    // Пользователь test@example.com создаётся серверными тестами (api.test.js)
+    // с паролем 'password123'. Регистрируем на случай, если его нет,
+    // и входим с тем же паролем.
     cy.request({
       method: 'POST',
       url: 'http://localhost:5000/api/auth/register',
-      body: { name: 'Test User', email: 'test@example.com', password: 'password' },
+      body: { name: 'Test User', email: 'test@example.com', password: 'password123' },
       failOnStatusCode: false,
     });
     cy.visit('/login');
     cy.get('[data-testid="login-email"]').type('test@example.com');
-    cy.get('[data-testid="login-password"]').type('password');
+    cy.get('[data-testid="login-password"]').type('password123');
     cy.get('[data-testid="login-submit"]').click();
     // Добавляем товар в корзину для доступности checkout
     cy.visit('/shop');
