@@ -74,6 +74,18 @@ describe('Основной пользовательский сценарий', (
 
 describe('Валидация формы оформления заказа', () => {
   before(() => {
+    // Полный сброс авторизации, чтобы Login.jsx не редиректил /login -> /
+    // из-за пользователя, вошедшего в предыдущих тестах
+    cy.window().then((win) => {
+      win.localStorage.clear();
+      win.sessionStorage.clear();
+      if (win.indexedDB) {
+        win.indexedDB.deleteDatabase('shoppingCart');
+      }
+    });
+    cy.clearCookies();
+    cy.reload();
+
     // Создаём пользователя через API (как в auth.cy.js), затем входим
     cy.request({
       method: 'POST',
