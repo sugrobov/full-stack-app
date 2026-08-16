@@ -73,50 +73,43 @@ describe('Основной пользовательский сценарий', (
 });
 
 describe('Валидация формы оформления заказа', () => {
-  before(() => {
-    // Полный сброс авторизации, чтобы Login.jsx не редиректил /login -> /
-    // из-за пользователя, вошедшего в предыдущих тестах
-    cy.window().then((win) => {
-      win.localStorage.clear();
-      win.sessionStorage.clear();
-      if (win.indexedDB) {
-        win.indexedDB.deleteDatabase('shoppingCart');
-      }
-    });
-    cy.clearCookies();
-    cy.reload();
-
-    // Пользователь test@example.com создаётся серверными тестами (api.test.js)
-    // с паролем 'password123'. Регистрируем на случай, если его нет,
-    // и входим с тем же паролем.
-    cy.request({
-      method: 'POST',
-      url: 'http://localhost:5000/api/auth/register',
-      body: { name: 'Test User', email: 'test@example.com', password: 'password123' },
-      failOnStatusCode: false,
-    });
-    cy.visit('/login');
-    cy.get('[data-testid="login-email"]').type('test@example.com');
-    cy.get('[data-testid="login-password"]').type('password123');
-    cy.get('[data-testid="login-submit"]').click();
-
-    // Добавляем товар в корзину и переходим на /checkout через SPA-навигацию
-    // (клики по ссылкам), чтобы избежать полной перезагрузки (cy.visit), при
-    // которой ProtectedRoute редиректит /checkout на /login до rehydrate auth.
-    cy.url().should('eq', Cypress.config().baseUrl + '/');
-    cy.get('a[href="/shop"]').first().click();
-    cy.get('[data-testid="add-to-cart-button"]').first().click();
-    cy.get('a[href="/cart"]').first().click();
-    cy.get('[data-testid="checkout-button"]').click();
-    cy.url().should('include', '/checkout');
-
-    // Очищаем предзаполненные поля (name/email берутся из user),
-    // чтобы проверка «пустых обязательных полей» работала корректно
-    cy.get('[data-testid="checkout-name"]').clear();
-    cy.get('[data-testid="checkout-email"]').clear();
-    cy.get('[data-testid="checkout-address"]').clear();
-    cy.get('[data-testid="checkout-phone"]').clear();
+beforeEach(() => {
+  // Полный сброс авторизации...
+  cy.window().then((win) => {
+    win.localStorage.clear();
+    win.sessionStorage.clear();
+    if (win.indexedDB) {
+      win.indexedDB.deleteDatabase('shoppingCart');
+    }
   });
+  cy.clearCookies();
+  cy.reload();
+
+  cy.request({
+    method: 'POST',
+    url: 'http://localhost:5000/api/auth/register',
+    body: { name: 'Test User', email: 'test@example.com', password: 'password123' },
+    failOnStatusCode: false,
+  });
+  cy.visit('/login');
+  cy.get('[data-testid="login-email"]').type('test@example.com');
+  cy.get('[data-testid="login-password"]').type('password123');
+  cy.get('[data-testid="login-submit"]').click();
+
+  cy.url().should('eq', Cypress.config().baseUrl + '/');
+  cy.get('a[href="/shop"]').first().click();
+  cy.get('[data-testid="add-to-cart-button"]').first().click();
+  cy.get('[data-testid="cart-badge"]').should('contain', '1');
+  cy.get('a[href="/cart"]').first().click();
+  cy.get('[data-testid="checkout-button"]').click();
+  cy.url().should('include', '/checkout');
+
+  // Очищаем предзаполненные поля
+  cy.get('[data-testid="checkout-name"]').clear();
+  cy.get('[data-testid="checkout-email"]').clear();
+  cy.get('[data-testid="checkout-address"]').clear();
+  cy.get('[data-testid="checkout-phone"]').clear();
+});
 
   it('Показывает ошибки при пустых обязательных полях', () => {
     cy.get('[data-testid="submit-order"]').click();
