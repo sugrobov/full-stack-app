@@ -13,6 +13,7 @@ import NewsPage from '../pages/NewsPage';
 import NewsDetailPage from '../pages/NewsDetailPage';
 import NotFoundPage from '../pages/NotFoundPage';
 import AdminRoute from '../components/AdminRoute';
+import ProtectedRoute from '../components/ProtectedRoute';
 import AdminDashboard from '../pages/Admin/AdminDashboard';
 import AdminProducts from '../pages/Admin/AdminProducts';
 import AdminOrders from '../pages/Admin/AdminOrders';
@@ -29,8 +30,8 @@ const routes = [
   { path: '/search', element: <SearchPage /> },
   { path: '/login', element: <Login /> },
   { path: '/register', element: <Register /> },
-  { path: '/profile', element: <ProfilePage /> },
-  { path: '/checkout', element: <CheckoutPage /> },
+  { path: '/profile', element: <ProtectedRoute><ProfilePage /></ProtectedRoute> },
+  { path: '/checkout', element: <ProtectedRoute><CheckoutPage /></ProtectedRoute> },
   { path: '/favorites', element: <FavoritesPage /> },
   { path: '/news', element: <NewsPage /> },
   { path: '/news/:id', element: <NewsDetailPage /> },

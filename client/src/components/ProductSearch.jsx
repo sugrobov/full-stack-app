@@ -74,6 +74,7 @@ const ProductSearch = () => {
     <div ref={wrapperRef} className="relative mb-6">
       <div className="relative">
         <Input
+          data-testid="search-input"
           type="text"
           placeholder="Поиск товаров..."
           value={query}

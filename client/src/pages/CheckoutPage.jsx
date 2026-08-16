@@ -15,8 +15,10 @@ const CheckoutPage = () => {
   const [name, setName] = useState(user?.name || '');
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState(user?.email || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [validationErrors, setValidationErrors] = useState({});
 
   const computedTotal = items.reduce((sum, item) => {
     const price = Number(item.discountPrice) || Number(item.price) || 0;
@@ -32,15 +34,28 @@ const CheckoutPage = () => {
   useEffect(() => {
     if (items.length === 0) {
       navigate('/');
-    } else if (!user) {
-      navigate('/login');
     }
-  }, [items.length, user, navigate]);
+  }, [items.length, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
+
+    // Кастомная валидация
+    const newErrors = {};
+    if (!name.trim()) newErrors.name = 'Имя обязательно';
+    if (!email.trim()) newErrors.email = 'Email обязателен';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) newErrors.email = 'Некорректный email';
+    if (!address.trim()) newErrors.address = 'Адрес обязателен';
+    if (!phone.trim()) newErrors.phone = 'Телефон обязателен';
+
+    if (Object.keys(newErrors).length > 0) {
+      setValidationErrors(newErrors);
+      return;
+    }
+
+    setValidationErrors({});
+    setLoading(true);
 
     const orderItems = items.map(item => ({
       productId: item.id,
@@ -51,7 +66,7 @@ const CheckoutPage = () => {
     try {
       await axios.post(
         `${import.meta.env.VITE_API_URL || '/api'}/orders`,
-        { name, address, phone, items: orderItems },
+        { name, email, address, phone, items: orderItems },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       dispatch(clearCart());
@@ -86,42 +101,66 @@ const CheckoutPage = () => {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6">
+      <form onSubmit={handleSubmit} noValidate className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-4">Данные для доставки</h2>
         <div className="mb-4">
           <label htmlFor="name" className="block text-gray-700 mb-2">Ваше имя</label>
           <input
             id="name"
+            data-testid="checkout-name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full border rounded px-3 py-2"
-            required
           />
+          {validationErrors.name && (
+            <p className="text-red-500 text-sm mt-1">{validationErrors.name}</p>
+          )}
         </div>
         <div className="mb-4">
           <label htmlFor="address" className="block text-gray-700 mb-2">Адрес доставки *</label>
           <input
             id="address"
+            data-testid="checkout-address"
             type="text"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             className="w-full border rounded px-3 py-2"
-            required
           />
+          {validationErrors.address && (
+            <p className="text-red-500 text-sm mt-1">{validationErrors.address}</p>
+          )}
         </div>
         <div className="mb-6">
           <label htmlFor="phone" className="block text-gray-700 mb-2">Телефон</label>
           <input
             id="phone"
+            data-testid="checkout-phone"
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             className="w-full border rounded px-3 py-2"
           />
+          {validationErrors.phone && (
+            <p className="text-red-500 text-sm mt-1">{validationErrors.phone}</p>
+          )}
+        </div>
+        <div className="mb-4">
+          <label htmlFor="email" className="block text-gray-700 mb-2">Email *</label>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full border rounded px-3 py-2"
+            data-testid="checkout-email"
+          />
+          {validationErrors.email && (
+            <p className="text-red-500 text-sm mt-1">{validationErrors.email}</p>
+          )}
         </div>
         {error && <div className="bg-red-100 text-red-700 p-3 rounded mb-4">{error}</div>}
-        <Button type="submit" disabled={loading} variant="primary" className="w-full">
+        <Button type="submit" disabled={loading} variant="primary" className="w-full" data-testid="submit-order">
           Подтвердить заказ
         </Button>
       </form>

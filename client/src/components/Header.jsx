@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { clearCart } from '../store/cartSlice';
 import { clearFilters } from '../store/productsSlice';
 import { logout } from '../store/authSlice';
 import Button from './UI/Button';
-import ConfirmModal from './UI/ConfirmModal';
 
 const Header = () => {
   const dispatch = useDispatch();
@@ -13,13 +12,12 @@ const Header = () => {
   const { user } = useSelector(state => state.auth);
   const { totalQuantity } = useSelector(state => state.cart);
   const favorites = useSelector(state => state.favorites.items);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const handleLogout = () => {
     dispatch(clearCart());
     dispatch(clearFilters());
     dispatch(logout());
-    navigate('/');
+    navigate('/login');
   };
 
   return (
@@ -47,7 +45,7 @@ const Header = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-1.5 6M17 13l1.5 6M9 21h6M9 21a2 2 0 100-4 2 2 0 000 4zm6 0a2 2 0 100-4 2 2 0 000 4z" />
             </svg>
             {totalQuantity > 0 && (
-              <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              <span data-testid="cart-badge" className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                 {totalQuantity}
               </span>
             )}
@@ -66,7 +64,7 @@ const Header = () => {
                 <span>Профиль</span>
               </Link>
               <span className="text-gray-700">Привет, {user.name}</span>
-              <Button variant="danger" onClick={() => setShowLogoutConfirm(true)}>
+              <Button variant="danger" data-testid="logout-button" onClick={handleLogout}>
                 Выйти
               </Button>
             </div>
@@ -93,17 +91,6 @@ const Header = () => {
         </nav>
       </div>
 
-      <ConfirmModal
-        isOpen={showLogoutConfirm}
-        onClose={() => setShowLogoutConfirm(false)}
-        onConfirm={() => {
-          setShowLogoutConfirm(false);
-          handleLogout();
-        }}
-        title="Подтверждение выхода"
-        message="Вы уверены, что хотите выйти из аккаунта?"
-        confirmText="Выйти"
-      />
     </header>
   );
 };

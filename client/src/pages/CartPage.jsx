@@ -181,7 +181,7 @@ const CartPage = () => {
             </div>
 
             <Link to="/checkout">
-              <Button variant="primary" className="w-full py-3 font-medium">
+              <Button variant="primary" data-testid="checkout-button" className="w-full py-3 font-medium">
                 Оформить заказ
               </Button>
             </Link>

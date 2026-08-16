@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
 import { configureStore } from '@reduxjs/toolkit';
@@ -8,19 +8,6 @@ import cartReducer from '../../store/cartSlice';
 import favoritesReducer from '../../store/favoritesSlice';
 import authReducer from '../../store/authSlice';
 import productsReducer from '../../store/productsSlice';
-
-// Мокаем ConfirmModal, чтобы просто отображать children или проверять пропсы
-vi.mock('../UI/ConfirmModal', () => ({
-  default: ({ isOpen, onConfirm, onClose, title, message, confirmText }) =>
-    isOpen ? (
-      <div data-testid="confirm-modal">
-        <p>{title}</p>
-        <p>{message}</p>
-        <button onClick={onConfirm}>{confirmText}</button>
-        <button onClick={onClose}>Отмена</button>
-      </div>
-    ) : null,
-}));
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -128,28 +115,17 @@ describe('Header component', () => {
     expect(screen.getByText('Админка')).toBeInTheDocument();
   });
 
-  it('opens logout confirmation modal and performs logout', async () => {
+  it('logs out immediately when logout button is clicked', () => {
     const state = {
       ...defaultState,
       auth: { ...defaultState.auth, user: { id: 1, name: 'Иван', role: 'user' } },
     };
     renderHeader(state);
 
-    // Кликаем основную кнопку "Выйти" (которая в хедере)
-    fireEvent.click(screen.getByText('Выйти'));
+    // Кликаем кнопку "Выйти"
+    fireEvent.click(screen.getByTestId('logout-button'));
 
-    // Модальное окно должно появиться
-    const modal = screen.getByTestId('confirm-modal');
-    expect(modal).toBeInTheDocument();
-    expect(screen.getByText('Подтверждение выхода')).toBeInTheDocument();
-
-    // Ищем кнопку подтверждения именно внутри модального окна
-    const confirmButton = within(modal).getByText('Выйти');
-    fireEvent.click(confirmButton);
-
-    // Проверяем, что был осуществлён переход на главную
-    expect(mockNavigate).toHaveBeenCalledWith('/');
-    // Модальное окно должно закрыться (не обязательно проверять, но можно)
-    expect(screen.queryByTestId('confirm-modal')).not.toBeInTheDocument();
+    // Происходит мгновенный переход на /login
+    expect(mockNavigate).toHaveBeenCalledWith('/login');
   });
 });

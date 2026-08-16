@@ -41,7 +41,7 @@ const ProductCard = React.memo(({ product }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full relative">
+    <div className="product-card bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full relative">
       {/* Кнопка избранного */}
       <Button
         variant="icon"
@@ -135,6 +135,7 @@ const ProductCard = React.memo(({ product }) => {
       <div className="p-4 pt-0">
         <Button
           variant={product.stock === 0 ? "secondary" : "primary"}
+          data-testid="add-to-cart-button"
           onClick={handleAddToCart}
           disabled={product.stock === 0}
           className="w-full py-2 text-sm"

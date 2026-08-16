@@ -33,6 +33,7 @@ const Register = () => {
           <input
             type="text"
             value={name}
+            data-testid="register-name"
             onChange={(e) => setName(e.target.value)}
             className="w-full px-3 py-2 border rounded"
             required
@@ -43,6 +44,7 @@ const Register = () => {
           <input
             type="email"
             value={email}
+            data-testid="register-email"
             onChange={(e) => setEmail(e.target.value)}
             className="w-full px-3 py-2 border rounded"
             required
@@ -54,6 +56,7 @@ const Register = () => {
             type="password"
             autoComplete="current-password"
             value={password}
+            data-testid="register-password"
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-3 py-2 border rounded"
             required
@@ -64,6 +67,7 @@ const Register = () => {
         <button
           type="submit"
           disabled={isLoading}
+          data-testid="register-submit"
           className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
         >
           {isLoading ? 'Загрузка...' : 'Зарегистрироваться'}

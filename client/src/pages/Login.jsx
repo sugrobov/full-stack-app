@@ -30,6 +30,7 @@ const Login = () => {
           <label htmlFor="login-email" className="block text-gray-700">Email</label>
           <input
             id="login-email"
+            data-testid="login-email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -41,6 +42,7 @@ const Login = () => {
           <label htmlFor="login-password" className="block text-gray-700">Пароль</label>
           <input
             id="login-password"
+            data-testid="login-password"
             type="password"
             autoComplete="current-password"
             value={password}
@@ -52,6 +54,7 @@ const Login = () => {
         {error && <p className="text-red-500 mb-4" role="alert">{error}</p>}
         <button
           type="submit"
+          data-testid="login-submit"
           disabled={isLoading}
           className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
         >
