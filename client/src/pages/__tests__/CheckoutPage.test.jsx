@@ -94,6 +94,7 @@ describe('CheckoutPage', () => {
     fireEvent.change(screen.getByLabelText('Ваше имя'), { target: { value: 'John' } });
     fireEvent.change(screen.getByLabelText(/Адрес доставки/), { target: { value: 'Test Address' } });
     fireEvent.change(screen.getByLabelText('Телефон'), { target: { value: '1234567890' } });
+    fireEvent.change(screen.getByLabelText(/Email/), { target: { value: 'john@example.com' } });
 
     fireEvent.click(screen.getByRole('button', { name: /подтвердить заказ/i }));
 
@@ -103,6 +104,7 @@ describe('CheckoutPage', () => {
       expect(callArgs[0]).toContain('/orders');
       expect(callArgs[1]).toMatchObject({
         name: 'John',
+        email: 'john@example.com',
         address: 'Test Address',
         phone: '1234567890',
         items: [{ productId: 1, quantity: 2, price: 100 }],
@@ -120,6 +122,8 @@ describe('CheckoutPage', () => {
 
     fireEvent.change(screen.getByLabelText('Ваше имя'), { target: { value: 'John' } });
     fireEvent.change(screen.getByLabelText(/Адрес доставки/), { target: { value: 'Address' } });
+    fireEvent.change(screen.getByLabelText('Телефон'), { target: { value: '1234567890' } });
+    fireEvent.change(screen.getByLabelText(/Email/), { target: { value: 'john@example.com' } });
 
     fireEvent.click(screen.getByRole('button', { name: /подтвердить заказ/i }));
 
@@ -133,6 +137,8 @@ describe('CheckoutPage', () => {
 
     fireEvent.change(screen.getByLabelText('Ваше имя'), { target: { value: 'John' } });
     fireEvent.change(screen.getByLabelText(/Адрес доставки/), { target: { value: 'Address' } });
+    fireEvent.change(screen.getByLabelText('Телефон'), { target: { value: '1234567890' } });
+    fireEvent.change(screen.getByLabelText(/Email/), { target: { value: 'john@example.com' } });
 
     fireEvent.click(screen.getByRole('button', { name: /подтвердить заказ/i }));
 
@@ -147,6 +153,8 @@ describe('CheckoutPage', () => {
 
     fireEvent.change(screen.getByLabelText('Ваше имя'), { target: { value: 'John' } });
     fireEvent.change(screen.getByLabelText(/Адрес доставки/), { target: { value: 'Address' } });
+    fireEvent.change(screen.getByLabelText('Телефон'), { target: { value: '1234567890' } });
+    fireEvent.change(screen.getByLabelText(/Email/), { target: { value: 'john@example.com' } });
 
     const submitButton = screen.getByRole('button', { name: /подтвердить заказ/i });
     fireEvent.click(submitButton);
