@@ -89,7 +89,7 @@ jobs:
           DB_USER: root
           DB_PASSWORD: ''
           DB_NAME: store_db_test
-        run: node server/seed.cjs
+        run: node seed.cjs
         working-directory: server
 
       # ===== E2E (Cypress) =====
