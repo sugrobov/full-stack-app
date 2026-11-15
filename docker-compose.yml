@@ -21,6 +21,8 @@ services:
     restart: unless-stopped
     ports:
       - "5000:5000"
+    env_file:
+      - ./server/.env
     environment:
       DB_HOST: db
       DB_PORT: 3306
@@ -42,7 +44,9 @@ services:
 
   migrate:
     build: ./server
-    command: node migrate.js
+    command: node migrate.cjs
+    env_file:
+      - ./server/.env
     environment:
       DB_HOST: db
       DB_PORT: 3306

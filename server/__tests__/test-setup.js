@@ -1,9 +1,13 @@
 const mysql = require('mysql2/promise');
 const dotenv = require('dotenv');
 const path = require('path');
-const migrate = require('../migrate'); // миграция в корне server
+const migrate = require('../migrate.cjs'); // миграция в корне server
 
 dotenv.config({ path: path.join(__dirname, '..', '.env.test') });
+dotenv.config({
+  path: path.join(__dirname, '..', '.env.test.local'),
+  override: true,
+});
 
 const testDb = mysql.createPool({
   host: process.env.DB_HOST,

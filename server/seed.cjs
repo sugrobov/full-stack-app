@@ -49,16 +49,12 @@ async function seed() {
   ];
 
   for (const [name, price, discountPrice, rating, stock] of products) {
-    const [result] = await db.query(
+    await db.query(
       'INSERT INTO products (name, category_id, price, discount_price, rating, stock, description) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [name, categoryId, price, discountPrice, rating, stock, `Описание товара ${name}`]
     );
-    const productId = result.insertId;
-    // Изображение (можно заглушку — ProductCard отрисует имя при отсутствии картинки)
-    await db.query(
-      'INSERT INTO product_images (product_id, image_url, sort_order) VALUES (?, ?, ?)',
-      [productId, `/images/category${categoryId}/product${productId}.jpg`, 0]
-    );
+    // Изображения не создаём — карточек с картинками нет,
+    // ProductCard отрисует fallback (имя/placeholder).
   }
 
   console.log(`✅ Сидирование завершено: категория #${categoryId}, товаров: ${products.length}`);

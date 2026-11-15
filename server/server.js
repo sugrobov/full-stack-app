@@ -1,8 +1,23 @@
+const path = require('path');
+require('dotenv').config({
+  path: process.env.NODE_ENV === 'test'
+    ? path.join(__dirname, '.env.test')
+    : path.join(__dirname, '.env'),
+});
+
+// Локальный override (не коммитится) — для DB_PASSWORD и JWT_SECRET в тестах
+if (process.env.NODE_ENV === 'test') {
+  require('dotenv').config({
+    path: path.join(__dirname, '.env.test.local'),
+    override: true,
+  });
+}
+
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
-const dotenv = require('dotenv');
+// const dotenv = require('dotenv');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
@@ -13,21 +28,21 @@ const multer = require('multer');
 const sharp = require('sharp');
 const { v4: uuidv4 } = require('uuid');
 const { fileTypeFromBuffer } = require('file-type');
-const path = require('path');
 const fs = require('fs').promises;
 const compression = require('compression');
 
-if (process.env.NODE_ENV === 'test') {
-  dotenv.config({ path: path.join(__dirname, '.env.test') });
-} else {
-  dotenv.config();
-}
+// if (process.env.NODE_ENV === 'test') {
+//   dotenv.config({ path: path.join(__dirname, '.env.test') });
+// } else {
+//   dotenv.config();
+// }
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 const allowedOrigins = [
   'http://localhost:5173',
+  'http://127.0.0.1:5173',
   process.env.CLIENT_URL
 ].filter(Boolean);
 
@@ -115,7 +130,7 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  acquireTimeout: 10000,
+  // acquireTimeout: 10000,
   enableKeepAlive: true,
   keepAliveInitialDelay: 10000
 });
@@ -889,7 +904,9 @@ app.delete('/api/admin/products/:id', verifyToken, requireAdmin, async (req, res
         await fs.unlink(filePath);
         console.log(`Удалён файл ${filePath}`);
       } catch (e) {
+        if (e.code !== 'ENOENT') {
         console.error(`Ошибка удаления файла ${filePath}:`, e);
+        }
       }
     }
     res.json({ message: 'Product deleted' });
@@ -1320,7 +1337,9 @@ app.delete('/api/admin/products/:productId/images', verifyToken, requireAdmin, a
     try {
       await fs.unlink(filePath);
     } catch (e) {
+        if (e.code !== 'ENOENT') {
       console.error('Ошибка удаления файла:', e);
+        }
     }
 
     // Обновляем поле image в products (ставим первое оставшееся или NULL)
